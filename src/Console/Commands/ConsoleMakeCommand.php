@@ -24,7 +24,9 @@ class ConsoleMakeCommand extends FoundationConsoleMakeCommand
         return ucfirst(parent::getNameInput());
     }
 
-    /** {@inheritdoc} */
+    /**
+     * {@inheritdoc}
+     */
     protected function getStub(): string
     {
         $relativePath = '/stubs/console.stub';

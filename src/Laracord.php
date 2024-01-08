@@ -19,7 +19,7 @@ class Laracord
     /**
      * The Discord instance.
      *
-     * @var \Discord\Discord
+     * @var \Discord\DiscordCommandClient
      */
     protected $discord;
 
@@ -55,8 +55,6 @@ class Laracord
 
     /**
      * Initialize the Discord Bot.
-     *
-     * @return void
      */
     public function __construct(LaravelCommand $console)
     {
@@ -70,8 +68,6 @@ class Laracord
 
     /**
      * Make the Bot instance.
-     *
-     * @return $this
      */
     public static function make(LaravelCommand $console): self
     {
@@ -133,8 +129,6 @@ class Laracord
 
     /**
      * Get the Discord instance.
-     *
-     * @return \Discord\Discord
      */
     public function getDiscord(): Discord
     {

@@ -33,9 +33,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * System is unusable.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function emergency(string|\Stringable $message, array $context = []): void
     {
@@ -43,12 +41,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Action must be taken immediately.
-     *
-     * Example: Entire website down, database unavailable, etc. This should
-     * trigger the SMS alerts and wake you up.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function alert(string|\Stringable $message, array $context = []): void
     {
@@ -56,11 +49,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Critical conditions.
-     *
-     * Example: Application component unavailable, unexpected exception.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function critical(string|\Stringable $message, array $context = []): void
     {
@@ -68,10 +57,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Runtime errors that do not require immediate action but should typically
-     * be logged and monitored.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function error(string|\Stringable $message, array $context = []): void
     {
@@ -79,12 +65,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Exceptional occurrences that are not errors.
-     *
-     * Example: Use of deprecated APIs, poor use of an API, undesirable things
-     * that are not necessarily wrong.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function warning(string|\Stringable $message, array $context = []): void
     {
@@ -92,9 +73,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Normal but significant events.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function notice(string|\Stringable $message, array $context = []): void
     {
@@ -102,11 +81,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Interesting events.
-     *
-     * Example: User logs in, SQL logs.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function info(string|\Stringable $message, array $context = []): void
     {
@@ -114,9 +89,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Detailed debug information.
-     *
-     * @param  mixed[]  $context
+     * {@inheritdoc}
      */
     public function debug(string|\Stringable $message, array $context = []): void
     {
@@ -128,12 +101,7 @@ class Logger implements LoggerInterface
     }
 
     /**
-     * Logs with an arbitrary level.
-     *
-     * @param  mixed  $level
-     * @param  mixed[]  $context
-     *
-     * @throws \Psr\Log\InvalidArgumentException
+     * {@inheritdoc}
      */
     public function log($level, string|\Stringable $message, array $context = []): void
     {
