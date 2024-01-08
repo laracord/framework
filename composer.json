@@ -19,9 +19,6 @@
     "illuminate/http": "^10.0",
     "laravel-zero/framework": "^10.2",
     "nunomaduro/termwind": "^1.15.1",
-    "openai-php/client": "^0.8.0",
-    "react/child-process": "^0.6.5",
-    "react/event-loop": "^1.5",
     "team-reflex/discord-php": "^7.3"
   },
   "require-dev": {
