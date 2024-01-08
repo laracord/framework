@@ -1,0 +1,41 @@
+{
+  "name": "laracord/framework",
+  "type": "package",
+  "description": "The Laracord Framework.",
+  "keywords": ["framework", "laravel", "discord"],
+  "license": "MIT",
+  "homepage": "https://laracord.com",
+  "authors": [
+    {
+      "name": "Brandon Nifong",
+      "email": "brandon@tendency.me",
+      "homepage": "https://github.com/log1x"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.5",
+    "illuminate/database": "^10.0",
+    "illuminate/http": "^10.0",
+    "laravel-zero/framework": "^10.2",
+    "nunomaduro/termwind": "^1.15.1",
+    "openai-php/client": "^0.8.0",
+    "react/child-process": "^0.6.5",
+    "react/event-loop": "^1.5",
+    "team-reflex/discord-php": "^7.3"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.13"
+  },
+  "autoload": {
+    "psr-4": {
+      "Laracord\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
+}

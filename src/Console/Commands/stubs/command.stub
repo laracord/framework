@@ -1,0 +1,53 @@
+<?php
+
+namespace {{ namespace }};
+
+use Laracord\Commands\Command;
+
+class {{ class }} extends Command
+{
+    /**
+     * The Discord command name.
+     *
+     * @var string
+     */
+    protected $signature = '{{ command }}';
+
+    /**
+     * The Discord command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description';
+
+    /**
+     * Indiciates whether the command requires admin permissions.
+     *
+     * @var bool
+     */
+    protected $admin = false;
+
+    /**
+     * Indicates whether the command should be displayed in the commands list.
+     *
+     * @var bool
+     */
+    protected $hidden = false;
+
+    /**
+     * Execute the Discord command.
+     *
+     * @param  \Discord\Parts\Channel\Message  $message
+     * @param  array  $args
+     * @return mixed
+     */
+    public function handle($message, $args)
+    {
+        return $this->message(
+            $message->channel,
+            'Ping',
+            'Pong!',
+            ['Response time' => (string) $message->timestamp->diff()->f]
+        );
+    }
+}
