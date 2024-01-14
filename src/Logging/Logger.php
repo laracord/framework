@@ -120,6 +120,8 @@ class Logger implements LoggerInterface
             default => 'info',
         };
 
+        $message = ucfirst($message);
+
         if (method_exists($this->console, 'log')) {
             $this->console->log($message, $type);
         } else {
