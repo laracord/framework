@@ -1,5 +1,9 @@
 # Laracord Framework
 
+![Latest Stable Version](https://img.shields.io/packagist/v/laracord/framework.svg?style=flat-square)
+![Total Downloads](https://img.shields.io/packagist/dt/laracord/framework.svg?style=flat-square)
+![Build Status](https://img.shields.io/github/actions/workflow/status/laracord/framework/main.yml?branch=main&style=flat-square)
+
 [Laracord](https://github.com/laracord/laracord) is a micro-framework that provides a powerful starting point for your next Discord bot.
 
 Build functional, elegant bots harnessing the full power of [Laravel](https://laravel.com/) alongside [DiscordPHP](https://github.com/discord-php/DiscordPHP).
