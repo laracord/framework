@@ -4,8 +4,13 @@ namespace Laracord;
 
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
+use Exception;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Laracord\Commands\Command;
 use Laracord\Logging\Logger;
 use LaravelZero\Framework\Commands\Command as LaravelCommand;
+use ReflectionClass;
 
 class Laracord
 {
@@ -44,6 +49,16 @@ class Laracord
     protected string $prefix = '';
 
     /**
+     * The Discord bot intents.
+     */
+    protected ?int $intents = null;
+
+    /**
+     * The DiscordPHP options.
+     */
+    protected array $options = [];
+
+    /**
      * The Discord bot commands.
      */
     protected array $commands = [];
@@ -59,11 +74,6 @@ class Laracord
     public function __construct(LaravelCommand $console)
     {
         $this->console = $console;
-
-        $this->name = config('app.name');
-        $this->description = config('discord.description');
-        $this->token = config('discord.token');
-        $this->prefix = config('discord.prefix');
     }
 
     /**
@@ -79,23 +89,23 @@ class Laracord
      */
     public function boot(): void
     {
-        $this->discord = new Discord([
-            'token' => $this->token,
-            'prefix' => $this->prefix,
-            'description' => $this->description,
-            'defaultHelpCommand' => false,
-            'discordOptions' => [
-                'intents' => Intents::getDefaultIntents() | Intents::GUILD_MEMBERS,
-                'logger' => Logger::make($this->console),
-                'loadAllMembers' => true,
-            ],
-        ]);
-
-        if (config('discord.help')) {
-            $this->commands[] = Commands\HelpCommand::class;
+        if (! $this->getToken()) {
+            throw new Exception('You must provide a Discord bot token.');
         }
 
-        foreach ($this->commands as $command) {
+        if (! $this->getCommands()) {
+            throw new Exception('You must register at least one Discord bot command.');
+        }
+
+        $this->discord = new Discord([
+            'token' => $this->getToken(),
+            'prefix' => $this->getPrefix(),
+            'description' => $this->getDescription(),
+            'discordOptions' => $this->getOptions(),
+            'defaultHelpCommand' => false,
+        ]);
+
+        foreach ($this->getCommands() as $command) {
             $command = new $command($this);
 
             $this->discord->registerCommand($command->getName(), fn ($message, $args) => $command->maybeHandle($message, $args), [
@@ -109,22 +119,150 @@ class Laracord
             $this->registeredCommands[] = $command;
         }
 
-        $commands = count($this->registeredCommands);
-        $commands = $commands === 1
-            ? "<fg=blue>{$commands}</> command"
-            : "<fg=blue>{$commands}</> commands";
+        $this->discord->on('ready', function ($discord) {
+            $commands = count($this->registeredCommands);
+            $commands = $commands === 1
+                ? "<fg=blue>{$commands}</> command"
+                : "<fg=blue>{$commands}</> commands";
 
-        $this->console->outputComponents()->info("Booting <fg=blue>{$this->name}</> with {$commands}");
+            $this->console->log("Successfully booted <fg=blue>{$this->getName()}</> with {$commands}");
+
+            $this->console->table(
+                ['<fg=blue>Command</>', '<fg=blue>Description</>'],
+                collect($this->registeredCommands)->map(function ($command) {
+                    return [
+                        $command->getSyntax(),
+                        $command->getDescription(),
+                    ];
+                })->toArray()
+            );
+        });
 
         $this->discord->run();
     }
 
     /**
-     * Get the command list.
+     * Get the bot name.
+     */
+    public function getName(): string
+    {
+        if ($this->name) {
+            return $this->name;
+        }
+
+        return $this->name = config('app.name');
+    }
+
+    /**
+     * Get the bot description.
+     */
+    public function getDescription(): string
+    {
+        if ($this->description) {
+            return $this->description;
+        }
+
+        return $this->description = config('discord.description');
+    }
+
+    /**
+     * Get the bot token.
+     */
+    public function getToken(): string
+    {
+        if ($this->token) {
+            return $this->token;
+        }
+
+        return $this->token = config('discord.token');
+    }
+
+    /**
+     * Get the bot intents.
+     */
+    public function getIntents(): ?int
+    {
+        if ($this->intents) {
+            return $this->intents;
+        }
+
+        return $this->intents = config('discord.intents', Intents::getDefaultIntents());
+    }
+
+    /**
+     * Get the bot options.
+     */
+    public function getOptions(): array
+    {
+        if ($this->options) {
+            return $this->options;
+        }
+
+        $defaultOptions = [
+            'intents' => $this->getIntents(),
+            'logger' => Logger::make($this->console),
+        ];
+
+        return $this->options = [
+            ...config('discord.options', []),
+            ...$defaultOptions,
+        ];
+    }
+
+    /**
+     * Get the bot commands.
      */
     public function getCommands(): array
     {
+        if ($this->commands) {
+            return $this->commands;
+        }
+
+        $commands = collect(File::allFiles($this->getCommandPath()))
+            ->map(function ($file) {
+                $relativePath = str_replace(
+                    Str::finish(app_path(), DIRECTORY_SEPARATOR),
+                    '',
+                    $file->getPathname()
+                );
+
+                $folders = Str::beforeLast(
+                    $relativePath,
+                    DIRECTORY_SEPARATOR
+                ).DIRECTORY_SEPARATOR;
+
+                $className = Str::after($relativePath, $folders);
+
+                $command = app()->getNamespace().str_replace(
+                    ['/', '.php'],
+                    ['\\', ''],
+                    $folders.$className
+                );
+
+                return $command;
+            })
+            ->merge(config('discord.commands', []))
+            ->unique()
+            ->filter(fn ($command) => is_subclass_of($command, Command::class) && ! (new ReflectionClass($command))->isAbstract())
+            ->all();
+
+        return $this->commands = $commands;
+    }
+
+    /**
+     * Get the registered commands.
+     */
+    public function getRegisteredCommands(): array
+    {
         return $this->registeredCommands;
+    }
+
+    /**
+     * Get the path to the Discord commands.
+     */
+    public function getCommandPath(): string
+    {
+        return app_path('Commands');
     }
 
     /**
@@ -148,6 +286,10 @@ class Laracord
      */
     public function getPrefix(): string
     {
-        return $this->prefix;
+        if ($this->prefix) {
+            return $this->prefix;
+        }
+
+        return $this->prefix = config('discord.prefix');
     }
 }
