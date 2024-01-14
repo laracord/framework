@@ -26,6 +26,7 @@ class LaracordServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->commands([
+            Console\Commands\AdminCommand::class,
             Console\Commands\BootCommand::class,
             Console\Commands\ConsoleMakeCommand::class,
             Console\Commands\MakeCommand::class,
