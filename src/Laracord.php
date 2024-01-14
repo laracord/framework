@@ -89,10 +89,6 @@ class Laracord
      */
     public function boot(): void
     {
-        if (! $this->getToken()) {
-            throw new Exception('You must provide a Discord bot token.');
-        }
-
         if (! $this->getCommands()) {
             throw new Exception('You must register at least one Discord bot command.');
         }
@@ -172,7 +168,13 @@ class Laracord
             return $this->token;
         }
 
-        return $this->token = config('discord.token');
+        $token = config('discord.token');
+
+        if (! $token) {
+            throw new Exception('You must provide a Discord bot token.');
+        }
+
+        return $this->token = $token;
     }
 
     /**
