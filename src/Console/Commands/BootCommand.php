@@ -2,6 +2,7 @@
 
 namespace Laracord\Console\Commands;
 
+use Illuminate\Support\Str;
 use Laracord\Console\Concerns\WithLog;
 use LaravelZero\Framework\Commands\Command;
 
@@ -30,6 +31,16 @@ class BootCommand extends Command
      */
     public function handle()
     {
-        (class_exists('\App\Bot') ? '\App\Bot' : 'Laracord')::make($this)->boot();
+        $this->getClass()::make($this)->boot();
+    }
+
+    /**
+     * Get the bot class.
+     */
+    protected function getClass(): string
+    {
+        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
+
+        return class_exists($class) ? $class : 'Laracord';
     }
 }
