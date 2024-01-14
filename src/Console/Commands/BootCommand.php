@@ -2,10 +2,13 @@
 
 namespace Laracord\Console\Commands;
 
+use Laracord\Console\Concerns\WithLog;
 use LaravelZero\Framework\Commands\Command;
 
 class BootCommand extends Command
 {
+    use WithLog;
+
     /**
      * The signature of the command.
      *
