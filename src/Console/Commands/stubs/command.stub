@@ -18,7 +18,7 @@ class {{ class }} extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'The {{ command }} command.';
 
     /**
      * Indiciates whether the command requires admin permissions.
