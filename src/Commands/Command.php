@@ -140,7 +140,7 @@ abstract class Command implements CommandContract
      *
      * @param  \Discord\Parts\Channel\Message  $message
      * @param  array  $args
-     * @return mixed
+     * @return void
      */
     abstract public function handle($message, $args);
 
