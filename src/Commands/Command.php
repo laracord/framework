@@ -174,13 +174,11 @@ abstract class Command implements CommandContract
         }
 
         if (! empty($fields)) {
-            $fields = array_map(function ($key, $value) use ($inline) {
-                return [
-                    'name' => $key,
-                    'value' => $value,
-                    'inline' => $inline,
-                ];
-            }, array_keys($fields), array_values($fields));
+            $fields = collect($fields)->map(fn ($value, $key) => [
+                'name' => $key,
+                'value' => $value,
+                'inline' => $inline,
+            ])->values()->all();
         }
 
         return $message->sendMessage('', false, [
