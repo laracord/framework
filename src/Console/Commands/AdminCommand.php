@@ -23,7 +23,7 @@ class AdminCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Make the specified user an admin.';
+    protected $description = 'Make the specified user an admin';
 
     /**
      * The user model.
