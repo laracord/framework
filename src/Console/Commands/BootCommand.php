@@ -15,14 +15,15 @@ class BootCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'bot:boot';
+    protected $signature = 'bot:boot
+                            {--no-migrate : Boot without running database migrations}';
 
     /**
      * The description of the command.
      *
      * @var string
      */
-    protected $description = 'Boot the Discord bot.';
+    protected $description = 'Boot the Discord bot';
 
     /**
      * Execute the console command.
@@ -31,6 +32,10 @@ class BootCommand extends Command
      */
     public function handle()
     {
+        if (! $this->option('no-migrate')) {
+            $this->callSilent('migrate');
+        }
+
         $this->getClass()::make($this)->boot();
     }
 
