@@ -33,7 +33,7 @@ class BootCommand extends Command
     public function handle()
     {
         if (! $this->option('no-migrate')) {
-            $this->callSilent('migrate');
+            $this->callSilent('migrate', ['--force' => true]);
         }
 
         $this->getClass()::make($this)->boot();
