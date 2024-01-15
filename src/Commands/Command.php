@@ -136,7 +136,6 @@ abstract class Command implements CommandContract
         $this->user = User::firstOrCreate(['discord_id' => $message->author->id], [
             'discord_id' => $message->author->id,
             'username' => $message->author->username,
-            'is_admin' => in_array($message->author->username, config('discord.admins', [])),
         ]);
 
         $this->server = $message->channel->guild;
@@ -218,7 +217,6 @@ abstract class Command implements CommandContract
         return $user ? User::firstOrCreate(['discord_id' => $user->id], [
             'discord_id' => $user->id,
             'username' => $user->username,
-            'is_admin' => in_array($user->username, config('discord.admins', [])),
         ]) : $this->user;
     }
 
