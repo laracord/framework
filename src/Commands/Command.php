@@ -3,6 +3,7 @@
 namespace Laracord\Commands;
 
 use App\Models\User;
+use Laracord\Commands\Components\Message;
 use Laracord\Commands\Contracts\Command as CommandContract;
 use Laracord\Laracord;
 
@@ -100,19 +101,6 @@ abstract class Command implements CommandContract
     protected $hidden = false;
 
     /**
-     * The Discord embed color table.
-     *
-     * @var array
-     */
-    protected $embedColors = [
-        'default' => 3066993,
-        'success' => 3066993,
-        'error' => 15158332,
-        'warning' => 15105570,
-        'info' => 3447003,
-    ];
-
-    /**
      * Create a new console command instance.
      *
      * @return void
@@ -159,38 +147,13 @@ abstract class Command implements CommandContract
     /**
      * Build an embed for use in a Discord message.
      *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  string  $title
      * @param  string  $content
-     * @param  array  $fields
-     * @param  bool  $inline
-     * @param  string  $color
-     * @return array
+     * @return \Laracord\Commands\Components\Message
      */
-    public function message($message, $title, $content = '', $fields = [], $inline = true, $color = 'default')
+    public function message($content = '')
     {
-        if (is_array($content)) {
-            $fields = $content;
-        }
-
-        if (! empty($fields)) {
-            $fields = collect($fields)->map(fn ($value, $key) => [
-                'name' => $key,
-                'value' => $value,
-                'inline' => $inline,
-            ])->values()->all();
-        }
-
-        return $message->sendMessage('', false, [
-            'author' => [
-                'name' => $this->discord->user->username,
-                'icon_url' => $this->discord->user->avatar,
-            ],
-            'color' => $this->embedColors[$color] ?? $this->embedColors['default'],
-            'title' => $title,
-            'description' => ! is_array($content) ? $content : '',
-            'fields' => $fields,
-        ]);
+        return Message::make($this)
+            ->content($content);
     }
 
     /**

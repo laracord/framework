@@ -1,37 +1,24 @@
 <?php
 
-namespace Laracord\Discord;
+namespace Laracord\Commands\Components;
 
-use Exception;
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Facades\Http;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
+use Discord\Builders\MessageBuilder;
+use Discord\Parts\Channel\Message as ChannelMessage;
+use Laracord\Commands\Command;
 
-class Embed
+class Message
 {
-    /**
-     * The Discord message endpoint.
-     */
-    protected string $endpoint = 'https://canary.discord.com/api/v10/channels/{channel_id}';
-
-    /**
-     * The Discord channel.
-     */
-    protected string $channel = '';
-
-    /**
-     * The Discord Bot token.
-     */
-    protected ?string $token = null;
-
     /**
      * The message username.
      */
     protected ?string $username = null;
 
     /**
-     * The message content.
+     * The message body.
      */
-    protected ?string $content = null;
+    protected string $body = '';
 
     /**
      * The message avatar URL.
@@ -49,9 +36,9 @@ class Embed
     protected ?string $title = null;
 
     /**
-     * The message description.
+     * The message content.
      */
-    protected ?string $description = null;
+    protected ?string $content = null;
 
     /**
      * The message color.
@@ -114,73 +101,101 @@ class Embed
     protected array $components = [];
 
     /**
-     * Create a new Discord embed instance.
+     * The message buttons.
+     */
+    protected array $buttons = [];
+
+    /**
+     * The default embed colors.
+     */
+    protected array $colors = [
+        'default' => 3066993,
+        'success' => 3066993,
+        'error' => 15158332,
+        'warning' => 15105570,
+        'info' => 3447003,
+    ];
+
+    /**
+     * Create a new Discord message instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Command $command)
     {
-        $this->token = config('discord.token');
+        $this->command = $command;
+
+        $this
+            ->authorName($command->getDiscord()->user->username)
+            ->authorIcon($command->getDiscord()->user->avatar)
+            ->success();
     }
 
     /**
-     * Make a new Discord embed instance.
-     *
-     * @return static
+     * Make a new Discord message instance.
      */
-    public static function make(): self
+    public static function make(Command $command): self
     {
-        return new static();
+        return new static($command);
     }
 
     /**
-     * Get the Discord HTTP client.
+     * Build the message.
      */
-    protected function client(): PendingRequest
+    public function build(): MessageBuilder
     {
-        return Http::withHeaders([
-            'Authorization' => "Bot {$this->getToken()}",
-        ])->baseUrl($this->getEndpoint());
-    }
+        $message = MessageBuilder::new()
+            ->setTts($this->tts)
+            ->setContent($this->body)
+            ->setComponents($this->getComponents());
 
-    /**
-     * Send the message to Discord.
-     *
-     * @return \Illuminate\Http\Client\Response
-     */
-    public function send()
-    {
-        $response = $this->client()->post('messages', $this->toArray());
-
-        return $response;
-    }
-
-    /**
-     * Get the Discord message endpoint.
-     */
-    protected function getEndpoint(): string
-    {
-        return str_replace('{channel_id}', $this->getChannel(), $this->endpoint);
-    }
-
-    /**
-     * Get the Discord channel.
-     */
-    protected function getChannel(): string
-    {
-        if (! $this->channel) {
-            throw new Exception('You must specify a Discord channel.');
+        if ($this->content || $this->fields) {
+            $message->addEmbed($this->getEmbed());
         }
 
-        return $this->channel;
+        if ($this->buttons) {
+            $message->addComponent($this->getButtons());
+        }
+
+        return $message;
     }
 
     /**
-     * Get the Discord token.
+     * Send the message.
      */
-    protected function getToken(): string
+    public function send(ChannelMessage $message): void
     {
-        return $this->token;
+        $message->channel->sendMessage($this->build());
+    }
+
+    /**
+     * Get the embed.
+     */
+    public function getEmbed(): array
+    {
+        return collect([
+            'title' => $this->title,
+            'description' => $this->content,
+            'url' => $this->url,
+            'timestamp' => $this->timestamp,
+            'color' => $this->color,
+            'footer' => [
+                'text' => $this->footerText,
+                'icon_url' => $this->footerIcon,
+            ],
+            'thumbnail' => [
+                'url' => $this->thumbnailUrl,
+            ],
+            'image' => [
+                'url' => $this->imageUrl,
+            ],
+            'author' => [
+                'name' => $this->authorName,
+                'url' => $this->authorUrl,
+                'icon_url' => $this->authorIcon,
+            ],
+            'fields' => $this->fields,
+        ])->filter()->all();
     }
 
     /**
@@ -188,26 +203,25 @@ class Embed
      */
     public function getComponents(): array
     {
-        if (empty($this->components)) {
-            return [];
-        }
-
-        return [
-            'type' => 1,
-            'components' => $this->components,
-        ];
+        return $this->components;
     }
 
     /**
-     * Set the channel.
-     *
-     * @return $this
+     * Get the buttons.
      */
-    public function channel(string $channel): self
+    public function getButtons()
     {
-        $this->channel = $channel;
+        if (empty($this->buttons)) {
+            return;
+        }
 
-        return $this;
+        $buttons = ActionRow::new();
+
+        foreach ($this->buttons as $button) {
+            $buttons->addComponent($button);
+        }
+
+        return $buttons;
     }
 
     /**
@@ -261,11 +275,11 @@ class Embed
     }
 
     /**
-     * Set the message description.
+     * Set the message body.
      */
-    public function description(?string $description): self
+    public function body(string $body = ''): self
     {
-        $this->description = $description;
+        $this->body = $body;
 
         return $this;
     }
@@ -273,11 +287,51 @@ class Embed
     /**
      * Set the message color.
      */
-    public function color(?string $color): self
+    public function color(string $color): self
     {
+        $color = match ($color) {
+            'success' => $this->colors['success'],
+            'error' => $this->colors['error'],
+            'warning' => $this->colors['warning'],
+            'info' => $this->colors['info'],
+            default => $color,
+        };
+
         $this->color = $color;
 
         return $this;
+    }
+
+    /**
+     * Set the message color to success.
+     */
+    public function success(): self
+    {
+        return $this->color('success');
+    }
+
+    /**
+     * Set the message color to error.
+     */
+    public function error(): self
+    {
+        return $this->color('error');
+    }
+
+    /**
+     * Set the message color to warning.
+     */
+    public function warning(): self
+    {
+        return $this->color('warning');
+    }
+
+    /**
+     * Set the message color to info.
+     */
+    public function info(): self
+    {
+        return $this->color('info');
     }
 
     /**
@@ -425,73 +479,13 @@ class Embed
      */
     public function button(string $label, string $url, mixed $emoji = null): self
     {
-        $button = [
-            'type' => 2,
-            'label' => $label,
-            'style' => 5,
-            'url' => $url,
-        ];
+        $button = Button::new(Button::STYLE_LINK)
+            ->setLabel($label)
+            ->setUrl($url)
+            ->setEmoji($emoji);
 
-        if ($emoji) {
-            $emoji = is_array($emoji) ? array_merge([
-                'id' => null,
-                'animated' => false,
-            ], $emoji) : [
-                'name' => $emoji,
-                'id' => null,
-                'animated' => false,
-            ];
-
-            $button['emoji'] = $emoji;
-        }
-
-        $this->components[] = $button;
+        $this->buttons[] = $button;
 
         return $this;
-    }
-
-    /**
-     * Convert the message to JSON.
-     */
-    public function toJson(): string
-    {
-        return json_encode($this->toArray());
-    }
-
-    /**
-     * Convert the message to an array.
-     */
-    public function toArray(): array
-    {
-        return [
-            'content' => $this->content,
-            'tts' => $this->tts,
-            'components' => [$this->getComponents()],
-            'embeds' => [
-                [
-                    'title' => $this->title,
-                    'description' => $this->description,
-                    'url' => $this->url,
-                    'timestamp' => $this->timestamp,
-                    'color' => $this->color,
-                    'footer' => [
-                        'text' => $this->footerText,
-                        'icon_url' => $this->footerIcon,
-                    ],
-                    'thumbnail' => [
-                        'url' => $this->thumbnailUrl,
-                    ],
-                    'image' => [
-                        'url' => $this->imageUrl,
-                    ],
-                    'author' => [
-                        'name' => $this->authorName,
-                        'url' => $this->authorUrl,
-                        'icon_url' => $this->authorIcon,
-                    ],
-                    'fields' => $this->fields,
-                ],
-            ],
-        ];
     }
 }
