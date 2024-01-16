@@ -30,7 +30,7 @@ class HelpCommand extends Command
      *
      * @var string
      */
-    protected $title = 'Bot Help';
+    protected $title = 'Command Help';
 
     /**
      * The response message.
