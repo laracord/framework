@@ -5,11 +5,17 @@ namespace Laracord\Commands\Components;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
+use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Laracord\Laracord;
 
 class Message
 {
+    /**
+     * The message channel.
+     */
+    protected ?Channel $channel = null;
+
     /**
      * The message username.
      */
@@ -163,9 +169,13 @@ class Message
     /**
      * Send the message.
      */
-    public function send(ChannelMessage $message): void
+    public function send(mixed $destination = null): void
     {
-        $message->channel->sendMessage($this->build());
+        if ($destination) {
+            $this->channel($destination);
+        }
+
+        $this->getChannel()->sendMessage($this->build());
     }
 
     /**
@@ -222,6 +232,40 @@ class Message
         }
 
         return $buttons;
+    }
+
+    /**
+     * Get the message channel.
+     */
+    public function getChannel(): Channel
+    {
+        if (! $this->channel) {
+            throw new Exception('You must provide a Discord channel.');
+        }
+
+        return $this->channel;
+    }
+
+    /**
+     * Set the message channel.
+     */
+    public function channel(mixed $channel): self
+    {
+        if (is_numeric($channel)) {
+            $channel = app('bot')->discord()->getChannel($channel);
+        }
+
+        if ($channel instanceof ChannelMessage) {
+            $channel = $channel->channel;
+        }
+
+        if (! $channel instanceof Channel) {
+            throw new Exception('You must provide a valid Discord channel.');
+        }
+
+        $this->channel = $channel;
+
+        return $this;
     }
 
     /**
