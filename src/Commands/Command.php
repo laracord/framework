@@ -108,8 +108,8 @@ abstract class Command implements CommandContract
     public function __construct(Laracord $bot)
     {
         $this->bot = $bot;
-        $this->console = $bot->getConsole();
-        $this->discord = $bot->getDiscord();
+        $this->console = $bot->console();
+        $this->discord = $bot->discord();
     }
 
     /**
@@ -156,7 +156,7 @@ abstract class Command implements CommandContract
      */
     public function message($content = '')
     {
-        return Message::make($this->getBot())
+        return Message::make($this->bot())
             ->content($content);
     }
 
@@ -229,7 +229,7 @@ abstract class Command implements CommandContract
      */
     public function getSyntax()
     {
-        $command = "{$this->getBot()->getPrefix()}{$this->name}";
+        $command = "{$this->bot()->getPrefix()}{$this->name}";
 
         if (! empty($this->usage)) {
             $command .= " `{$this->usage}`";
@@ -293,7 +293,7 @@ abstract class Command implements CommandContract
      *
      * @return \Laracord\Laracord
      */
-    public function getBot()
+    public function bot()
     {
         return $this->bot;
     }
@@ -303,7 +303,7 @@ abstract class Command implements CommandContract
      *
      * @return \Laracord\Console\Commands\Command
      */
-    public function getConsole()
+    public function console()
     {
         return $this->console;
     }
@@ -313,7 +313,7 @@ abstract class Command implements CommandContract
      *
      * @return \Discord\DiscordCommandClient
      */
-    public function getDiscord()
+    public function discord()
     {
         return $this->discord;
     }

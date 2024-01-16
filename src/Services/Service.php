@@ -50,8 +50,8 @@ abstract class Service implements ServiceContract
     public function __construct(Laracord $bot)
     {
         $this->bot = $bot;
-        $this->console = $bot->getConsole();
-        $this->discord = $bot->getDiscord();
+        $this->console = $bot->console();
+        $this->discord = $bot->discord();
     }
 
     /**
@@ -92,14 +92,14 @@ abstract class Service implements ServiceContract
      */
     public function message($content = '')
     {
-        return Message::make($this->getBot())
+        return Message::make($this->bot())
             ->content($content);
     }
 
     /**
      * Get the Discord client.
      */
-    public function getDiscord(): Discord
+    public function discord(): Discord
     {
         return $this->discord;
     }
@@ -107,7 +107,7 @@ abstract class Service implements ServiceContract
     /**
      * Get the bot instance.
      */
-    public function getBot(): Laracord
+    public function bot(): Laracord
     {
         return $this->bot;
     }
@@ -115,7 +115,7 @@ abstract class Service implements ServiceContract
     /**
      * Get the console instance.
      */
-    public function getConsole(): Console
+    public function console(): Console
     {
         return $this->console;
     }
@@ -125,7 +125,7 @@ abstract class Service implements ServiceContract
      */
     public function getLoop()
     {
-        return $this->getBot()->getLoop();
+        return $this->bot()->getLoop();
     }
 
     /**

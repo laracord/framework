@@ -110,9 +110,9 @@ class Laracord
 
         $this->bootDiscord();
 
-        $this->getDiscord()->on('ready', fn () => $this->afterBoot());
+        $this->discord()->on('ready', fn () => $this->afterBoot());
 
-        $this->getDiscord()->run();
+        $this->discord()->run();
     }
 
     /**
@@ -382,7 +382,7 @@ class Laracord
     /**
      * Get the Discord instance.
      */
-    public function getDiscord(): Discord
+    public function discord(): Discord
     {
         return $this->discord;
     }
@@ -390,7 +390,7 @@ class Laracord
     /**
      * Get the console instance.
      */
-    public function getConsole(): ConsoleCommand
+    public function console(): ConsoleCommand
     {
         return $this->console;
     }

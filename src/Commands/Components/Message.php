@@ -126,8 +126,8 @@ class Message
         $this->bot = $bot;
 
         $this
-            ->authorName($this->bot->getDiscord()->user->username)
-            ->authorIcon($this->bot->getDiscord()->user->avatar)
+            ->authorName($this->bot->discord()->user->username)
+            ->authorIcon($this->bot->discord()->user->avatar)
             ->success();
     }
 

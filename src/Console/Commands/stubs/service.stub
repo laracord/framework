@@ -16,6 +16,6 @@ class {{ class }} extends Service
      */
     public function handle(): void
     {
-        $this->getConsole()->log('Hello world.');
+        $this->console()->log('Hello world.');
     }
 }
