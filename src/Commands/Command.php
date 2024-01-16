@@ -2,7 +2,7 @@
 
 namespace Laracord\Commands;
 
-use App\Models\User;
+use Illuminate\Support\Str;
 use Laracord\Commands\Components\Message;
 use Laracord\Commands\Contracts\Command as CommandContract;
 use Laracord\Laracord;
@@ -129,11 +129,7 @@ abstract class Command implements CommandContract
      */
     public function maybeHandle($message, $args)
     {
-        $this->user = User::firstOrCreate(['discord_id' => $message->author->id], [
-            'discord_id' => $message->author->id,
-            'username' => $message->author->username,
-        ]);
-
+        $this->user = $this->getUser($message->author);
         $this->server = $message->channel->guild;
 
         if ($this->isAdminCommand() && ! $this->user->is_admin) {
@@ -160,7 +156,7 @@ abstract class Command implements CommandContract
      */
     public function message($content = '')
     {
-        return Message::make($this)
+        return Message::make($this->getBot())
             ->content($content);
     }
 
@@ -183,7 +179,9 @@ abstract class Command implements CommandContract
      */
     public function getUser($user = null)
     {
-        return $user ? User::firstOrCreate(['discord_id' => $user->id], [
+        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
+
+        return $user ? $model::firstOrCreate(['discord_id' => $user->id], [
             'discord_id' => $user->id,
             'username' => $user->username,
         ]) : $this->user;
@@ -203,7 +201,7 @@ abstract class Command implements CommandContract
      * Resolve a Discord user.
      *
      * @param  string  $username
-     * @return \App\Models\User|null
+     * @return \Discord\Parts\User\User|null
      */
     public function resolveUser($username = null)
     {
@@ -293,7 +291,7 @@ abstract class Command implements CommandContract
     /**
      * Retrieve the bot instance.
      *
-     * @return \App\Bot\Bot
+     * @return \Laracord\Laracord
      */
     public function getBot()
     {

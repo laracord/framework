@@ -3,6 +3,7 @@
 namespace Laracord\Services;
 
 use Discord\DiscordCommandClient as Discord;
+use Laracord\Commands\Components\Message;
 use Laracord\Console\Commands\BootCommand as Console;
 use Laracord\Laracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
@@ -81,6 +82,18 @@ abstract class Service implements ServiceContract
             $this->getInterval(),
             fn () => $this->handle()
         );
+    }
+
+    /**
+     * Build an embed for use in a Discord message.
+     *
+     * @param  string  $content
+     * @return \Laracord\Commands\Components\Message
+     */
+    public function message($content = '')
+    {
+        return Message::make($this->getBot())
+            ->content($content);
     }
 
     /**

@@ -6,7 +6,7 @@ use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Message as ChannelMessage;
-use Laracord\Commands\Command;
+use Laracord\Laracord;
 
 class Message
 {
@@ -121,22 +121,22 @@ class Message
      *
      * @return void
      */
-    public function __construct(Command $command)
+    public function __construct(Laracord $bot)
     {
-        $this->command = $command;
+        $this->bot = $bot;
 
         $this
-            ->authorName($command->getDiscord()->user->username)
-            ->authorIcon($command->getDiscord()->user->avatar)
+            ->authorName($this->bot->getDiscord()->user->username)
+            ->authorIcon($this->bot->getDiscord()->user->avatar)
             ->success();
     }
 
     /**
      * Make a new Discord message instance.
      */
-    public static function make(Command $command): self
+    public static function make(Laracord $bot): self
     {
-        return new static($command);
+        return new static($bot);
     }
 
     /**
