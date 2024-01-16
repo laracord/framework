@@ -64,11 +64,10 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        return $this->message(
-            $message->channel,
-            $this->title,
-            $this->message,
-            $fields
-        );
+        return $this->message()
+            ->title($this->title)
+            ->content($this->message)
+            ->fields($fields)
+            ->send($message->channel);
     }
 }
