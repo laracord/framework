@@ -39,7 +39,7 @@ return [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
             'database' => config('app.env') === 'production' ?
-                getcwd().'/database/database.sqlite' :
+                env('DB_DATABASE', getcwd().'/database.sqlite') :
                 env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
