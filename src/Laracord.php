@@ -196,7 +196,7 @@ class Laracord
         $this->console->table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
             collect($this->registeredCommands)->map(fn ($command) => [
-                $command->getSyntax(),
+                $command->getSignature(),
                 $command->getDescription(),
             ])->toArray()
         );

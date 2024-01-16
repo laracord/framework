@@ -223,13 +223,23 @@ abstract class Command implements CommandContract
     }
 
     /**
+     * Retrieve the command signature.
+     *
+     * @return string
+     */
+    public function getSignature()
+    {
+        return Str::start($this->getName(), $this->bot()->getPrefix());
+    }
+
+    /**
      * Retrieve the full command syntax.
      *
      * @return string
      */
     public function getSyntax()
     {
-        $command = "{$this->bot()->getPrefix()}{$this->name}";
+        $command = $this->getSignature();
 
         if (! empty($this->usage)) {
             $command .= " `{$this->usage}`";
