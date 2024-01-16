@@ -4,11 +4,9 @@ namespace Laracord\Console\Commands;
 
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
-#[AsCommand(name: 'make:command')]
 class MakeCommand extends GeneratorCommand
 {
     /**
@@ -93,8 +91,8 @@ class MakeCommand extends GeneratorCommand
     protected function getOptions()
     {
         return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the console command already exists'],
-            ['command', null, InputOption::VALUE_OPTIONAL, 'The terminal command that will be used to invoke the class'],
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the Discord command already exists'],
+            ['command', null, InputOption::VALUE_OPTIONAL, 'The Discord command that will be used to invoke the class'],
         ];
     }
 }
