@@ -30,6 +30,7 @@ class LaracordServiceProvider extends ServiceProvider
             Console\Commands\BootCommand::class,
             Console\Commands\ConsoleMakeCommand::class,
             Console\Commands\MakeCommand::class,
+            Console\Commands\ServiceMakeCommand::class,
         ]);
     }
 }

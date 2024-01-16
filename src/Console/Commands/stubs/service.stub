@@ -1,0 +1,21 @@
+<?php
+
+namespace {{ namespace }};
+
+use Laracord\Services\Service;
+
+class {{ class }} extends Service
+{
+    /**
+     * The service interval.
+     */
+    protected int $interval = 5;
+
+    /**
+     * Handle the service.
+     */
+    public function handle(): void
+    {
+        $this->getConsole()->log('Hello world.');
+    }
+}
