@@ -32,7 +32,9 @@ class BootCommand extends Command
             $this->callSilent('migrate', ['--force' => true]);
         }
 
-        $this->getClass()::make($this)->boot();
+        $this->app->singleton('bot', fn () => $this->getClass()::make($this));
+
+        $this->app->make('bot')->boot();
     }
 
     /**
