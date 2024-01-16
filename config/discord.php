@@ -54,7 +54,7 @@ return [
     | These options will be passed directly to the DiscordPHP client.
     |
     | For more information, see the DiscordPHP documentation:
-    | https://discord-php.github.io/DiscordPHP/#basics
+    |   ↪ <https://discord-php.github.io/DiscordPHP/#basics>
     |
     */
 
