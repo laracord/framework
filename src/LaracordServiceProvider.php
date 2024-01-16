@@ -13,9 +13,10 @@ class LaracordServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
+        $this->mergeConfigFrom(__DIR__.'/../config/cache.php', 'cache');
         $this->mergeConfigFrom(__DIR__.'/../config/commands.php', 'commands');
         $this->mergeConfigFrom(__DIR__.'/../config/database.php', 'database');
+        $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
     }
 
     /**
