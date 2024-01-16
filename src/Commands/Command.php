@@ -19,14 +19,14 @@ abstract class Command implements CommandContract
     /**
      * The console instance.
      *
-     * @var \LaravelZero\Framework\Commands\Command
+     * @var \Laracord\Console\Commands\Command
      */
     protected $console;
 
     /**
      * The Discord instance.
      *
-     * @var \Discord\DiscordCommandClient;
+     * @var \Discord\DiscordCommandClient
      */
     protected $discord;
 
@@ -101,7 +101,7 @@ abstract class Command implements CommandContract
     protected $hidden = false;
 
     /**
-     * Create a new console command instance.
+     * Create a new command instance.
      *
      * @return void
      */
@@ -110,6 +110,14 @@ abstract class Command implements CommandContract
         $this->bot = $bot;
         $this->console = $bot->getConsole();
         $this->discord = $bot->getDiscord();
+    }
+
+    /**
+     * Make a new command instance.
+     */
+    public static function make(Laracord $bot): self
+    {
+        return new static($bot);
     }
 
     /**
@@ -295,7 +303,7 @@ abstract class Command implements CommandContract
     /**
      * Retrieve the console instance.
      *
-     * @return \LaravelZero\Framework\Commands\Command
+     * @return \Laracord\Console\Commands\Command
      */
     public function getConsole()
     {
