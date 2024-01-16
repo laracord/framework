@@ -7,6 +7,7 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
+use Exception;
 use Laracord\Laracord;
 
 class Message
@@ -473,7 +474,9 @@ class Message
      */
     public function fields(array $fields): self
     {
-        $this->fields = $fields;
+        foreach ($fields as $key => $value) {
+            $this->field($key, $value);
+        }
 
         return $this;
     }
