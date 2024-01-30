@@ -5,15 +5,21 @@ namespace Laracord;
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
+use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
 use React\EventLoop\Loop;
 use ReflectionClass;
+
+use function React\Async\async;
+use function React\Async\await;
+use function React\Promise\all;
 
 class Laracord
 {
@@ -72,6 +78,11 @@ class Laracord
     protected array $commands = [];
 
     /**
+     * The Discord bot slash commands.
+     */
+    protected array $slashCommands = [];
+
+    /**
      * The bot services.
      */
     protected array $services = [];
@@ -80,6 +91,11 @@ class Laracord
      * The registered bot commands.
      */
     protected array $registeredCommands = [];
+
+    /**
+     * Determine whether to show the commands on boot.
+     */
+    protected bool $showCommands = true;
 
     /**
      * Initialize the Discord Bot.
@@ -110,7 +126,21 @@ class Laracord
 
         $this->bootDiscord();
 
-        $this->discord()->on('ready', fn () => $this->afterBoot());
+        $this->registerCommands();
+
+        $this->discord()->on('ready', function () {
+            $this->bootServices();
+
+            $this->registerSlashCommands()->then(function () {
+                $commands = count($this->registeredCommands);
+
+                $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with <fg=blue>{$commands}</> command(s)");
+
+                $this->showCommands();
+            });
+
+            $this->afterBoot();
+        });
 
         $this->discord()->run();
     }
@@ -127,7 +157,29 @@ class Laracord
             'discordOptions' => $this->getOptions(),
             'defaultHelpCommand' => false,
         ]);
+    }
 
+    /**
+     * Actions to run before booting the bot.
+     */
+    public function beforeBoot(): void
+    {
+        //
+    }
+
+    /**
+     * Actions to run after booting the bot.
+     */
+    public function afterBoot(): void
+    {
+        //
+    }
+
+    /**
+     * Register the bot commands.
+     */
+    protected function registerCommands(): void
+    {
         foreach ($this->getCommands() as $command) {
             $command = $command::make($this);
 
@@ -144,27 +196,177 @@ class Laracord
     }
 
     /**
-     * Actions to run before booting the bot.
+     * Handle the bot slash commands.
      */
-    public function beforeBoot(): void
+    protected function registerSlashCommands()
     {
-        //
+        $existing = [];
+
+        $existing[] = async(fn () => await($this->discord->application->commands->freshen()))();
+
+        foreach ($this->discord->guilds as $guild) {
+            $existing[] = async(fn () => await($guild->commands->freshen()))();
+        }
+
+        return all($existing)->then(function ($commands) {
+            $existing = collect($commands)
+                ->flatMap(fn ($command) => $command->toArray())
+                ->map(fn ($command) => collect($command->getUpdatableAttributes())->prepend($command->id, 'id')->filter()->all())
+                ->map(fn ($command) => array_merge($command, [
+                    'guild_id' => $command['guild_id'] ?? null,
+                    'dm_permission' => $command['dm_permission'] ?? null,
+                    'default_permission' => $command['default_permission'] ?? true,
+                    'options' => collect($command['options'] ?? [])->map(fn ($option) => collect($option)->sortKeys()->all())->all(),
+                ]))
+                ->keyBy('name');
+
+            $registered = collect($this->getSlashCommands())
+                ->mapWithKeys(function ($command) {
+                    $command = $command::make($this);
+                    $attributes = $command->create()->getUpdatableAttributes();
+
+                    $attributes = array_merge($attributes, [
+                        'type' => $attributes['type'] ?? 1,
+                        'dm_permission' => $attributes['dm_permission'] ?? null,
+                        'guild_id' => $attributes['guild_id'] ?? false,
+                    ]);
+
+                    return [$command->getName() => [
+                        'state' => $command,
+                        'attributes' => $attributes,
+                    ]];
+                });
+
+            $created = $registered->reject(fn ($command, $name) => $existing->has($name));
+            $deleted = $existing->reject(fn ($command, $name) => $registered->has($name));
+
+            $updated = $registered
+                ->map(function ($command) {
+                    $options = collect($command['attributes']['options'] ?? [])
+                        ->filter()
+                        ->all();
+
+                    $attributes = collect($command['attributes']);
+
+                    $attributes = $attributes
+                        ->put('options', collect($options)->map(fn ($option) => collect($option)->filter()->all())->all())
+                        ->forget('guild_id')
+                        ->filter()
+                        ->prepend($command['state']->getGuild(), 'guild_id')
+                        ->all();
+
+                    return array_merge($command, ['attributes' => $attributes]);
+                })
+                ->filter(function ($command, $name) use ($existing) {
+                    if (! $existing->has($name)) {
+                        return false;
+                    }
+
+                    $current = collect($existing->get($name))->forget('id');
+
+                    foreach ($command['attributes'] as $key => $value) {
+                        $attributes = $current->get($key);
+
+                        if (is_array($attributes) && is_array($value)) {
+                            $attributes = collect($attributes)
+                                ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
+                                ->toJson();
+
+                            $value = collect($value)
+                                ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
+                                ->toJson();
+                        }
+
+                        if ($attributes === $value) {
+                            continue;
+                        }
+
+                        return true;
+                    }
+
+                    return false;
+                })->each(function ($command) use ($existing) {
+                    $state = $existing->get($command['state']->getName());
+
+                    if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
+                        $this->unregisterSlashCommand($state['id']);
+                    }
+
+                    if (! Arr::get($command, 'attributes.guild_id') && $guild = Arr::get($state, 'guild_id')) {
+                        $this->unregisterSlashCommand($state['id'], $guild);
+                    }
+                });
+
+            if ($created->isNotEmpty()) {
+                $this->console()->log("Creating <fg=blue>{$created->count()}</> new slash command(s).");
+
+                $created->each(fn ($command) => $this->registerSlashCommand($command['state']));
+            }
+
+            if ($updated->isNotEmpty()) {
+                $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
+
+                $updated->each(fn ($command) => $this->registerSlashCommand($command['state']));
+            }
+
+            if ($deleted->isNotEmpty()) {
+                $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> slash command(s).");
+
+                $deleted->each(fn ($command) => $this->unregisterSlashCommand($command['id'], $command['guild_id'] ?? null));
+            }
+
+            if ($registered->isEmpty()) {
+                return;
+            }
+
+            $registered->each(fn ($command, $name) => $this->discord()->listenCommand($name, fn ($interaction) => $command['state']->maybeHandle($interaction)));
+
+            $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
+        });
     }
 
     /**
-     * Actions to run after booting the bot.
+     * Register the specified slash command.
      */
-    public function afterBoot(): void
+    public function registerSlashCommand(SlashCommand $command): void
     {
-        $commands = count($this->registeredCommands);
-        $commands = $commands === 1
-            ? "<fg=blue>{$commands}</> command"
-            : "<fg=blue>{$commands}</> commands";
+        if ($command->getGuild()) {
+            $guild = $this->discord()->guilds->get('id', $command->getGuild());
 
-        $this->console->log("Successfully booted <fg=blue>{$this->getName()}</> with {$commands}");
+            if (! $guild) {
+                $this->console()->warn("The <fg=yellow>{$command->getName()}</> command failed to register because the guild <fg=yellow>{$command->getGuild()}</> could not be found.");
 
-        $this->bootServices();
-        $this->showCommands();
+                return;
+            }
+
+            $guild->commands->save($command->create());
+
+            return;
+        }
+
+        $this->discord()->application->commands->save($command->create());
+    }
+
+    /**
+     * Unregister the specified slash command.
+     */
+    public function unregisterSlashCommand(string $id, ?string $guild = null): void
+    {
+        if ($guild) {
+            $guild = $this->discord()->guilds->get('id', $guild);
+
+            if (! $guild) {
+                $this->console()->warn("The <fg=yellow>{$command->getName()}</> command failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
+
+                return;
+            }
+
+            $guild->commands->delete($id)->done();
+
+            return;
+        }
+
+        $this->discord()->application->commands->delete($id)->done();
     }
 
     /**
@@ -178,13 +380,13 @@ class Laracord
             try {
                 $service->boot();
             } catch (Exception $e) {
-                $this->console->log("The <fg=red>{$service->getName()}</> service failed to boot.", 'error');
-                $this->console->log($e->getMessage(), 'error');
+                $this->console()->error("The <fg=red>{$service->getName()}</> service failed to boot.");
+                $this->console()->error($e->getMessage());
 
                 continue;
             }
 
-            $this->console->log("The <fg=blue>{$service->getName()}</> service has been booted.");
+            $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
         }
     }
 
@@ -193,7 +395,11 @@ class Laracord
      */
     public function showCommands(): void
     {
-        $this->console->table(
+        if (! $this->showCommands) {
+            return;
+        }
+
+        $this->console()->table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
             collect($this->registeredCommands)->map(fn ($command) => [
                 $command->getSignature(),
@@ -314,6 +520,24 @@ class Laracord
     }
 
     /**
+     * Get the bot slash commands.
+     */
+    public function getSlashCommands(): array
+    {
+        if ($this->slashCommands) {
+            return $this->slashCommands;
+        }
+
+        $slashCommands = $this->extractClasses($this->getSlashCommandPath())
+            ->merge(config('discord.commands', []))
+            ->unique()
+            ->filter(fn ($command) => is_subclass_of($command, SlashCommand::class) && ! (new ReflectionClass($command))->isAbstract())
+            ->all();
+
+        return $this->slashCommands = $slashCommands;
+    }
+
+    /**
      * Extract classes from the provided application path.
      */
     protected function extractClasses(string $path): Collection
@@ -357,6 +581,14 @@ class Laracord
     public function getCommandPath(): string
     {
         return app_path('Commands');
+    }
+
+    /**
+     * Get the path to the Discord slash commands.
+     */
+    public function getSlashCommandPath(): string
+    {
+        return app_path('SlashCommands');
     }
 
     /**
