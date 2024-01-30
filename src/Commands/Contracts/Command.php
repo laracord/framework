@@ -7,7 +7,7 @@ use Discord\Parts\Channel\Message;
 interface Command
 {
     /**
-     * Execute the Discord command.
+     * Handle the command.
      */
     public function handle(Message $message, array $args);
 }
