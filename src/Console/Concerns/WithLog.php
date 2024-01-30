@@ -8,10 +8,8 @@ trait WithLog
 {
     /**
      * Send a message to the console.
-     *
-     * @return void
      */
-    public function log(string $message, string $type = 'info')
+    public function log(string $message, string $type = 'info'): void
     {
         $message = trim($message);
 
@@ -35,5 +33,29 @@ trait WithLog
         ];
 
         with(new Log($this->getOutput()))->render($config, $message);
+    }
+
+    /**
+     * Send a warning log to console.
+     *
+     * @param  string  $string
+     * @param  string|null  $verbosity
+     * @return void
+     */
+    public function warn($string, $verbosity = null)
+    {
+        return $this->log($string, 'warn');
+    }
+
+    /**
+     * Send an error log to console.
+     *
+     * @param  string  $string
+     * @param  string|null  $verbosity
+     * @return void
+     */
+    public function error($string, $verbosity = null)
+    {
+        return $this->log($string, 'error');
     }
 }
