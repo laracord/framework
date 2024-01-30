@@ -7,14 +7,14 @@ use Laracord\Commands\Command;
 class {{ class }} extends Command
 {
     /**
-     * The Discord command name.
+     * The command name.
      *
      * @var string
      */
     protected $name = '{{ command }}';
 
     /**
-     * The Discord command description.
+     * The command description.
      *
      * @var string
      */
@@ -35,7 +35,7 @@ class {{ class }} extends Command
     protected $hidden = false;
 
     /**
-     * Execute the Discord command.
+     * Handle the command.
      *
      * @param  \Discord\Parts\Channel\Message  $message
      * @param  array  $args
