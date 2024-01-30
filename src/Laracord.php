@@ -636,6 +636,12 @@ class Laracord
             return $this->prefix;
         }
 
-        return $this->prefix = config('discord.prefix');
+        $prefix = trim(config('discord.prefix'));
+
+        if (! $prefix || $prefix === '/') {
+            throw new Exception('You must provide a valid command prefix.');
+        }
+
+        return $this->prefix = $prefix;
     }
 }
