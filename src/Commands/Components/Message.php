@@ -7,6 +7,7 @@ use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
+use Discord\Parts\User\User;
 use Exception;
 use Laracord\Laracord;
 
@@ -177,6 +178,34 @@ class Message
         }
 
         $this->getChannel()->sendMessage($this->build());
+    }
+
+    /**
+     * Send the message to a user.
+     */
+    public function sendTo(mixed $user): void
+    {
+        if (is_numeric($user)) {
+            $member = app('bot')->discord()->users->get('id', $user);
+
+            if (! $member) {
+                app('bot')->console()->error("Could not find user <fg=red>{$user}</> to send message");
+
+                return;
+            }
+
+            $user = $member;
+        }
+
+        if ($user instanceof ChannelMessage) {
+            $user = $user->author;
+        }
+
+        if (! $user instanceof User) {
+            throw new Exception('You must provide a valid Discord user.');
+        }
+
+        $user->sendMessage($this->build());
     }
 
     /**

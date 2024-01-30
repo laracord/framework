@@ -5,14 +5,14 @@ namespace Laracord\Commands;
 class HelpCommand extends Command
 {
     /**
-     * The Discord command name.
+     * The command name.
      *
      * @var string
      */
     protected $name = 'help';
 
     /**
-     * The Discord command description.
+     * The command description.
      *
      * @var string|null
      */
@@ -40,7 +40,7 @@ class HelpCommand extends Command
     protected $message = 'Here is a list of all available commands.';
 
     /**
-     * Execute the Discord command.
+     * Handle the command.
      *
      * @param  \Discord\Parts\Channel\Message  $message
      * @param  array  $args
