@@ -73,7 +73,7 @@ abstract class Event
      */
     public function register(): void
     {
-        if (! $this->getHandler() || ! array_key_exists($this->getHandler(), $this->events())) {
+        if (! $this->getHandler() || ! array_key_exists($this->getHandler(), $this->getEvents())) {
             $this->console()->error("The <fg=red>{$this->getName()}</> event handler <fg=red>{$this->getHandler()}</> is invalid.");
 
             return;
