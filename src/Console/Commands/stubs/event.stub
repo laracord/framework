@@ -1,0 +1,24 @@
+<?php
+
+namespace {{ namespace }};
+{{ namespaces }}
+use Discord\WebSockets\Event as Events;
+use Laracord\Events\Event;
+
+class {{ class }} extends Event
+{
+    /**
+     * The event handler.
+     *
+     * @var string
+     */
+    protected $handler = Events::{{ event }};
+
+    /**
+     * Handle the event.
+     */
+    public function handle({{ attributes }})
+    {
+        $this->console()->log('The {{ eventName }} event has fired!');
+    }
+}

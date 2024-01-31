@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Laracord\Commands\Command;
 use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
+use Laracord\Events\Event;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
 use React\EventLoop\Loop;
@@ -83,6 +84,11 @@ class Laracord
     protected array $slashCommands = [];
 
     /**
+     * The Discord events.
+     */
+    protected array $events = [];
+
+    /**
      * The bot services.
      */
     protected array $services = [];
@@ -91,6 +97,11 @@ class Laracord
      * The registered bot commands.
      */
     protected array $registeredCommands = [];
+
+    /**
+     * The registered Discord events.
+     */
+    protected array $registeredEvents = [];
 
     /**
      * Determine whether to show the commands on boot.
@@ -129,6 +140,7 @@ class Laracord
         $this->registerCommands();
 
         $this->discord()->on('ready', function () {
+            $this->registerEvents();
             $this->bootServices();
 
             $this->registerSlashCommands()->then(function () {
@@ -370,6 +382,27 @@ class Laracord
     }
 
     /**
+     * Register the Discord events.
+     */
+    public function registerEvents(): void
+    {
+        foreach ($this->getEvents() as $event) {
+            $event = $event::make($this);
+
+            try {
+                $event->register();
+            } catch (Exception $e) {
+                $this->console()->error("The <fg=red>{$event->getName()}</> event failed to register.");
+                $this->console()->error($e->getMessage());
+
+                continue;
+            }
+
+            $this->console()->log("The <fg=blue>{$event->getName()}</> event has been registered to <fg=blue>{$event->getHandler()}</>.");
+        }
+    }
+
+    /**
      * Handle the bot services.
      */
     public function bootServices(): void
@@ -484,6 +517,24 @@ class Laracord
     }
 
     /**
+     * Get the Discord events.
+     */
+    public function getEvents(): array
+    {
+        if ($this->events) {
+            return $this->events;
+        }
+
+        $events = $this->extractClasses($this->getEventPath())
+            ->merge(config('discord.events', []))
+            ->unique()
+            ->filter(fn ($service) => is_subclass_of($service, Event::class) && ! (new ReflectionClass($service))->isAbstract())
+            ->all();
+
+        return $this->events = $events;
+    }
+
+    /**
      * Get the bot services.
      */
     public function getServices(): array
@@ -589,6 +640,14 @@ class Laracord
     public function getSlashCommandPath(): string
     {
         return app_path('SlashCommands');
+    }
+
+    /**
+     * Get the path to the Discord events.
+     */
+    public function getEventPath(): string
+    {
+        return app_path('Events');
     }
 
     /**
