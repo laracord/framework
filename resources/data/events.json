@@ -1,0 +1,361 @@
+[
+    {
+        "ApplicationCommandPermissionsUpdate": {
+            "commandPermission": "Discord\\Parts\\Guild\\CommandPermissions",
+            "discord": "Discord\\Discord",
+            "oldCommandPermission": "?Discord\\Parts\\Guild\\CommandPermissions"
+        }
+    },
+    {
+        "AutoModerationActionExecution": {
+            "actionExecution": "Discord\\Parts\\WebSockets\\AutoModerationActionExecution",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "AutoModerationRuleCreate": {
+            "rule": "Discord\\Parts\\Guild\\AutoModeration\\Rule",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "AutoModerationRuleDelete": {
+            "rule": "Discord\\Parts\\Guild\\AutoModeration\\Rule",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "AutoModerationRuleUpdate": {
+            "rule": "Discord\\Parts\\Guild\\AutoModeration\\Rule",
+            "discord": "Discord\\Discord",
+            "oldRule": "?Discord\\Parts\\Guild\\AutoModeration\\Rule"
+        }
+    },
+    {
+        "ChannelCreate": {
+            "channel": "Discord\\Parts\\Channel\\Channel",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ChannelDelete": {
+            "channel": "Discord\\Parts\\Channel\\Channel",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ChannelPinsUpdate": {
+            "pins": "$pins",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ChannelUpdate": {
+            "channel": "Discord\\Parts\\Channel\\Channel",
+            "discord": "Discord\\Discord",
+            "oldChannel": "?Discord\\Parts\\Channel\\Channel"
+        }
+    },
+    {
+        "GuildBanAdd": {
+            "ban": "Discord\\Parts\\Guild\\Ban",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildBanRemove": {
+            "ban": "Discord\\Parts\\Guild\\Ban",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildCreate": {
+            "guild": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildDelete": {
+            "guild": "object",
+            "discord": "Discord\\Discord",
+            "unavailable": "bool"
+        }
+    },
+    {
+        "GuildEmojisUpdate": {
+            "emojis": "Discord\\Helpers\\Collection",
+            "discord": "Discord\\Discord",
+            "oldEmojis": "Discord\\Helpers\\Collection"
+        }
+    },
+    {
+        "GuildIntegrationsUpdate": {
+            "guild": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildMemberAdd": {
+            "member": "Discord\\Parts\\User\\Member",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildMemberRemove": {
+            "member": "Discord\\Parts\\User\\Member",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildMemberUpdate": {
+            "member": "Discord\\Parts\\User\\Member",
+            "discord": "Discord\\Discord",
+            "oldMember": "?Discord\\Parts\\User\\Member"
+        }
+    },
+    {
+        "GuildRoleCreate": {
+            "role": "Discord\\Parts\\Guild\\Role",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildRoleDelete": {
+            "role": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildRoleUpdate": {
+            "role": "Discord\\Parts\\Guild\\Role",
+            "discord": "Discord\\Discord",
+            "oldRole": "?Discord\\Parts\\Guild\\Role"
+        }
+    },
+    {
+        "GuildScheduledEventCreate": {
+            "scheduledEvent": "Discord\\Parts\\Guild\\ScheduledEvent",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildScheduledEventDelete": {
+            "scheduledEvent": "Discord\\Parts\\Guild\\ScheduledEvent",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildScheduledEventUpdate": {
+            "scheduledEvent": "Discord\\Parts\\Guild\\ScheduledEvent",
+            "discord": "Discord\\Discord",
+            "oldScheduledEvent": "?Discord\\Parts\\Guild\\ScheduledEvent"
+        }
+    },
+    {
+        "GuildScheduledEventUserAdd": {
+            "data": "$data",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildScheduledEventUserRemove": {
+            "data": "$data",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "GuildStickersUpdate": {
+            "stickers": "Discord\\Helpers\\Collection",
+            "discord": "Discord\\Discord",
+            "oldStickers": "Discord\\Helpers\\Collection"
+        }
+    },
+    {
+        "GuildUpdate": {
+            "guild": "Discord\\Parts\\Guild\\Guild",
+            "discord": "Discord\\Discord",
+            "oldGuild": "?Discord\\Parts\\Guild\\Guild"
+        }
+    },
+    {
+        "IntegrationCreate": {
+            "integration": "Discord\\Parts\\Guild\\Integration",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "IntegrationDelete": {
+            "integration": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "IntegrationUpdate": {
+            "integration": "Discord\\Parts\\Guild\\Integration",
+            "discord": "Discord\\Discord",
+            "oldIntegration": "?Discord\\Parts\\Guild\\Integration"
+        }
+    },
+    {
+        "InteractionCreate": {
+            "interaction": "Discord\\Parts\\Interactions\\Interaction",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "InviteCreate": {
+            "invite": "Discord\\Parts\\Channel\\Invite",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "InviteDelete": {
+            "invite": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageCreate": {
+            "message": "Discord\\Parts\\Channel\\Message",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageDelete": {
+            "message": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageDeleteBulk": {
+            "messages": "Discord\\Helpers\\Collection",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageReactionAdd": {
+            "reaction": "Discord\\Parts\\WebSockets\\MessageReaction",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageReactionRemove": {
+            "reaction": "Discord\\Parts\\WebSockets\\MessageReaction",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageReactionRemoveAll": {
+            "reaction": "Discord\\Parts\\WebSockets\\MessageReaction",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageReactionRemoveEmoji": {
+            "reaction": "Discord\\Parts\\WebSockets\\MessageReaction",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessageUpdate": {
+            "message": "Discord\\Parts\\Channel\\Message",
+            "discord": "Discord\\Discord",
+            "oldMessage": "?Discord\\Parts\\Channel\\Message"
+        }
+    },
+    {
+        "PresenceUpdate": {
+            "presence": "Discord\\WebSockets\\Events\\PresenceUpdate",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "StageInstanceCreate": {
+            "stageInstance": "Discord\\Parts\\Channel\\StageInstance",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "StageInstanceDelete": {
+            "stageInstance": "Discord\\Parts\\Channel\\StageInstance",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "StageInstanceUpdate": {
+            "stageInstance": "Discord\\Parts\\Channel\\StageInstance",
+            "discord": "Discord\\Discord",
+            "oldStageInstance": "?Discord\\Parts\\Channel\\StageInstance"
+        }
+    },
+    {
+        "ThreadCreate": {
+            "thread": "Discord\\Parts\\Thread\\Thread",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ThreadDelete": {
+            "thread": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ThreadListSync": {
+            "threads": "Discord\\Helpers\\Collection",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ThreadMemberUpdate": {
+            "threadMember": "Discord\\Parts\\Thread\\Member",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ThreadMembersUpdate": {
+            "thread": "Discord\\Parts\\Thread\\Thread",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "ThreadUpdate": {
+            "thread": "Discord\\Parts\\Thread\\Thread",
+            "discord": "Discord\\Discord",
+            "oldThread": "?Discord\\Parts\\Thread\\Thread"
+        }
+    },
+    {
+        "TypingStart": {
+            "typing": "Discord\\Parts\\WebSockets\\TypingStart",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "UserUpdate": {
+            "user": "Discord\\Parts\\User\\User",
+            "discord": "Discord\\Discord",
+            "oldUser": "?Discord\\Parts\\User\\User"
+        }
+    },
+    {
+        "VoiceServerUpdate": {
+            "voice": "object",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "VoiceStateUpdate": {
+            "state": "Discord\\WebSockets\\Events\\VoiceStateUpdate",
+            "discord": "Discord\\Discord",
+            "oldstate": "$oldstate"
+        }
+    },
+    {
+        "WebhooksUpdate": {
+            "guild": "object",
+            "discord": "Discord\\Discord",
+            "channel": "object"
+        }
+    }
+]
