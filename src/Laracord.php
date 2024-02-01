@@ -18,6 +18,7 @@ use Laracord\Services\Service;
 use React\EventLoop\Loop;
 use ReflectionClass;
 
+use function Laravel\Prompts\table;
 use function React\Async\async;
 use function React\Async\await;
 use function React\Promise\all;
@@ -104,6 +105,11 @@ class Laracord
     protected array $registeredEvents = [];
 
     /**
+     * The registered bot services.
+     */
+    protected array $registeredServices = [];
+
+    /**
      * Determine whether to show the commands on boot.
      */
     protected bool $showCommands = true;
@@ -144,9 +150,21 @@ class Laracord
             $this->bootServices();
 
             $this->registerSlashCommands()->then(function () {
-                $commands = count($this->registeredCommands);
+                $status = collect([
+                    'commands' => count($this->registeredCommands),
+                    'events' => count($this->registeredEvents),
+                    'services' => count($this->registeredServices),
+                ])
+                ->filter()
+                ->map(function ($count, $type) {
+                    $string = Str::plural($type, $count);
 
-                $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with <fg=blue>{$commands}</> command(s)");
+                    return "<fg=blue>{$count}</> {$string}";
+                })->implode(', ');
+
+                $status = Str::replaceLast(', ', ', and ', $status);
+
+                $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
 
                 $this->showCommands();
             });
@@ -390,7 +408,7 @@ class Laracord
             $event = $event::make($this);
 
             try {
-                $event->register();
+                $this->registeredEvents[] = $event->register();
             } catch (Exception $e) {
                 $this->console()->error("The <fg=red>{$event->getName()}</> event failed to register.");
                 $this->console()->error($e->getMessage());
@@ -411,7 +429,7 @@ class Laracord
             $service = $service::make($this);
 
             try {
-                $service->boot();
+                $this->registeredServices[] = $service->boot();
             } catch (Exception $e) {
                 $this->console()->error("The <fg=red>{$service->getName()}</> service failed to boot.");
                 $this->console()->error($e->getMessage());
@@ -432,7 +450,7 @@ class Laracord
             return;
         }
 
-        $this->console()->table(
+        table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
             collect($this->registeredCommands)->map(fn ($command) => [
                 $command->getSignature(),
@@ -593,6 +611,10 @@ class Laracord
      */
     protected function extractClasses(string $path): Collection
     {
+        if (! File::isDirectory($path)) {
+            return collect();
+        }
+
         return collect(File::allFiles($path))
             ->map(function ($file) {
                 $relativePath = str_replace(
