@@ -76,13 +76,13 @@ abstract class Event
         if (! $this->getHandler() || ! array_key_exists($this->getHandler(), $this->getEvents())) {
             $this->console()->error("The <fg=red>{$this->getName()}</> event handler <fg=red>{$this->getHandler()}</> is invalid.");
 
-            return;
+            return $this;
         }
 
         if (! method_exists($this, 'handle')) {
             $this->console()->error("The <fg=red>{$this->getName()}</> event handler does not have a handle method.");
 
-            return;
+            return $this;
         }
 
         $this->discord()->on($this->getHandler(), [$this, 'handle']);
