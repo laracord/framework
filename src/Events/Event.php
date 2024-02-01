@@ -71,7 +71,7 @@ abstract class Event
     /**
      * Register the event.
      */
-    public function register(): void
+    public function register(): self
     {
         if (! $this->getHandler() || ! array_key_exists($this->getHandler(), $this->getEvents())) {
             $this->console()->error("The <fg=red>{$this->getName()}</> event handler <fg=red>{$this->getHandler()}</> is invalid.");
@@ -86,6 +86,8 @@ abstract class Event
         }
 
         $this->discord()->on($this->getHandler(), [$this, 'handle']);
+
+        return $this;
     }
 
     /**

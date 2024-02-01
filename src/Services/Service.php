@@ -72,7 +72,7 @@ abstract class Service implements ServiceContract
     /**
      * Boot the service.
      */
-    public function boot(): void
+    public function boot(): self
     {
         if ($this->getInterval() < 1) {
             throw new InvalidServiceInterval($this->getName());
@@ -82,6 +82,8 @@ abstract class Service implements ServiceContract
             $this->getInterval(),
             fn () => $this->handle()
         );
+
+        return $this;
     }
 
     /**
