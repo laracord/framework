@@ -13,6 +13,9 @@
 
 Build functional, elegant bots harnessing the full power of [Laravel](https://laravel.com/) alongside [DiscordPHP](https://github.com/discord-php/DiscordPHP).
 
+> [!NOTE]
+> This repository contains the core code for the Laracord framework. If you want to build a bot using Laracord, visit the main [Laracord repository](https://github.com/laracord/laracord).
+
 ## Documentation
 
 For full documentation, visit [Laracord.com](https://laracord.com).
