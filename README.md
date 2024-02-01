@@ -16,6 +16,16 @@ Build functional, elegant bots harnessing the full power of [Laravel](https://la
 > [!NOTE]
 > This repository contains the core code for the Laracord framework. If you want to build a bot using Laracord, visit the main [Laracord repository](https://github.com/laracord/laracord).
 
+## Features
+
+- ⚡️ Out of the box support for databases, caching, and many other Laravel features thanks to [Laravel Zero](https://laravel-zero.com/).
+- 🚀 Instantly generate working bot [commands](https://laracord.com/docs/commands) and [event listeners](https://laracord.com/docs/events) with 0 knowledge.
+- 🧑‍💻 Automatic handling of registering/updating/unregistering application [slash commands](https://laracord.com/docs/slash-commands).
+- 👷 Generate asynchronous [services/tasks](https://laracord.com/docs/services) that run parallel to the bot.
+- 🔧 Fully configurable and extendable.
+- 💄 Beautiful console logging with timestamps.
+- 🔍️ Fully [documented](https://laracord.com) and maintained.
+
 ## Documentation
 
 For full documentation, visit [Laracord.com](https://laracord.com).
