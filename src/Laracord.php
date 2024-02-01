@@ -155,12 +155,12 @@ class Laracord
                     'events' => count($this->registeredEvents),
                     'services' => count($this->registeredServices),
                 ])
-                ->filter()
-                ->map(function ($count, $type) {
-                    $string = Str::plural($type, $count);
+                    ->filter()
+                    ->map(function ($count, $type) {
+                        $string = Str::plural($type, $count);
 
-                    return "<fg=blue>{$count}</> {$string}";
-                })->implode(', ');
+                        return "<fg=blue>{$count}</> {$string}";
+                    })->implode(', ');
 
                 $status = Str::replaceLast(', ', ', and ', $status);
 
