@@ -135,10 +135,6 @@ class Laracord
      */
     public function boot(): void
     {
-        if (! $this->getCommands()) {
-            throw new Exception('You must register at least one Discord bot command.');
-        }
-
         $this->beforeBoot();
 
         $this->bootDiscord();
@@ -386,7 +382,7 @@ class Laracord
             $guild = $this->discord()->guilds->get('id', $guild);
 
             if (! $guild) {
-                $this->console()->warn("The <fg=yellow>{$command->getName()}</> command failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
+                $this->console()->warn("The <fg=yellow>{$id}</> command failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
 
                 return;
             }
