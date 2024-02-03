@@ -5,7 +5,6 @@ namespace Laracord\Console\Commands;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use LaravelZero\Framework\Commands\Command;
 
 class AdminCommand extends Command
 {
