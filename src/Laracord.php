@@ -5,18 +5,25 @@ namespace Laracord;
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
+use Laracord\Commands\Components\Message;
 use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Events\Event;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
+use React\Http\HttpServer;
+use React\Socket\SocketServer;
 use ReflectionClass;
+use Throwable;
 
 use function Laravel\Prompts\table;
 use function React\Async\async;
@@ -95,6 +102,13 @@ class Laracord
     protected array $services = [];
 
     /**
+     * The bot HTTP server.
+     *
+     * @var \React\Http\HttpServer
+     */
+    protected $httpServer;
+
+    /**
      * The registered bot commands.
      */
     protected array $registeredCommands = [];
@@ -144,6 +158,7 @@ class Laracord
         $this->discord()->on('ready', function () {
             $this->registerEvents();
             $this->bootServices();
+            $this->bootHttpServer();
 
             $this->registerSlashCommands()->then(function () {
                 $status = collect([
@@ -382,7 +397,7 @@ class Laracord
             $guild = $this->discord()->guilds->get('id', $guild);
 
             if (! $guild) {
-                $this->console()->warn("The <fg=yellow>{$id}</> command failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
+                $this->console()->warn("The command with ID <fg=yellow>{$id}</> failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
 
                 return;
             }
@@ -417,7 +432,7 @@ class Laracord
     }
 
     /**
-     * Handle the bot services.
+     * Boot the bot services.
      */
     public function bootServices(): void
     {
@@ -435,6 +450,72 @@ class Laracord
 
             $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
         }
+    }
+
+    /**
+     * Boot the HTTP server.
+     */
+    public function bootHttpServer(): void
+    {
+        if ($this->httpServer) {
+            return;
+        }
+
+        $address = config('discord.http');
+        $routes = $this->getHttpPath('routes.php');
+
+        if (! $address || ! File::exists($routes)) {
+            return;
+        }
+
+        if (Str::startsWith($address, ':')) {
+            $address = Str::start($address, '0.0.0.0');
+        }
+
+        require_once $routes;
+
+        if (! Route::getRoutes()->getRoutes()) {
+            return;
+        }
+
+        $this->httpServer = new HttpServer($this->getLoop(), function (ServerRequestInterface $request) {
+            if (! in_array($request->getMethod(), ['GET', 'POST'])) {
+                return response()->json(['error' => 'Method not allowed.'], 405);
+            }
+
+            $headers = $request->getHeaders();
+            $request = Request::create($request->getUri()->getPath(), $request->getMethod(), [], [], [], $_SERVER, $request->getBody()->getContents());
+
+            foreach ($headers as $header => $values) {
+                $request->headers->set($header, $values);
+            }
+
+            app()->instance('request', $request);
+
+            try {
+                $response = app('router')->dispatch($request);
+            } catch (Throwable $e) {
+                $response = 'Internal Server Error';
+
+                if (! app()->isProduction()) {
+                    $response = Str::finish($response, ": {$e->getMessage()}");
+                }
+
+                return response()->json(['error' => $response], 500);
+            }
+
+            return response(
+                $response->getStatusCode(),
+                $response->headers->allPreserveCaseWithoutCookies(),
+                $response->getContent()
+            );
+        });
+
+        $socket = new SocketServer($address, [], $this->getLoop());
+
+        $this->httpServer->listen($socket);
+
+        $this->console()->log("HTTP server started on <fg=blue>{$address}</>.");
     }
 
     /**
@@ -677,6 +758,16 @@ class Laracord
     }
 
     /**
+     * Get the path to the HTTP routes.
+     */
+    public function getHttpPath(string $path = ''): string
+    {
+        $path = $path ? Str::start($path, '/') : '';
+
+        return app_path("Http{$path}");
+    }
+
+    /**
      * Get the event loop.
      */
     public function getLoop()
@@ -720,5 +811,17 @@ class Laracord
         }
 
         return $this->prefix = $prefix;
+    }
+
+    /**
+     * Build an embed for use in a Discord message.
+     *
+     * @param  string  $content
+     * @return \Laracord\Commands\Components\Message
+     */
+    public function message($content = '')
+    {
+        return Message::make($this)
+            ->content($content);
     }
 }
