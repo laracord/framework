@@ -9,6 +9,17 @@ use Psr\Log\LoggerInterface;
 class Logger implements LoggerInterface
 {
     /**
+     * Log messages that should be ignored.
+     *
+     * @var array
+     */
+    protected $except = [
+        'sending heartbeat',
+        'received heartbeat',
+        'http not checking',
+    ];
+
+    /**
      * The console instance.
      *
      * @var \LaravelZero\Framework\Commands\Command
@@ -119,6 +130,10 @@ class Logger implements LoggerInterface
             'warn' => 'warn',
             default => 'info',
         };
+
+        if (Str::of($message)->lower()->contains($this->except)) {
+            return;
+        }
 
         $message = ucfirst($message);
 
