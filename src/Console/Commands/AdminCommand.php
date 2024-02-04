@@ -124,7 +124,7 @@ class AdminCommand extends Command
     /**
      * Resolve the user.
      *
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return \Illuminate\Database\Eloquent\Model|void
      */
     protected function resolveUser(?string $user = null)
     {
