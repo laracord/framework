@@ -115,6 +115,11 @@ class Laracord
     protected bool $showCommands = true;
 
     /**
+     * Show the invite link if the bot is not in any guilds.
+     */
+    protected bool $showInvite = true;
+
+    /**
      * Initialize the Discord Bot.
      */
     public function __construct(ConsoleCommand $console)
@@ -163,6 +168,7 @@ class Laracord
                 $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
 
                 $this->showCommands();
+                $this->showInvite();
             });
 
             $this->afterBoot();
@@ -453,6 +459,28 @@ class Laracord
                 $command->getDescription(),
             ])->toArray()
         );
+    }
+
+    /**
+     * Show the invite link if the bot is not in any guilds.
+     */
+    public function showInvite(): void
+    {
+        if (! $this->showInvite || $this->discord()->guilds->count() > 0) {
+            return;
+        }
+
+        $this->console()->warn("{$this->getName()} is currently not in any guilds.");
+
+        $query = Arr::query([
+            'client_id' => $this->discord()->id,
+            'permissions' => 281600,
+            'scope' => 'bot applications.commands',
+        ]);
+
+        $this->console()->log("You can <fg=blue>invite {$this->getName()}</> using the following link:");
+
+        $this->console()->outputComponents()->bulletList(["https://discord.com/api/oauth2/authorize?{$query}"]);
     }
 
     /**
