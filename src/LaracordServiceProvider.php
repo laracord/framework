@@ -47,6 +47,9 @@ class LaracordServiceProvider extends ServiceProvider
 
             return new PsrHttpFactory($factory, $factory, $factory, $factory);
         });
+
+        $this->app['config']->set('app.debug', ! $this->app->isProduction());
+        $this->app['config']->set('view.paths', []);
     }
 
     /**

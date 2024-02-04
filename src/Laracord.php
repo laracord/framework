@@ -21,6 +21,7 @@ use Laracord\Services\Service;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
+use React\Http\Message\Response;
 use React\Socket\SocketServer;
 use ReflectionClass;
 use Throwable;
@@ -479,10 +480,6 @@ class Laracord
         }
 
         $this->httpServer = new HttpServer($this->getLoop(), function (ServerRequestInterface $request) {
-            if (! in_array($request->getMethod(), ['GET', 'POST'])) {
-                return response()->json(['error' => 'Method not allowed.'], 405);
-            }
-
             $headers = $request->getHeaders();
             $request = Request::create($request->getUri()->getPath(), $request->getMethod(), [], [], [], $_SERVER, $request->getBody()->getContents());
 
@@ -501,10 +498,10 @@ class Laracord
                     $response = Str::finish($response, ": {$e->getMessage()}");
                 }
 
-                return response()->json(['error' => $response], 500);
+                return new Response(500, ['Content-Type' => 'text/plain'], $response);
             }
 
-            return response(
+            return new Response(
                 $response->getStatusCode(),
                 $response->headers->allPreserveCaseWithoutCookies(),
                 $response->getContent()
