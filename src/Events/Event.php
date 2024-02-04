@@ -144,7 +144,12 @@ abstract class Event
             ->mapWithKeys(fn ($file) => [Str::of($file->getFilename())->replace('.php', '')->__toString() => $file->getPathname()]);
 
         return collect($events)->mapWithKeys(function ($path, $event) use ($classes) {
-            $class = Str::of($event)->lower()->replace('_', ' ')->headline()->replace(' ', '')->__toString();
+            $class = Str::of($event)
+                ->lower()
+                ->replace('_', ' ')
+                ->headline()
+                ->replace(' ', '')
+                ->__toString();
 
             if (! $classes->has($class)) {
                 return [];
