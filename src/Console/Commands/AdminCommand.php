@@ -38,26 +38,14 @@ class AdminCommand extends Command
      */
     public function handle()
     {
-        if (! is_numeric($user = $this->argument('user'))) {
-            $this->user = $this->getUserModel()::where('username', $user)->first();
+        $this->user = $this->resolveUser($this->argument('user'));
 
-            if (! $this->user) {
-                $this->components->error("The user <fg=red>{$user}</> does not exist.");
-
-                return;
-            }
+        if (! $this->user) {
+            return;
         }
-
-        $this->user = $this->user ?? $this->getUserModel()::where('discord_id', $user)->first();
 
         if ($this->option('revoke')) {
             return $this->revoke();
-        }
-
-        if ($this->user && $this->user->is_admin) {
-            $this->components->error("The user <fg=red>{$this->user->username}</> is already an admin.");
-
-            return;
         }
 
         $this->handleAdmin();
@@ -68,43 +56,25 @@ class AdminCommand extends Command
      */
     protected function handleAdmin(): void
     {
-        $user = $this->user ? [
-            'id' => $this->user->discord_id,
-            'username' => $this->user->username,
-        ] : [];
-
-        if (! $user) {
-            $token = $this->getBotClass()::make($this)->getToken();
-
-            $request = Http::withHeaders([
-                'Authorization' => "Bot {$token}",
-            ])->get("https://discord.com/api/users/{$user}");
-
-            if ($request->failed()) {
-                $this->components->error('Failed to fetch user data from Discord API.');
-
-                return;
-            }
-
-            $user = $request->json();
-        }
-
-        if (! $this->components->confirm("Are you sure you want to make <fg=blue>{$user['username']}</> an admin?")) {
-            return;
-        }
-
-        $user = $this->getUserModel()::updateOrCreate(['discord_id' => $user['id']], [
-            'username' => $user['username'],
-            'is_admin' => true,
-        ]);
-
-        if (! $user) {
-            $this->components->error('Failed to update user.');
+        if ($this->user->is_admin) {
+            $this->components->error("The user <fg=red>{$this->user->username}</> is already an admin.");
 
             return;
         }
 
-        $this->components->info("User <fg=blue>{$user->username}</> is now an admin.");
+        if (! $this->components->confirm("Are you sure you want to make <fg=blue>{$this->user->username}</> a bot admin?")) {
+            return;
+        }
+
+        $user = $this->user->update(['is_admin' => true]);
+
+        if (! $user) {
+            $this->components->error("Failed to make <fg=red>{$this->user->username}</> a bot admin.");
+
+            return;
+        }
+
+        $this->components->info("User <fg=blue>{$this->user->username}</> is now a bot admin.");
     }
 
     /**
@@ -112,12 +82,6 @@ class AdminCommand extends Command
      */
     protected function revoke(): void
     {
-        if (! $this->user) {
-            $this->components->error("The user <fg=red>{$user}</> does not exist.");
-
-            return;
-        }
-
         if (! $this->user->is_admin) {
             $this->components->error("The user <fg=red>{$this->user->username}</> is not an admin.");
 
@@ -152,6 +116,54 @@ class AdminCommand extends Command
 
         if (! class_exists($model)) {
             throw new Exception('The user model could not be found.');
+        }
+
+        return $model;
+    }
+
+    /**
+     * Resolve the user.
+     *
+     * @return \Illuminate\Database\Eloquent\Model|void
+     */
+    protected function resolveUser(?string $user = null)
+    {
+        if (! $user) {
+            $this->components->error('You must specify a valid user.');
+
+            return;
+        }
+
+        if (! is_numeric($user)) {
+            $model = $this->getUserModel()::where('username', $user)->first();
+
+            if (! $model) {
+                $this->components->error("The user <fg=red>{$user}</> does not exist.");
+
+                return;
+            }
+        }
+
+        $model = $model ?? $this->getUserModel()::where('discord_id', $user)->first();
+
+        if (! $model) {
+            $token = $this->getBotClass()::make($this)->getToken();
+
+            $request = Http::withHeaders([
+                'Authorization' => "Bot {$token}",
+            ])->get("https://discord.com/api/users/{$user}");
+
+            if ($request->failed()) {
+                $this->components->error("Failed to fetch user <fg=red>{$user}</> from the Discord API.");
+
+                return;
+            }
+
+            $user = $request->json();
+
+            $model = $this->getUserModel()::updateOrCreate(['discord_id' => $user['id']], [
+                'username' => $user['username'],
+            ]);
         }
 
         return $model;
