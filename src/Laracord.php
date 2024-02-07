@@ -8,11 +8,14 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
+use Laracord\Commands\Components\Message;
 use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Events\Event;
+use Laracord\Http\Server;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
 use React\EventLoop\Loop;
@@ -100,6 +103,13 @@ class Laracord
     protected array $services = [];
 
     /**
+     * The bot HTTP server.
+     *
+     * @var \React\Http\HttpServer
+     */
+    protected $httpServer;
+
+    /**
      * The registered bot commands.
      */
     protected array $registeredCommands = [];
@@ -156,6 +166,7 @@ class Laracord
             $this
                 ->registerEvents()
                 ->bootServices()
+                ->bootHttpServer()
                 ->registerSlashCommands();
 
             $status = collect([
@@ -211,6 +222,30 @@ class Laracord
     public function afterBoot(): void
     {
         //
+    }
+
+    /**
+     * The HTTP routes.
+     */
+    public function routes(): void
+    {
+        //
+    }
+
+    /**
+     * The HTTP middleware.
+     */
+    public function middleware(): array
+    {
+        return [];
+    }
+
+    /**
+     * The prepended HTTP middleware.
+     */
+    public function prependMiddleware(): array
+    {
+        return [];
     }
 
     /**
@@ -406,7 +441,7 @@ class Laracord
             $guild = $this->discord()->guilds->get('id', $guild);
 
             if (! $guild) {
-                $this->console()->warn("The <fg=yellow>{$id}</> command failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
+                $this->console()->warn("The command with ID <fg=yellow>{$id}</> failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
 
                 return;
             }
@@ -443,7 +478,7 @@ class Laracord
     }
 
     /**
-     * Handle the bot services.
+     * Boot the bot services.
      */
     public function bootServices(): self
     {
@@ -460,6 +495,26 @@ class Laracord
             }
 
             $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
+        }
+
+        return $this;
+    }
+
+    /**
+     * Boot the HTTP server.
+     */
+    public function bootHttpServer(): self
+    {
+        if ($this->httpServer) {
+            return $this;
+        }
+
+        Route::middleware('api')->group(fn () => $this->routes());
+
+        $this->httpServer = Server::make($this)->boot();
+
+        if ($this->httpServer->isBooted()) {
+            $this->console()->log("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
         }
 
         return $this;
@@ -792,5 +847,17 @@ class Laracord
     public function getPrefix(): string
     {
         return $this->getPrefixes()->first();
+    }
+
+    /**
+     * Build an embed for use in a Discord message.
+     *
+     * @param  string  $content
+     * @return \Laracord\Commands\Components\Message
+     */
+    public function message($content = '')
+    {
+        return Message::make($this)
+            ->content($content);
     }
 }

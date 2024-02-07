@@ -2,12 +2,12 @@
 
 namespace Laracord\Console\Commands;
 
-use Exception;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Laracord\Console\Concerns\ResolvesUser;
 
 class AdminCommand extends Command
 {
+    use ResolvesUser;
+
     /**
      * The signature of the command.
      *
@@ -45,14 +45,14 @@ class AdminCommand extends Command
         }
 
         if ($this->option('revoke')) {
-            return $this->revoke();
+            return $this->revokeAdmin();
         }
 
         $this->handleAdmin();
     }
 
     /**
-     * Handle the admin command.
+     * Handle the admin promotion.
      */
     protected function handleAdmin(): void
     {
@@ -78,9 +78,9 @@ class AdminCommand extends Command
     }
 
     /**
-     * Revoke admin privileges from the specified user.
+     * Revoke the user's admin privileges.
      */
-    protected function revoke(): void
+    protected function revokeAdmin(): void
     {
         if (! $this->user->is_admin) {
             $this->components->error("The user <fg=red>{$this->user->username}</> is not an admin.");
@@ -95,77 +95,5 @@ class AdminCommand extends Command
         $this->user->update(['is_admin' => false]);
 
         $this->components->info("User <fg=blue>{$this->user->username}</> is no longer an admin.");
-    }
-
-    /**
-     * Get the bot class.
-     */
-    protected function getBotClass(): string
-    {
-        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
-
-        return class_exists($class) ? $class : 'Laracord';
-    }
-
-    /**
-     * Get the user model class.
-     */
-    protected function getUserModel(): string
-    {
-        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
-
-        if (! class_exists($model)) {
-            throw new Exception('The user model could not be found.');
-        }
-
-        return $model;
-    }
-
-    /**
-     * Resolve the user.
-     *
-     * @return \Illuminate\Database\Eloquent\Model|void
-     */
-    protected function resolveUser(?string $user = null)
-    {
-        if (! $user) {
-            $this->components->error('You must specify a valid user.');
-
-            return;
-        }
-
-        if (! is_numeric($user)) {
-            $model = $this->getUserModel()::where('username', $user)->first();
-
-            if (! $model) {
-                $this->components->error("The user <fg=red>{$user}</> does not exist.");
-
-                return;
-            }
-        }
-
-        $model = $model ?? $this->getUserModel()::where('discord_id', $user)->first();
-
-        if (! $model) {
-            $token = $this->getBotClass()::make($this)->getToken();
-
-            $request = Http::withHeaders([
-                'Authorization' => "Bot {$token}",
-            ])->get("https://discord.com/api/users/{$user}");
-
-            if ($request->failed()) {
-                $this->components->error("Failed to fetch user <fg=red>{$user}</> from the Discord API.");
-
-                return;
-            }
-
-            $user = $request->json();
-
-            $model = $this->getUserModel()::updateOrCreate(['discord_id' => $user['id']], [
-                'username' => $user['username'],
-            ]);
-        }
-
-        return $model;
     }
 }
