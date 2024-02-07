@@ -46,7 +46,7 @@ class EventMakeCommand extends GeneratorCommand
     {
         $stub = parent::replaceClass($stub, $name);
 
-        $events = collect(Event::getEvents())->sort();
+        $events = collect(Event::getEvents())->sortBy('name');
 
         $parameters = collect(
             File::json(__DIR__.'/../../../resources/data/events.json')
@@ -58,7 +58,7 @@ class EventMakeCommand extends GeneratorCommand
             $event = windows_os()
                 ? select(
                     'Select a Discord event to listen for',
-                    $events->pluck('name')->keys()->all(),
+                    $events->pluck('name')->flip()->all(),
                     scroll: 15,
                 )
                 : search(
@@ -70,7 +70,7 @@ class EventMakeCommand extends GeneratorCommand
                     scroll: 15,
                 );
 
-            $event = is_int($event) ? $events->keys()->get($event) : $event;
+            $event = $events->filter(fn ($e) => $e['name'] === $event)->keys()->first() ?? $event;
         }
 
         if (! $events->has($event)) {
