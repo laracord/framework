@@ -52,7 +52,8 @@ return [
     |
     | Here you may specify the command prefix for the Discord bot. This
     | prefix will be used to distinguish commands from regular chat
-    | messages. You may change this to anything you like.
+    | messages. To use mentioning the bot as a prefix, use "@mention".
+    | To use multiple prefixes, you may pass an array instead.
     |
     */
 
