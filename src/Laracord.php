@@ -484,17 +484,17 @@ class Laracord
     /**
      * Boot the HTTP server.
      */
-    public function bootHttpServer(): void
+    public function bootHttpServer(): self
     {
         if ($this->httpServer) {
-            return;
+            return $this;
         }
 
         $address = config('discord.http');
         $routes = $this->getHttpPath('routes.php');
 
         if (! $address || ! File::exists($routes)) {
-            return;
+            return $this;
         }
 
         if (Str::startsWith($address, ':')) {
@@ -504,7 +504,7 @@ class Laracord
         require_once $routes;
 
         if (! Route::getRoutes()->getRoutes()) {
-            return;
+            return $this;
         }
 
         $this->httpServer = new HttpServer($this->getLoop(), function (ServerRequestInterface $request) {
@@ -541,6 +541,8 @@ class Laracord
         $this->httpServer->listen($socket);
 
         $this->console()->log("HTTP server started on <fg=blue>{$address}</>.");
+
+        return $this;
     }
 
     /**
