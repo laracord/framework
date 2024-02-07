@@ -58,17 +58,19 @@ class EventMakeCommand extends GeneratorCommand
             $event = windows_os()
                 ? select(
                     'Select a Discord event to listen for',
-                    $events->pluck('name', 'key')->all(),
+                    $events->pluck('name')->sort()->all(),
                     scroll: 15,
                 )
                 : search(
                     label: 'Select a Discord event to listen for',
                     placeholder: 'Search for an event...',
                     options: fn (string $value) => strlen($value) > 0
-                        ? $events->pluck('name', 'key')->filter(fn ($name) => Str::contains(strtolower($name), strtolower($value)))->all()
-                        : $events->pluck('name', 'key')->all(),
+                        ? $events->pluck('name', 'key')->sort()->filter(fn ($name) => Str::contains(strtolower($name), strtolower($value)))->all()
+                        : $events->pluck('name', 'key')->sort()->all(),
                     scroll: 15,
                 );
+
+            $event = is_int($event) ? $events->keys()->get($event) : $event;
         }
 
         if (! $events->has($event)) {
