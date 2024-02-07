@@ -147,31 +147,31 @@ class Laracord
         $this->registerCommands();
 
         $this->discord()->on('ready', function () {
-            $this->registerEvents();
-            $this->bootServices();
+            $this
+                ->registerEvents()
+                ->bootServices()
+                ->registerSlashCommands();
 
-            $this->registerSlashCommands()->then(function () {
-                $status = collect([
-                    'commands' => count($this->registeredCommands),
-                    'events' => count($this->registeredEvents),
-                    'services' => count($this->registeredServices),
-                ])
-                    ->filter()
-                    ->map(function ($count, $type) {
-                        $string = Str::plural($type, $count);
+            $status = collect([
+                'command' => count($this->registeredCommands),
+                'event' => count($this->registeredEvents),
+                'service' => count($this->registeredServices),
+            ])
+                ->filter()
+                ->map(function ($count, $type) {
+                    $string = Str::plural($type, $count);
 
-                        return "<fg=blue>{$count}</> {$string}";
-                    })->implode(', ');
+                    return "<fg=blue>{$count}</> {$string}";
+                })->implode(', ');
 
-                $status = Str::replaceLast(', ', ', and ', $status);
+            $status = Str::replaceLast(', ', ', and ', $status);
 
-                $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
+            $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
 
-                $this->showCommands();
-                $this->showInvite();
-            });
-
-            $this->afterBoot();
+            $this
+                ->showCommands()
+                ->showInvite()
+                ->afterBoot();
         });
 
         $this->discord()->run();
@@ -210,7 +210,7 @@ class Laracord
     /**
      * Register the bot commands.
      */
-    protected function registerCommands(): void
+    protected function registerCommands(): self
     {
         foreach ($this->getCommands() as $command) {
             $command = $command::make($this);
@@ -225,6 +225,8 @@ class Laracord
 
             $this->registeredCommands[] = $command;
         }
+
+        return $this;
     }
 
     /**
@@ -232,129 +234,135 @@ class Laracord
      */
     protected function registerSlashCommands()
     {
-        $existing = [];
+        $existing = cache()->get('laracord.slash-commands');
 
-        $existing[] = async(fn () => await($this->discord->application->commands->freshen()))();
+        if (! $existing) {
+            $existing = [];
 
-        foreach ($this->discord->guilds as $guild) {
-            $existing[] = async(fn () => await($guild->commands->freshen()))();
+            $existing[] = async(fn () => await($this->discord->application->commands->freshen()))();
+
+            foreach ($this->discord->guilds as $guild) {
+                $existing[] = async(fn () => await($guild->commands->freshen()))();
+            }
+
+            $existing = all($existing)->then(function ($commands) {
+                return collect($commands)
+                    ->flatMap(fn ($command) => $command->toArray())
+                    ->map(fn ($command) => collect($command->getUpdatableAttributes())->prepend($command->id, 'id')->filter()->all())
+                    ->map(fn ($command) => array_merge($command, [
+                        'guild_id' => $command['guild_id'] ?? null,
+                        'dm_permission' => $command['dm_permission'] ?? null,
+                        'default_permission' => $command['default_permission'] ?? true,
+                        'options' => collect($command['options'] ?? [])->map(fn ($option) => collect($option)->sortKeys()->all())->all(),
+                    ]))
+                    ->keyBy('name');
+            })->then(fn ($commands) => cache()->rememberForever('laracord.slash-commands', fn () => $commands));
         }
 
-        return all($existing)->then(function ($commands) {
-            $existing = collect($commands)
-                ->flatMap(fn ($command) => $command->toArray())
-                ->map(fn ($command) => collect($command->getUpdatableAttributes())->prepend($command->id, 'id')->filter()->all())
-                ->map(fn ($command) => array_merge($command, [
-                    'guild_id' => $command['guild_id'] ?? null,
-                    'dm_permission' => $command['dm_permission'] ?? null,
-                    'default_permission' => $command['default_permission'] ?? true,
-                    'options' => collect($command['options'] ?? [])->map(fn ($option) => collect($option)->sortKeys()->all())->all(),
-                ]))
-                ->keyBy('name');
+        $existing = $existing instanceof Collection ? $existing : collect();
 
-            $registered = collect($this->getSlashCommands())
-                ->mapWithKeys(function ($command) {
-                    $command = $command::make($this);
-                    $attributes = $command->create()->getUpdatableAttributes();
+        $registered = collect($this->getSlashCommands())
+            ->mapWithKeys(function ($command) {
+                $command = $command::make($this);
+                $attributes = $command->create()->getUpdatableAttributes();
 
-                    $attributes = array_merge($attributes, [
-                        'type' => $attributes['type'] ?? 1,
-                        'dm_permission' => $attributes['dm_permission'] ?? null,
-                        'guild_id' => $attributes['guild_id'] ?? false,
-                    ]);
+                $attributes = array_merge($attributes, [
+                    'type' => $attributes['type'] ?? 1,
+                    'dm_permission' => $attributes['dm_permission'] ?? null,
+                    'guild_id' => $attributes['guild_id'] ?? false,
+                ]);
 
-                    return [$command->getName() => [
-                        'state' => $command,
-                        'attributes' => $attributes,
-                    ]];
-                });
+                return [$command->getName() => [
+                    'state' => $command,
+                    'attributes' => $attributes,
+                ]];
+            });
 
-            $created = $registered->reject(fn ($command, $name) => $existing->has($name));
-            $deleted = $existing->reject(fn ($command, $name) => $registered->has($name));
+        $created = $registered->reject(fn ($command, $name) => $existing->has($name));
+        $deleted = $existing->reject(fn ($command, $name) => $registered->has($name));
 
-            $updated = $registered
-                ->map(function ($command) {
-                    $options = collect($command['attributes']['options'] ?? [])
-                        ->filter()
-                        ->all();
+        $updated = $registered
+            ->map(function ($command) {
+                $options = collect($command['attributes']['options'] ?? [])
+                    ->filter()
+                    ->all();
 
-                    $attributes = collect($command['attributes']);
+                $attributes = collect($command['attributes']);
 
-                    $attributes = $attributes
-                        ->put('options', collect($options)->map(fn ($option) => collect($option)->filter()->all())->all())
-                        ->forget('guild_id')
-                        ->filter()
-                        ->prepend($command['state']->getGuild(), 'guild_id')
-                        ->all();
+                $attributes = $attributes
+                    ->put('options', collect($options)->map(fn ($option) => collect($option)->filter()->all())->all())
+                    ->forget('guild_id')
+                    ->filter()
+                    ->prepend($command['state']->getGuild(), 'guild_id')
+                    ->all();
 
-                    return array_merge($command, ['attributes' => $attributes]);
-                })
-                ->filter(function ($command, $name) use ($existing) {
-                    if (! $existing->has($name)) {
-                        return false;
-                    }
-
-                    $current = collect($existing->get($name))->forget('id');
-
-                    foreach ($command['attributes'] as $key => $value) {
-                        $attributes = $current->get($key);
-
-                        if (is_array($attributes) && is_array($value)) {
-                            $attributes = collect($attributes)
-                                ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                                ->toJson();
-
-                            $value = collect($value)
-                                ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                                ->toJson();
-                        }
-
-                        if ($attributes === $value) {
-                            continue;
-                        }
-
-                        return true;
-                    }
-
+                return array_merge($command, ['attributes' => $attributes]);
+            })
+            ->filter(function ($command, $name) use ($existing) {
+                if (! $existing->has($name)) {
                     return false;
-                })->each(function ($command) use ($existing) {
-                    $state = $existing->get($command['state']->getName());
+                }
 
-                    if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
-                        $this->unregisterSlashCommand($state['id']);
+                $current = collect($existing->get($name))->forget('id');
+
+                foreach ($command['attributes'] as $key => $value) {
+                    $attributes = $current->get($key);
+
+                    if (is_array($attributes) && is_array($value)) {
+                        $attributes = collect($attributes)
+                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
+                            ->toJson();
+
+                        $value = collect($value)
+                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
+                            ->toJson();
                     }
 
-                    if (! Arr::get($command, 'attributes.guild_id') && $guild = Arr::get($state, 'guild_id')) {
-                        $this->unregisterSlashCommand($state['id'], $guild);
+                    if ($attributes === $value) {
+                        continue;
                     }
-                });
 
-            if ($created->isNotEmpty()) {
-                $this->console()->log("Creating <fg=blue>{$created->count()}</> new slash command(s).");
+                    return true;
+                }
 
-                $created->each(fn ($command) => $this->registerSlashCommand($command['state']));
-            }
+                return false;
+            })->each(function ($command) use ($existing) {
+                $state = $existing->get($command['state']->getName());
 
-            if ($updated->isNotEmpty()) {
-                $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
+                if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
+                    $this->unregisterSlashCommand($state['id']);
+                }
 
-                $updated->each(fn ($command) => $this->registerSlashCommand($command['state']));
-            }
+                if (! Arr::get($command, 'attributes.guild_id') && $guild = Arr::get($state, 'guild_id')) {
+                    $this->unregisterSlashCommand($state['id'], $guild);
+                }
+            });
 
-            if ($deleted->isNotEmpty()) {
-                $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> slash command(s).");
+        if ($updated->isNotEmpty()) {
+            $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
 
-                $deleted->each(fn ($command) => $this->unregisterSlashCommand($command['id'], $command['guild_id'] ?? null));
-            }
+            $updated->each(fn ($command) => $this->registerSlashCommand($command['state']));
+        }
 
-            if ($registered->isEmpty()) {
-                return;
-            }
+        if ($deleted->isNotEmpty()) {
+            $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> slash command(s).");
 
-            $registered->each(fn ($command, $name) => $this->discord()->listenCommand($name, fn ($interaction) => $command['state']->maybeHandle($interaction)));
+            $deleted->each(fn ($command) => $this->unregisterSlashCommand($command['id'], $command['guild_id'] ?? null));
+        }
 
-            $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
-        });
+        if ($created->isNotEmpty()) {
+            $this->console()->log("Creating <fg=blue>{$created->count()}</> new slash command(s).");
+
+            $created->each(fn ($command) => $this->registerSlashCommand($command['state']));
+        }
+
+        if ($registered->isEmpty()) {
+            return;
+        }
+
+        $registered->each(fn ($command, $name) => $this->discord()->listenCommand($name, fn ($interaction) => $command['state']->maybeHandle($interaction)));
+
+        $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
     }
 
     /**
@@ -362,6 +370,8 @@ class Laracord
      */
     public function registerSlashCommand(SlashCommand $command): void
     {
+        cache()->forget('laracord.slash-commands');
+
         if ($command->getGuild()) {
             $guild = $this->discord()->guilds->get('id', $command->getGuild());
 
@@ -384,6 +394,8 @@ class Laracord
      */
     public function unregisterSlashCommand(string $id, ?string $guild = null): void
     {
+        cache()->forget('laracord.slash-commands');
+
         if ($guild) {
             $guild = $this->discord()->guilds->get('id', $guild);
 
@@ -404,7 +416,7 @@ class Laracord
     /**
      * Register the Discord events.
      */
-    public function registerEvents(): void
+    public function registerEvents(): self
     {
         foreach ($this->getEvents() as $event) {
             $event = $event::make($this);
@@ -420,12 +432,14 @@ class Laracord
 
             $this->console()->log("The <fg=blue>{$event->getName()}</> event has been registered to <fg=blue>{$event->getHandler()}</>.");
         }
+
+        return $this;
     }
 
     /**
      * Handle the bot services.
      */
-    public function bootServices(): void
+    public function bootServices(): self
     {
         foreach ($this->getServices() as $service) {
             $service = $service::make($this);
@@ -441,15 +455,17 @@ class Laracord
 
             $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
         }
+
+        return $this;
     }
 
     /**
      * Print the registered commands to console.
      */
-    public function showCommands(): void
+    public function showCommands(): self
     {
         if (! $this->showCommands) {
-            return;
+            return $this;
         }
 
         table(
@@ -459,15 +475,17 @@ class Laracord
                 $command->getDescription(),
             ])->toArray()
         );
+
+        return $this;
     }
 
     /**
      * Show the invite link if the bot is not in any guilds.
      */
-    public function showInvite(): void
+    public function showInvite(): self
     {
         if (! $this->showInvite || $this->discord()->guilds->count() > 0) {
-            return;
+            return $this;
         }
 
         $this->console()->warn("{$this->getName()} is currently not in any guilds.");
@@ -481,6 +499,8 @@ class Laracord
         $this->console()->log("You can <fg=blue>invite {$this->getName()}</> using the following link:");
 
         $this->console()->outputComponents()->bulletList(["https://discord.com/api/oauth2/authorize?{$query}"]);
+
+        return $this;
     }
 
     /**
