@@ -1,6 +1,6 @@
 <?php
 
-namespace Laracord\Commands\Components;
+namespace Laracord\Discord;
 
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
@@ -9,7 +9,9 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Discord\Parts\User\User;
 use Exception;
+use Illuminate\Support\Str;
 use Laracord\Laracord;
+use Throwable;
 
 class Message
 {
@@ -129,9 +131,9 @@ class Message
      *
      * @return void
      */
-    public function __construct(Laracord $bot)
+    public function __construct(?Laracord $bot)
     {
-        $this->bot = $bot;
+        $this->bot = $bot ?: app('bot');
 
         $this
             ->authorName($this->bot->discord()->user->username)
@@ -142,7 +144,7 @@ class Message
     /**
      * Make a new Discord message instance.
      */
-    public static function make(Laracord $bot): self
+    public static function make(?Laracord $bot): self
     {
         return new static($bot);
     }
@@ -553,14 +555,50 @@ class Message
     /**
      * Add a URL button to the message.
      */
-    public function button(string $label, string $url, mixed $emoji = null): self
+    public function button(string $label, mixed $value, mixed $emoji = null, ?int $style = null, array $options = []): self
     {
-        $button = Button::new(Button::STYLE_LINK)
+        $style = $style ?? (is_string($value) ? Button::STYLE_LINK : Button::STYLE_PRIMARY);
+
+        $button = Button::new($style)
             ->setLabel($label)
-            ->setUrl($url)
             ->setEmoji($emoji);
 
+        if ($options) {
+            foreach ($options as $key => $option) {
+                $key = Str::of($key)->camel()->ucfirst()->__toString();
+
+                try {
+                    $button = $button->{$key}($option);
+                } catch (Throwable) {
+                    $this->bot->console()->error("Invalid button option <fg=red>{$key}</>");
+
+                    continue;
+                }
+            }
+        }
+
+        $button = match ($style) {
+            Button::STYLE_LINK => $button->setUrl($value),
+            default => $button->setListener($value, $this->bot->discord()),
+        };
+
         $this->buttons[] = $button;
+
+        return $this;
+    }
+
+    /**
+     * Add buttons to the message.
+     */
+    public function buttons(array $buttons): self
+    {
+        foreach ($buttons as $key => $value) {
+            if (is_string($key) && is_string($value)) {
+                $value = [$key, $value];
+            }
+
+            $this->button(...$value);
+        }
 
         return $this;
     }

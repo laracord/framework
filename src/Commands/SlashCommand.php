@@ -76,11 +76,16 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             return;
         }
 
-        $this->user = $this->getUser($interaction->member->user);
         $this->server = $interaction->guild;
 
-        if ($this->isAdminCommand() && ! $this->user->is_admin) {
-            return;
+        if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
+            return $interaction->respondWithMessage(
+                $this
+                    ->message('You do not have permission to run this command.')
+                    ->title('Permission Denied')
+                    ->error()
+                    ->build()
+            );
         }
 
         $this->handle($interaction);

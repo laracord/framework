@@ -2,8 +2,8 @@
 
 namespace Laracord\Commands;
 
-use Laracord\Commands\Components\Message;
 use Laracord\Commands\Contracts\Command as CommandContract;
+use Laracord\Discord\Message;
 
 abstract class Command extends AbstractCommand implements CommandContract
 {
@@ -50,10 +50,9 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
-        $this->user = $this->getUser($message->author);
         $this->server = $message->channel->guild;
 
-        if ($this->isAdminCommand() && ! $this->user->is_admin) {
+        if ($this->isAdminCommand() && ! $this->isAdmin($message->author)) {
             return;
         }
 
