@@ -3,7 +3,7 @@
 namespace Laracord\Commands;
 
 use Illuminate\Support\Str;
-use Laracord\Commands\Components\Message;
+use Laracord\Discord\Message;
 use Laracord\Laracord;
 
 abstract class AbstractCommand
@@ -95,7 +95,7 @@ abstract class AbstractCommand
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Commands\Components\Message
+     * @return \Laracord\Discord\Message
      */
     public function message($content = '')
     {

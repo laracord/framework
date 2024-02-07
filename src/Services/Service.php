@@ -3,8 +3,8 @@
 namespace Laracord\Services;
 
 use Discord\DiscordCommandClient as Discord;
-use Laracord\Commands\Components\Message;
 use Laracord\Console\Commands\BootCommand as Console;
+use Laracord\Discord\Message;
 use Laracord\Laracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
 use Laracord\Services\Exceptions\InvalidServiceInterval;
@@ -90,7 +90,7 @@ abstract class Service implements ServiceContract
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Commands\Components\Message
+     * @return \Laracord\Discord\Message
      */
     public function message($content = '')
     {

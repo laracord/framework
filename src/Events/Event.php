@@ -7,8 +7,8 @@ use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Event as DiscordEvent;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Laracord\Commands\Components\Message;
 use Laracord\Console\Commands\BootCommand as Console;
+use Laracord\Discord\Message;
 use Laracord\Laracord;
 
 abstract class Event
@@ -94,7 +94,7 @@ abstract class Event
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Commands\Components\Message
+     * @return \Laracord\Discord\Message
      */
     public function message($content = '')
     {
