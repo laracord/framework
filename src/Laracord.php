@@ -62,7 +62,7 @@ class Laracord
     /**
      * The Discord bot command prefix.
      */
-    protected string $prefix = '';
+    protected ?Collection $prefixes = null;
 
     /**
      * The Discord bot intents.
@@ -190,7 +190,7 @@ class Laracord
     {
         $this->discord = new Discord([
             'token' => $this->getToken(),
-            'prefixes' => Arr::wrap($this->getPrefix()),
+            'prefixes' => $this->getPrefixes()->all(),
             'description' => $this->getDescription(),
             'discordOptions' => $this->getOptions(),
             'defaultHelpCommand' => false,
@@ -767,20 +767,30 @@ class Laracord
     }
 
     /**
-     * Retrieve the prefix.
+     * Retrieve the prefixes.
      */
-    public function getPrefix(): string
+    public function getPrefixes(): Collection
     {
-        if ($this->prefix) {
-            return $this->prefix;
+        if ($this->prefixes) {
+            return $this->prefixes;
         }
 
-        $prefix = trim(config('discord.prefix'));
+        $prefixes = collect(config('discord.prefix', '!'))
+            ->filter()
+            ->reject(fn ($prefix) => Str::startsWith($prefix, '/'));
 
-        if (! $prefix || $prefix === '/') {
+        if ($prefixes->isEmpty()) {
             throw new Exception('You must provide a valid command prefix.');
         }
 
-        return $this->prefix = $prefix;
+        return $this->prefixes = $prefixes;
+    }
+
+    /**
+     * Retrieve the primary prefix.
+     */
+    public function getPrefix(): string
+    {
+        return $this->getPrefixes()->first();
     }
 }
