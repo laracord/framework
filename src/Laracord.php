@@ -319,8 +319,8 @@ class Laracord
                 ]];
             });
 
-        $created = $registered->reject(fn ($command, $name) => $existing->has($name));
-        $deleted = $existing->reject(fn ($command, $name) => $registered->has($name));
+        $created = $registered->reject(fn ($command, $name) => $existing->has($name))->filter();
+        $deleted = $existing->reject(fn ($command, $name) => $registered->has($name))->filter();
 
         $updated = $registered
             ->map(function ($command) {
@@ -433,15 +433,15 @@ class Laracord
     /**
      * Unregister the specified slash command.
      */
-    public function unregisterSlashCommand(string $id, ?string $guild = null): void
+    public function unregisterSlashCommand(string $id, ?string $guildId = null): void
     {
         cache()->forget('laracord.slash-commands');
 
-        if ($guild) {
-            $guild = $this->discord()->guilds->get('id', $guild);
+        if ($guildId) {
+            $guild = $this->discord()->guilds->get('id', $guildId);
 
             if (! $guild) {
-                $this->console()->warn("The command with ID <fg=yellow>{$id}</> failed to unregister because the guild <fg=yellow>{$guild}</> could not be found.");
+                $this->console()->warn("The command with ID <fg=yellow>{$id}</> failed to unregister because the guild <fg=yellow>{$guildId}</> could not be found.");
 
                 return;
             }
