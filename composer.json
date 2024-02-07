@@ -17,6 +17,7 @@
     "guzzlehttp/guzzle": "^7.5",
     "illuminate/database": "^10.0",
     "illuminate/http": "^10.0",
+    "illuminate/translation": "^10.0",
     "laravel-zero/framework": "^10.2",
     "nunomaduro/termwind": "^1.15.1",
     "nyholm/psr7": "^1.8",
