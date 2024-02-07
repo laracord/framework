@@ -17,6 +17,7 @@ class Logger implements LoggerInterface
         'sending heartbeat',
         'received heartbeat',
         'http not checking',
+        'resetting payload count',
     ];
 
     /**
