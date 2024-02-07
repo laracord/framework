@@ -88,6 +88,7 @@ class LaracordServiceProvider extends ServiceProvider
         $this->commands([
             Console\Commands\AdminCommand::class,
             Console\Commands\BootCommand::class,
+            Console\Commands\ControllerMakeCommand::class,
             Console\Commands\ConsoleMakeCommand::class,
             Console\Commands\EventMakeCommand::class,
             Console\Commands\MakeCommand::class,
