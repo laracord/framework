@@ -589,13 +589,15 @@ class Message
 
     /**
      * Add buttons to the message.
-     *
-     * @return $this
      */
     public function buttons(array $buttons): self
     {
-        foreach ($buttons as $button) {
-            $this->button(...$button);
+        foreach ($buttons as $key => $value) {
+            if (is_string($key) && is_string($value)) {
+                $value = [$key, $value];
+            }
+
+            $this->button(...$value);
         }
 
         return $this;
