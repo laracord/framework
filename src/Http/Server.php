@@ -117,7 +117,7 @@ class Server
                 return $this->handleError($e);
             }
 
-            if ($response->getStatusCode() !== 200) {
+            if ($response->getStatusCode() !== 200 && app()->isProduction()) {
                 return new Response(
                     $response->getStatusCode(),
                     ['Content-Type' => 'application/json'],
