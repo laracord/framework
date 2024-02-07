@@ -112,7 +112,7 @@ class AdminCommand extends Command
      */
     protected function getUserModel(): string
     {
-        $model = $this->app->getNamespace().'Models\User';
+        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
 
         if (! class_exists($model)) {
             throw new Exception('The user model could not be found.');

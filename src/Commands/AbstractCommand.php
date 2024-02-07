@@ -2,6 +2,7 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\User\User;
 use Illuminate\Support\Str;
 use Laracord\Discord\Message;
 use Laracord\Laracord;
@@ -104,6 +105,25 @@ abstract class AbstractCommand
     }
 
     /**
+     * Determine if the Discord user is an admin.
+     *
+     * @param  string|\Discord\Parts\User\User  $user
+     * @return bool
+     */
+    public function isAdmin($user)
+    {
+        if (! $user instanceof User) {
+            $user = $this->discord()->users->get('id', $user);
+        }
+
+        if ($this->bot()->getAdmins()) {
+            return in_array($user->id, $this->bot()->getAdmins());
+        }
+
+        return $this->getUser($user)->is_admin;
+    }
+
+    /**
      * Resolve a Discord user.
      *
      * @param  string  $username
@@ -121,17 +141,21 @@ abstract class AbstractCommand
     /**
      * Get the command user.
      *
-     * @param  \Discord\Parts\User\User|null  $user
-     * @return \App\Models\User
+     * @param  \Discord\Parts\User\User  $user
+     * @return \App\Models\User|null
      */
-    public function getUser($user = null)
+    public function getUser($user)
     {
         $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
 
-        return $user ? $model::firstOrCreate(['discord_id' => $user->id], [
+        if (! class_exists($model)) {
+            throw new Exception('The user model could not be found.');
+        }
+
+        return $this->user = $model::firstOrCreate(['discord_id' => $user->id], [
             'discord_id' => $user->id,
             'username' => $user->username,
-        ]) : $this->user;
+        ]) ?? null;
     }
 
     /**
