@@ -87,7 +87,7 @@ class Server
 
         return $this->server = new HttpServer($this->bot->getLoop(), function (ServerRequestInterface $request) {
             $headers = $request->getHeaders();
-            $request = Request::create($request->getUri()->getPath(), $request->getMethod(), [], [], [], $_SERVER, $request->getBody()->getContents());
+            $request = Request::create($request->getUri()->getPath(), $request->getMethod(), $request->getQueryParams(), [], [], $_SERVER, $request->getBody()->getContents());
 
             foreach ($headers as $header => $values) {
                 $request->headers->set($header, $values);
