@@ -90,6 +90,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Bot Admins
+    |--------------------------------------------------------------------------
+    |
+    | Here you may manually specify bot admins without using the User model.
+    | These users will have access to all bot admin commands. User's must
+    | be specified by their Discord user ID.
+    |
+    */
+
+    'admins' => [
+        //
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Additional Commands
     |--------------------------------------------------------------------------
     |

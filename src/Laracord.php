@@ -75,6 +75,11 @@ class Laracord
     protected array $options = [];
 
     /**
+     * The Discord bot admins.
+     */
+    protected array $admins = [];
+
+    /**
      * The Discord bot commands.
      */
     protected array $commands = [];
@@ -125,6 +130,7 @@ class Laracord
     public function __construct(ConsoleCommand $console)
     {
         $this->console = $console;
+        $this->admins = config('discord.admins', $this->admins);
     }
 
     /**
@@ -184,7 +190,7 @@ class Laracord
     {
         $this->discord = new Discord([
             'token' => $this->getToken(),
-            'prefix' => $this->getPrefix(),
+            'prefixes' => Arr::wrap($this->getPrefix()),
             'description' => $this->getDescription(),
             'discordOptions' => $this->getOptions(),
             'defaultHelpCommand' => false,
@@ -576,6 +582,14 @@ class Laracord
             ...config('discord.options', []),
             ...$defaultOptions,
         ];
+    }
+
+    /**
+     * Get the Discord admins.
+     */
+    public function getAdmins(): array
+    {
+        return $this->admins;
     }
 
     /**
