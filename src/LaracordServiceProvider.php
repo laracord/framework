@@ -2,10 +2,15 @@
 
 namespace Laracord;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Routing\RoutingServiceProvider;
 use Illuminate\Routing\UrlGenerator;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Translation\FileLoader;
+use Illuminate\Translation\TranslationServiceProvider;
+use Illuminate\Translation\Translator;
 use Illuminate\View\ViewServiceProvider;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
@@ -20,14 +25,35 @@ class LaracordServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->mergeConfigFrom(__DIR__.'/../config/app.php', 'app');
         $this->mergeConfigFrom(__DIR__.'/../config/cache.php', 'cache');
         $this->mergeConfigFrom(__DIR__.'/../config/commands.php', 'commands');
         $this->mergeConfigFrom(__DIR__.'/../config/database.php', 'database');
         $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
 
+        $this->registerTranslations();
+
         if ($this->isRoutingEnabled()) {
             $this->registerRouting();
         }
+    }
+
+    /**
+     * Register translations for the application.
+     *
+     * @return void
+     */
+    public function registerTranslations()
+    {
+        $this->app->register(TranslationServiceProvider::class);
+
+        $this->app->singleton('translator', function ($app) {
+            $loader = new FileLoader($app['files'], $app['path.lang']);
+            $translator = new Translator($loader, $app['config']['app.locale']);
+            $translator->setFallback($app['config']['app.fallback_locale']);
+
+            return $translator;
+        });
     }
 
     /**
@@ -48,8 +74,8 @@ class LaracordServiceProvider extends ServiceProvider
             return new PsrHttpFactory($factory, $factory, $factory, $factory);
         });
 
-        $this->app['config']->set('app.debug', ! $this->app->isProduction());
         $this->app['config']->set('view.paths', []);
+        $this->app['config']->set('view.compiled', $this->app['config']->get('cache.stores.file.path', base_path('cache')).'/views');
     }
 
     /**
@@ -93,6 +119,8 @@ class LaracordServiceProvider extends ServiceProvider
 
         $this->app->instance('request', $request);
         $this->app->instance('url', new UrlGenerator($this->app['router']->getRoutes(), $this->app['request']));
+
+        RateLimiter::for('api', fn ($request) => Limit::perMinute(60)->by($request->ip()));
     }
 
     /**

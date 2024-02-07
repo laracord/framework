@@ -5,7 +5,6 @@ namespace Laracord;
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -16,15 +15,11 @@ use Laracord\Commands\Components\Message;
 use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Events\Event;
+use Laracord\Http\Server;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
-use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
-use React\Http\HttpServer;
-use React\Http\Message\Response;
-use React\Socket\SocketServer;
 use ReflectionClass;
-use Throwable;
 
 use function Laravel\Prompts\table;
 use function React\Async\async;
@@ -227,6 +222,30 @@ class Laracord
     public function afterBoot(): void
     {
         //
+    }
+
+    /**
+     * The HTTP routes.
+     */
+    public function routes(): void
+    {
+        //
+    }
+
+    /**
+     * The HTTP middleware.
+     */
+    public function middleware(): array
+    {
+        return [];
+    }
+
+    /**
+     * The prepended HTTP middleware.
+     */
+    public function prependMiddleware(): array
+    {
+        return [];
     }
 
     /**
@@ -490,57 +509,13 @@ class Laracord
             return $this;
         }
 
-        $address = config('discord.http');
-        $routes = $this->getHttpPath('routes.php');
+        Route::middleware('api')->group(fn () => $this->routes());
 
-        if (! $address || ! File::exists($routes)) {
-            return $this;
+        $this->httpServer = Server::make($this)->boot();
+
+        if ($this->httpServer->isBooted()) {
+            $this->console()->log("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
         }
-
-        if (Str::startsWith($address, ':')) {
-            $address = Str::start($address, '0.0.0.0');
-        }
-
-        require_once $routes;
-
-        if (! Route::getRoutes()->getRoutes()) {
-            return $this;
-        }
-
-        $this->httpServer = new HttpServer($this->getLoop(), function (ServerRequestInterface $request) {
-            $headers = $request->getHeaders();
-            $request = Request::create($request->getUri()->getPath(), $request->getMethod(), [], [], [], $_SERVER, $request->getBody()->getContents());
-
-            foreach ($headers as $header => $values) {
-                $request->headers->set($header, $values);
-            }
-
-            app()->instance('request', $request);
-
-            try {
-                $response = app('router')->dispatch($request);
-            } catch (Throwable $e) {
-                $response = 'Internal Server Error';
-
-                if (! app()->isProduction()) {
-                    $response = Str::finish($response, ": {$e->getMessage()}");
-                }
-
-                return new Response(500, ['Content-Type' => 'text/plain'], $response);
-            }
-
-            return new Response(
-                $response->getStatusCode(),
-                $response->headers->allPreserveCaseWithoutCookies(),
-                $response->getContent()
-            );
-        });
-
-        $socket = new SocketServer($address, [], $this->getLoop());
-
-        $this->httpServer->listen($socket);
-
-        $this->console()->log("HTTP server started on <fg=blue>{$address}</>.");
 
         return $this;
     }
@@ -816,16 +791,6 @@ class Laracord
     public function getServicePath(): string
     {
         return app_path('Services');
-    }
-
-    /**
-     * Get the path to the HTTP routes.
-     */
-    public function getHttpPath(string $path = ''): string
-    {
-        $path = $path ? Str::start($path, '/') : '';
-
-        return app_path("Http{$path}");
     }
 
     /**
