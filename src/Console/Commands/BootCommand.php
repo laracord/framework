@@ -46,8 +46,10 @@ class BootCommand extends Command
     protected function handleCache(): void
     {
         $cache = config('cache.stores.file.path');
+        $session = config('session.files');
 
         File::ensureDirectoryExists($cache);
+        File::ensureDirectoryExists($session);
     }
 
     /**
