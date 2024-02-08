@@ -57,14 +57,15 @@ class LaracordServiceProvider extends ServiceProvider
         $this->commands([
             Console\Commands\AdminCommand::class,
             Console\Commands\BootCommand::class,
-            Console\Commands\ControllerMakeCommand::class,
             Console\Commands\ConsoleMakeCommand::class,
+            Console\Commands\ControllerMakeCommand::class,
             Console\Commands\EventMakeCommand::class,
+            Console\Commands\KeyGenerateCommand::class,
             Console\Commands\MakeCommand::class,
             Console\Commands\MakeSlashCommand::class,
             Console\Commands\ModelMakeCommand::class,
-            Console\Commands\TokenMakeCommand::class,
             Console\Commands\ServiceMakeCommand::class,
+            Console\Commands\TokenMakeCommand::class,
         ]);
     }
 }
