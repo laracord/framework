@@ -28,14 +28,8 @@ return [
     |
     */
 
-    'compiled' => env(
-        'VIEW_COMPILED_PATH',
-        realpath(
-            env('CACHE_PATH', config('app.env') === 'production'
-                ? getcwd().'/cache'
-                : base_path('cache')
-            ).'/views'
-        )
-    ),
+    'compiled' => config('app.env') === 'production'
+        ? getcwd().'/cache/views'
+        : base_path('cache/views'),
 
 ];
