@@ -40,6 +40,18 @@ class LaracordServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/session.php', 'session');
         $this->mergeConfigFrom(__DIR__.'/../config/view.php', 'view');
 
+        $paths = [
+            'cache' => $this->app['config']->get('cache.stores.file.path'),
+            'session' => $this->app['config']->get('session.files'),
+            'view' => $this->app['config']->get('view.compiled'),
+        ];
+
+        foreach ($paths as $path) {
+            if (! is_dir($path)) {
+                mkdir($path, 0755, true);
+            }
+        }
+
         foreach ($this->providers as $provider) {
             $this->app->register($provider);
         }

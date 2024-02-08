@@ -2,7 +2,6 @@
 
 namespace Laracord\Console\Commands;
 
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class BootCommand extends Command
@@ -33,23 +32,9 @@ class BootCommand extends Command
             $this->callSilent('migrate', ['--force' => true]);
         }
 
-        $this->handleCache();
-
         $this->app->singleton('bot', fn () => $this->getClass()::make($this));
 
         $this->app->make('bot')->boot();
-    }
-
-    /**
-     * Handle the cache.
-     */
-    protected function handleCache(): void
-    {
-        $cache = config('cache.stores.file.path');
-        $session = config('session.files');
-
-        File::ensureDirectoryExists($cache);
-        File::ensureDirectoryExists($session);
     }
 
     /**
