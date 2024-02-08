@@ -11,7 +11,7 @@ trait HasLaracord
     /**
      * The bot instance.
      */
-    protected ?Laracord $bot;
+    protected ?Laracord $bot = null;
 
     /**
      * Retrieve the bot instance.
@@ -49,7 +49,7 @@ trait HasLaracord
      */
     public function message($content = '')
     {
-        return Message::make($this)
+        return Message::make($this->bot())
             ->content($content);
     }
 }
