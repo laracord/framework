@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
-use Laracord\Commands\Components\Message;
 use Laracord\Commands\SlashCommand;
 use Laracord\Console\Commands\Command as ConsoleCommand;
+use Laracord\Discord\Message;
 use Laracord\Events\Event;
 use Laracord\Http\Server;
 use Laracord\Logging\Logger;
@@ -853,7 +853,7 @@ class Laracord
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Commands\Components\Message
+     * @return \Laracord\Discord\Message
      */
     public function message($content = '')
     {
