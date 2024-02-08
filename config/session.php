@@ -59,7 +59,9 @@ return [
     |
     */
 
-    'files' => base_path('cache/sessions'),
+    'files' => config('app.env') === 'production'
+        ? getcwd().'/cache/sessions'
+        : base_path('cache/sessions'),
 
     /*
     |--------------------------------------------------------------------------
