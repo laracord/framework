@@ -128,7 +128,7 @@ class Server
             return new Response(
                 $response->getStatusCode(),
                 $response->headers->allPreserveCaseWithoutCookies(),
-                $response->getContent()
+                $response->getContent() ?: $response->getFile()?->getContent()
             );
         });
     }
