@@ -32,9 +32,10 @@ return [
     'stores' => [
         'file' => [
             'driver' => 'file',
-            'path' => config('app.env') === 'production' ?
-                env('CACHE_PATH', getcwd().'/cache') :
-                env('CACHE_PATH', base_path('cache')),
+            'path' => env('CACHE_PATH', config('app.env') === 'production'
+                ? getcwd().'/cache'
+                : base_path('cache')
+            ),
         ],
     ],
 
