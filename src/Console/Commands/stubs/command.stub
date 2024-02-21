@@ -21,14 +21,14 @@ class {{ class }} extends Command
     protected $description = 'The {{ command }} command.';
 
     /**
-     * Indiciates whether the command requires admin permissions.
+     * Determines whether the command requires admin permissions.
      *
      * @var bool
      */
     protected $admin = false;
 
     /**
-     * Indicates whether the command should be displayed in the commands list.
+     * Determines whether the command should be displayed in the commands list.
      *
      * @var bool
      */

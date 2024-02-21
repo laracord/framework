@@ -4,7 +4,6 @@ namespace Laracord\Commands;
 
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
-use Laracord\Discord\Message;
 use Laracord\Laracord;
 
 abstract class AbstractCommand
@@ -59,18 +58,25 @@ abstract class AbstractCommand
     protected $description;
 
     /**
-     * Indiciates whether the command requires admin permissions.
+     * Determines whether the command requires admin permissions.
      *
      * @var bool
      */
     protected $admin = false;
 
     /**
-     * Indicates whether the command should be displayed in the commands list.
+     * Determines whether the command should be displayed in the commands list.
      *
      * @var bool
      */
     protected $hidden = false;
+
+    /**
+     * Determines whether the command is enabled.
+     *
+     * @var bool
+     */
+    protected $enabled = true;
 
     /**
      * Create a new command instance.
@@ -100,8 +106,7 @@ abstract class AbstractCommand
      */
     public function message($content = '')
     {
-        return Message::make($this->bot())
-            ->content($content);
+        return $this->bot()->message($content);
     }
 
     /**
@@ -246,21 +251,25 @@ abstract class AbstractCommand
 
     /**
      * Determine if the command requires admin permissions.
-     *
-     * @return bool
      */
-    public function isAdminCommand()
+    public function isAdminCommand(): bool
     {
         return $this->admin;
     }
 
     /**
      * Determine if the command is hidden.
-     *
-     * @return bool
      */
-    public function isHidden()
+    public function isHidden(): bool
     {
         return $this->hidden;
+    }
+
+    /**
+     * Determine if the command is enabled.
+     */
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
     }
 }
