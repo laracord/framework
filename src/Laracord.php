@@ -266,8 +266,7 @@ class Laracord
             'restart' => $this->restart(),
             'invite' => $this->showInvite(force: true),
             'commands' => $this->showCommands(),
-            '?' => table([
-                ['<fg=blue>Command</>', '<fg=blue>Description</>'],
+            '?' => table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
                 ['shutdown', 'Shutdown the bot'],
                 ['restart', 'Restart the bot'],
                 ['invite', 'Show the invite link'],
