@@ -4,7 +4,6 @@ namespace Laracord\Services;
 
 use Discord\DiscordCommandClient as Discord;
 use Laracord\Console\Commands\BootCommand as Console;
-use Laracord\Discord\Message;
 use Laracord\Laracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
 use Laracord\Services\Exceptions\InvalidServiceInterval;
@@ -41,6 +40,13 @@ abstract class Service implements ServiceContract
      * The loop interval.
      */
     protected int $interval = 5;
+
+    /**
+     * Determine if the service is enabled.
+     *
+     * @var bool
+     */
+    protected $enabled = true;
 
     /**
      * Create a new service instance.
@@ -87,42 +93,6 @@ abstract class Service implements ServiceContract
     }
 
     /**
-     * Build an embed for use in a Discord message.
-     *
-     * @param  string  $content
-     * @return \Laracord\Discord\Message
-     */
-    public function message($content = '')
-    {
-        return Message::make($this->bot())
-            ->content($content);
-    }
-
-    /**
-     * Get the Discord client.
-     */
-    public function discord(): Discord
-    {
-        return $this->discord;
-    }
-
-    /**
-     * Get the bot instance.
-     */
-    public function bot(): Laracord
-    {
-        return $this->bot;
-    }
-
-    /**
-     * Get the console instance.
-     */
-    public function console(): Console
-    {
-        return $this->console;
-    }
-
-    /**
      * Get the loop instance.
      */
     public function getLoop()
@@ -158,5 +128,48 @@ abstract class Service implements ServiceContract
         }
 
         return $this->name = class_basename(static::class);
+    }
+
+    /**
+     * Determine if the service is enabled.
+     */
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    /**
+     * Get the Discord client.
+     */
+    public function discord(): Discord
+    {
+        return $this->discord;
+    }
+
+    /**
+     * Get the bot instance.
+     */
+    public function bot(): Laracord
+    {
+        return $this->bot;
+    }
+
+    /**
+     * Get the console instance.
+     */
+    public function console(): Console
+    {
+        return $this->console;
+    }
+
+    /**
+     * Build an embed for use in a Discord message.
+     *
+     * @param  string  $content
+     * @return \Laracord\Discord\Message
+     */
+    public function message($content = '')
+    {
+        return $this->bot()->message($content);
     }
 }

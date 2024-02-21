@@ -8,7 +8,6 @@ use Discord\WebSockets\Event as DiscordEvent;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Laracord\Console\Commands\BootCommand as Console;
-use Laracord\Discord\Message;
 use Laracord\Laracord;
 
 abstract class Event
@@ -26,6 +25,13 @@ abstract class Event
      * @var string
      */
     protected $handler = DiscordEvent::READY;
+
+    /**
+     * Determine if the event is enabled.
+     *
+     * @var bool
+     */
+    protected $enabled = true;
 
     /**
      * The bot instance.
@@ -98,8 +104,7 @@ abstract class Event
      */
     public function message($content = '')
     {
-        return Message::make($this->bot())
-            ->content($content);
+        return $this->bot()->message($content);
     }
 
     /**
@@ -176,6 +181,14 @@ abstract class Event
         }
 
         return $this->name = class_basename(static::class);
+    }
+
+    /**
+     * Determine if the event is enabled.
+     */
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
     }
 
     /**
