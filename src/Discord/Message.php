@@ -16,6 +16,11 @@ use Throwable;
 class Message
 {
     /**
+     * The bot instance.
+     */
+    protected ?Laracord $bot = null;
+
+    /**
      * The message channel.
      */
     protected ?Channel $channel = null;
@@ -116,6 +121,11 @@ class Message
     protected array $buttons = [];
 
     /**
+     * The message files.
+     */
+    protected array $files = [];
+
+    /**
      * The default embed colors.
      */
     protected array $colors = [
@@ -167,6 +177,12 @@ class Message
             $message->addComponent($this->getButtons());
         }
 
+        if ($this->files) {
+            foreach ($this->files as $file) {
+                $message->addFileFromContent($file['filename'], $file['content']);
+            }
+        }
+
         return $message;
     }
 
@@ -188,10 +204,10 @@ class Message
     public function sendTo(mixed $user): void
     {
         if (is_numeric($user)) {
-            $member = app('bot')->discord()->users->get('id', $user);
+            $member = $this->bot->discord()->users->get('id', $user);
 
             if (! $member) {
-                app('bot')->console()->error("Could not find user <fg=red>{$user}</> to send message");
+                $this->bot->console()->error("Could not find user <fg=red>{$user}</> to send message");
 
                 return;
             }
@@ -284,7 +300,7 @@ class Message
     public function channel(mixed $channel): self
     {
         if (is_numeric($channel)) {
-            $channel = app('bot')->discord()->getChannel($channel);
+            $channel = $this->bot->discord()->getChannel($channel);
         }
 
         if ($channel instanceof ChannelMessage) {
@@ -356,6 +372,39 @@ class Message
     public function body(string $body = ''): self
     {
         $this->body = $body;
+
+        return $this;
+    }
+
+    /**
+     * Add a file to the message.
+     */
+    public function file(string $path, string $filename = ''): self
+    {
+        if (! file_exists($path)) {
+            $this->bot->console()->error("File <fg=red>{$path}</> does not exist");
+
+            return $this;
+        }
+
+        $filename = $filename ?? basename($path);
+
+        $this->rawFile(file_get_contents($path), $filename);
+
+        return $this;
+    }
+
+    /**
+     * Add a file from content to the message.
+     */
+    public function rawFile(string $content = '', string $filename = ''): self
+    {
+        $filename = $filename ?? 'file.txt';
+
+        $this->files[] = [
+            'content' => $content,
+            'filename' => $filename,
+        ];
 
         return $this;
     }

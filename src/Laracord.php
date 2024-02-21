@@ -19,6 +19,8 @@ use Laracord\Http\Server;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
 use React\EventLoop\Loop;
+use React\Stream\ReadableResourceStream;
+use React\Stream\WritableResourceStream;
 use ReflectionClass;
 
 use function Laravel\Prompts\table;
@@ -103,9 +105,23 @@ class Laracord
     protected array $services = [];
 
     /**
+     * The console input stream.
+     *
+     * @var \React\Stream\ReadableResourceStream
+     */
+    protected $inputStream;
+
+    /**
+     * The console output stream.
+     *
+     * @var \React\Stream\WritableResourceStream
+     */
+    protected $outputStream;
+
+    /**
      * The bot HTTP server.
      *
-     * @var \React\Http\HttpServer
+     * @var \Laracord\Http\Server
      */
     protected $httpServer;
 
@@ -160,6 +176,8 @@ class Laracord
 
         $this->bootDiscord();
 
+        $this->registerStream();
+
         $this->registerCommands();
 
         $this->discord()->on('ready', function () {
@@ -173,6 +191,7 @@ class Laracord
                 'command' => count($this->registeredCommands),
                 'event' => count($this->registeredEvents),
                 'service' => count($this->registeredServices),
+                'routes' => count(Route::getRoutes()->getRoutes()),
             ])
                 ->filter()
                 ->map(function ($count, $type) {
@@ -189,6 +208,8 @@ class Laracord
                 ->showCommands()
                 ->showInvite()
                 ->afterBoot();
+
+            $this->outputStream->write('> ');
         });
 
         $this->discord()->run();
@@ -206,6 +227,88 @@ class Laracord
             'discordOptions' => $this->getOptions(),
             'defaultHelpCommand' => false,
         ]);
+    }
+
+    /**
+     * Register the input and output streams.
+     */
+    public function registerStream(): self
+    {
+        if ($this->inputStream && $this->outputStream) {
+            return $this;
+        }
+
+        $this->inputStream = new ReadableResourceStream(STDIN, $this->getLoop());
+        $this->outputStream = new WritableResourceStream(STDOUT, $this->getLoop());
+
+        $this->inputStream->on('data', fn ($data) => $this->handleStream($data));
+
+        return $this;
+    }
+
+    /**
+     * Handle the input stream.
+     */
+    public function handleStream(string $data): void
+    {
+        $command = trim($data);
+
+        if (! $command) {
+            $this->outputStream->write('> ');
+
+            return;
+        }
+
+        $this->console()->newLine();
+
+        match ($command) {
+            'shutdown', 'exit', 'quit', 'stop' => $this->shutdown(),
+            'restart' => $this->restart(),
+            'invite' => $this->showInvite(force: true),
+            'commands' => $this->showCommands(),
+            '?' => table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
+                ['shutdown', 'Shutdown the bot.'],
+                ['restart', 'Restart the bot.'],
+                ['invite', 'Show the invite link.'],
+                ['commands', 'Show the registered commands.'],
+            ]),
+            default => $this->console()->error("Unknown command: <fg=red>{$command}</>"),
+        };
+
+        $this->outputStream->write('> ');
+    }
+
+    /**
+     * Shutdown the bot.
+     */
+    public function shutdown(int $code = 0): void
+    {
+        $this->console()->log("Shutting down <fg=blue>{$this->getName()}</>.");
+
+        $this->httpServer()->shutdown();
+        $this->discord()->close();
+
+        exit($code);
+    }
+
+    /**
+     * Restart the bot.
+     */
+    public function restart(): void
+    {
+        $this->console()->log("<fg=blue>{$this->getName()}</> is restarting.");
+
+        $this->httpServer()->shutdown();
+        $this->discord()->close();
+
+        $this->httpServer = null;
+        $this->discord = null;
+
+        $this->registeredCommands = [];
+        $this->registeredEvents = [];
+        $this->registeredServices = [];
+
+        $this->boot();
     }
 
     /**
@@ -543,13 +646,15 @@ class Laracord
     /**
      * Show the invite link if the bot is not in any guilds.
      */
-    public function showInvite(): self
+    public function showInvite(bool $force = false): self
     {
-        if (! $this->showInvite || $this->discord()->guilds->count() > 0) {
+        if (! $force && (! $this->showInvite || $this->discord()->guilds->count() > 0)) {
             return $this;
         }
 
-        $this->console()->warn("{$this->getName()} is currently not in any guilds.");
+        if (! $force) {
+            $this->console()->warn("{$this->getName()} is currently not in any guilds.");
+        }
 
         $query = Arr::query([
             'client_id' => $this->discord()->id,
@@ -794,34 +899,6 @@ class Laracord
     }
 
     /**
-     * Get the event loop.
-     */
-    public function getLoop()
-    {
-        if ($this->loop) {
-            return $this->loop;
-        }
-
-        return $this->loop = Loop::get();
-    }
-
-    /**
-     * Get the Discord instance.
-     */
-    public function discord(): Discord
-    {
-        return $this->discord;
-    }
-
-    /**
-     * Get the console instance.
-     */
-    public function console(): ConsoleCommand
-    {
-        return $this->console;
-    }
-
-    /**
      * Retrieve the prefixes.
      */
     public function getPrefixes(): Collection
@@ -847,6 +924,42 @@ class Laracord
     public function getPrefix(): string
     {
         return $this->getPrefixes()->first();
+    }
+
+    /**
+     * Get the event loop.
+     */
+    public function getLoop()
+    {
+        if ($this->loop) {
+            return $this->loop;
+        }
+
+        return $this->loop = Loop::get();
+    }
+
+    /**
+     * Get the Discord instance.
+     */
+    public function discord(): ?Discord
+    {
+        return $this->discord;
+    }
+
+    /**
+     * Get the console instance.
+     */
+    public function console(): ConsoleCommand
+    {
+        return $this->console;
+    }
+
+    /**
+     * Get the HTTP server instance.
+     */
+    public function httpServer(): ?Server
+    {
+        return $this->httpServer;
     }
 
     /**
