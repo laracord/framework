@@ -15,6 +15,13 @@ use React\Socket\SocketServer;
 class Server
 {
     /**
+     * The Laracord instance.
+     *
+     * @var \Laracord\Laracord
+     */
+    protected $bot;
+
+    /**
      * The HTTP server instance.
      *
      * @var \React\Http\HttpServer
@@ -72,6 +79,23 @@ class Server
         $this->booted = true;
 
         return $this;
+    }
+
+    /**
+     * Shutdown the HTTP server.
+     */
+    public function shutdown(): void
+    {
+        if (! $this->isBooted()) {
+            return;
+        }
+
+        $this->getServer()->removeAllListeners();
+        $this->getSocket()->close();
+
+        $this->booted = false;
+
+        $this->bot->console()->log('The HTTP server has been shutdown');
     }
 
     /**
