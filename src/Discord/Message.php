@@ -377,9 +377,24 @@ class Message
     }
 
     /**
+     * Add a file from content to the message.
+     */
+    public function file(string $content = '', string $filename = ''): self
+    {
+        $filename = $filename ?? 'file.txt';
+
+        $this->files[] = [
+            'content' => $content,
+            'filename' => $filename,
+        ];
+
+        return $this;
+    }
+
+    /**
      * Add a file to the message.
      */
-    public function file(string $path, string $filename = ''): self
+    public function filePath(string $path, string $filename = ''): self
     {
         if (! file_exists($path)) {
             $this->bot->console()->error("File <fg=red>{$path}</> does not exist");
@@ -389,22 +404,7 @@ class Message
 
         $filename = $filename ?? basename($path);
 
-        $this->rawFile(file_get_contents($path), $filename);
-
-        return $this;
-    }
-
-    /**
-     * Add a file from content to the message.
-     */
-    public function rawFile(string $content = '', string $filename = ''): self
-    {
-        $filename = $filename ?? 'file.txt';
-
-        $this->files[] = [
-            'content' => $content,
-            'filename' => $filename,
-        ];
+        $this->file(file_get_contents($path), $filename);
 
         return $this;
     }
@@ -604,8 +604,17 @@ class Message
     /**
      * Add a URL button to the message.
      */
-    public function button(string $label, mixed $value, mixed $emoji = null, ?int $style = null, array $options = []): self
+    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, array $options = []): self
     {
+        $style = match ($style) {
+            'link' => Button::STYLE_LINK,
+            'primary' => Button::STYLE_PRIMARY,
+            'secondary' => Button::STYLE_SECONDARY,
+            'success' => Button::STYLE_SUCCESS,
+            'danger' => Button::STYLE_DANGER,
+            default => $style,
+        };
+
         $style = $style ?? (is_string($value) ? Button::STYLE_LINK : Button::STYLE_PRIMARY);
 
         $button = Button::new($style)
