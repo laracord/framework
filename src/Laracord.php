@@ -359,6 +359,10 @@ class Laracord
         foreach ($this->getCommands() as $command) {
             $command = $command::make($this);
 
+            if (! $command->isEnabled()) {
+                continue;
+            }
+
             $this->discord->registerCommand($command->getName(), fn ($message, $args) => $command->maybeHandle($message, $args), [
                 'cooldown' => $command->getCooldown() ?: 0,
                 'cooldownMessage' => $command->getCooldownMessage() ?: '',
@@ -406,8 +410,9 @@ class Laracord
         $existing = $existing instanceof Collection ? $existing : collect();
 
         $registered = collect($this->getSlashCommands())
+            ->map(fn ($command) => $command::make($this))
+            ->filter(fn ($command) => $command->isEnabled())
             ->mapWithKeys(function ($command) {
-                $command = $command::make($this);
                 $attributes = $command->create()->getUpdatableAttributes();
 
                 $attributes = array_merge($attributes, [
@@ -565,6 +570,10 @@ class Laracord
         foreach ($this->getEvents() as $event) {
             $event = $event::make($this);
 
+            if (! $event->isEnabled()) {
+                continue;
+            }
+
             try {
                 $this->registeredEvents[] = $event->register();
             } catch (Exception $e) {
@@ -587,6 +596,10 @@ class Laracord
     {
         foreach ($this->getServices() as $service) {
             $service = $service::make($this);
+
+            if (! $service->isEnabled()) {
+                continue;
+            }
 
             try {
                 $this->registeredServices[] = $service->boot();
