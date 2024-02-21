@@ -267,10 +267,10 @@ class Laracord
             'invite' => $this->showInvite(force: true),
             'commands' => $this->showCommands(),
             '?' => table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
-                ['shutdown', 'Shutdown the bot'],
-                ['restart', 'Restart the bot'],
-                ['invite', 'Show the invite link'],
-                ['commands', 'Show the registered commands'],
+                ['shutdown', 'Shutdown the bot.'],
+                ['restart', 'Restart the bot.'],
+                ['invite', 'Show the invite link.'],
+                ['commands', 'Show the registered commands.'],
             ]),
             default => $this->console()->error("Unknown command: <fg=red>{$command}</>"),
         };
