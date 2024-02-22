@@ -11,6 +11,7 @@ use Discord\Parts\User\User;
 use Exception;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
+use React\Promise\ExtendedPromiseInterface;
 use Throwable;
 
 class Message
@@ -189,19 +190,19 @@ class Message
     /**
      * Send the message.
      */
-    public function send(mixed $destination = null): void
+    public function send(mixed $destination = null): ?ExtendedPromiseInterface
     {
         if ($destination) {
             $this->channel($destination);
         }
 
-        $this->getChannel()->sendMessage($this->build());
+        return $this->getChannel()->sendMessage($this->build());
     }
 
     /**
      * Send the message to a user.
      */
-    public function sendTo(mixed $user): void
+    public function sendTo(mixed $user): ?ExtendedPromiseInterface
     {
         if (is_numeric($user)) {
             $member = $this->bot->discord()->users->get('id', $user);
@@ -209,7 +210,7 @@ class Message
             if (! $member) {
                 $this->bot->console()->error("Could not find user <fg=red>{$user}</> to send message");
 
-                return;
+                return null;
             }
 
             $user = $member;
@@ -220,10 +221,12 @@ class Message
         }
 
         if (! $user instanceof User) {
-            throw new Exception('You must provide a valid Discord user.');
+            $this->bot->console()->error('You must provide a valid Discord user.');
+
+            return null;
         }
 
-        $user->sendMessage($this->build());
+        return $user->sendMessage($this->build());
     }
 
     /**
