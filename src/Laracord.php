@@ -208,8 +208,6 @@ class Laracord
                 ->showCommands()
                 ->showInvite()
                 ->afterBoot();
-
-            $this->outputStream->write('> ');
         });
 
         $this->discord()->run();
@@ -234,6 +232,10 @@ class Laracord
      */
     public function registerStream(): self
     {
+        if (windows_os()) {
+            return;
+        }
+
         if ($this->inputStream && $this->outputStream) {
             return $this;
         }
