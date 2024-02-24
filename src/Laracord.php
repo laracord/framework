@@ -233,7 +233,7 @@ class Laracord
     public function registerStream(): self
     {
         if (windows_os()) {
-            return;
+            return $this;
         }
 
         if ($this->inputStream && $this->outputStream) {
