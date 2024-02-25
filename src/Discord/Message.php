@@ -595,6 +595,16 @@ class Message
     }
 
     /**
+     * Clear the fields from the message.
+     */
+    public function clearFields(): self
+    {
+        $this->fields = [];
+
+        return $this;
+    }
+
+    /**
      * Set the message components.
      */
     public function components(array $components): self
@@ -660,6 +670,16 @@ class Message
 
             $this->button(...$value);
         }
+
+        return $this;
+    }
+
+    /**
+     * Clear the buttons from the message.
+     */
+    public function clearButtons(): self
+    {
+        $this->buttons = [];
 
         return $this;
     }
