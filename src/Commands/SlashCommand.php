@@ -21,11 +21,11 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     protected $guild;
 
     /**
-     * The default required permission for the command.
+     * The permissions required to use the command.
      *
-     * @var string
+     * @var array
      */
-    protected $permission;
+    protected $permissions = [];
 
     /**
      * The command options.
@@ -57,8 +57,8 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             ->setName($this->getName())
             ->setDescription($this->getDescription());
 
-        if ($permission = $this->getPermission()) {
-            $command = $command->setDefaultPermission($permission);
+        if ($permissions = $this->getPermissions()) {
+            $command = $command->setDefaultMemberPermissions($permissions);
         }
 
         if ($this->getRegisteredOptions()) {
@@ -195,13 +195,17 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     /**
      * Retrieve the slash command bitwise permission.
      */
-    public function getPermission(): ?string
+    public function getPermissions(): ?string
     {
-        if (! $this->permission) {
+        if (! $this->permissions) {
             return null;
         }
 
-        return (new RolePermission($this->discord(), [$this->permission => true]))->__toString();
+        $permissions = collect($this->permissions)
+            ->mapWithKeys(fn ($permission) => [$permission => true])
+            ->all();
+
+        return (new RolePermission($this->discord(), $permissions))->__toString();
     }
 
     /**

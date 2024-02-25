@@ -7,14 +7,14 @@ use Laracord\Commands\SlashCommand;
 class {{ class }} extends SlashCommand
 {
     /**
-     * The slash command name.
+     * The command name.
      *
      * @var string
      */
     protected $name = '{{ command }}';
 
     /**
-     * The slash command description.
+     * The command description.
      *
      * @var string
      */
@@ -28,14 +28,21 @@ class {{ class }} extends SlashCommand
     protected $options = [];
 
     /**
-     * Indiciates whether the slash command requires admin permissions.
+     * The permissions required to use the command.
+     *
+     * @var array
+     */
+    protected $permissions = [];
+
+    /**
+     * Indiciates whether the command requires admin permissions.
      *
      * @var bool
      */
     protected $admin = false;
 
     /**
-     * Indicates whether the slash command should be displayed in the commands list.
+     * Indicates whether the command should be displayed in the commands list.
      *
      * @var bool
      */
