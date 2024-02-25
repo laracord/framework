@@ -5,6 +5,9 @@ namespace Laracord\Commands;
 use Discord\Builders\CommandBuilder;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option as DiscordOption;
+use Discord\Parts\Interactions\Interaction;
+use Discord\Parts\Permissions\RolePermission;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
 
@@ -16,6 +19,13 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      * @var string
      */
     protected $guild;
+
+    /**
+     * The default required permission for the command.
+     *
+     * @var string
+     */
+    protected $permission;
 
     /**
      * The command options.
@@ -32,6 +42,13 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     protected $registeredOptions = [];
 
     /**
+     * The parsed command options.
+     *
+     * @var array
+     */
+    protected $parsedOptions = [];
+
+    /**
      * Create a Discord command instance.
      */
     public function create(): DiscordCommand
@@ -40,8 +57,12 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             ->setName($this->getName())
             ->setDescription($this->getDescription());
 
-        if ($this->getOptions()) {
-            foreach ($this->getOptions() as $option) {
+        if ($permission = $this->getPermission()) {
+            $command = $command->setDefaultPermission($permission);
+        }
+
+        if ($this->getRegisteredOptions()) {
+            foreach ($this->getRegisteredOptions() as $option) {
                 $command = $command->addOption($option);
             }
         }
@@ -71,7 +92,11 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     public function maybeHandle($interaction)
     {
         if (! $this->isAdminCommand()) {
+            $this->parseOptions($interaction);
+
             $this->handle($interaction);
+
+            $this->clearOptions();
 
             return;
         }
@@ -84,11 +109,59 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
                     ->message('You do not have permission to run this command.')
                     ->title('Permission Denied')
                     ->error()
-                    ->build()
+                    ->build(),
+                ephemeral: true
             );
         }
 
+        $this->parseOptions($interaction);
+
         $this->handle($interaction);
+
+        $this->clearOptions();
+    }
+
+    /**
+     * Parse the options inside of the interaction.
+     *
+     * We serialize the options and then decode them back to an array
+     * to get rid of excess data.
+     */
+    protected function parseOptions(Interaction $interaction): void
+    {
+        $this->parsedOptions = json_decode($interaction->data->options->serialize(), true);
+    }
+
+    /**
+     * Get the parsed options.
+     */
+    protected function getOptions(): array
+    {
+        return $this->parsedOptions ?? [];
+    }
+
+    /**
+     * Clear the parsed options.
+     */
+    protected function clearOptions(): void
+    {
+        $this->parsedOptions = [];
+    }
+
+    /**
+     * Retrieve the parsed command options.
+     *
+     * @param  string|null  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    protected function option($key = null, $default = null)
+    {
+        if (is_null($key) || ! $this->getParsedOptions()) {
+            return $this->getParsedOptions();
+        }
+
+        return Arr::get($this->getParsedOptions(), $key, $default);
     }
 
     /**
@@ -113,12 +186,22 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
 
     /**
      * Retrieve the slash command guild.
-     *
-     * @return string
      */
-    public function getGuild()
+    public function getGuild(): ?string
     {
-        return $this->guild;
+        return $this->guild ?? null;
+    }
+
+    /**
+     * Retrieve the slash command bitwise permission.
+     */
+    public function getPermission(): ?string
+    {
+        if (! $this->permission) {
+            return null;
+        }
+
+        return (new RolePermission($this->discord(), [$this->permission => true]))->__toString();
     }
 
     /**
@@ -126,7 +209,7 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      *
      * @return array
      */
-    public function getOptions()
+    public function getRegisteredOptions()
     {
         if ($this->registeredOptions) {
             return $this->registeredOptions;
