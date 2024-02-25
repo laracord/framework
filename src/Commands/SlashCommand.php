@@ -157,11 +157,11 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     protected function option($key = null, $default = null)
     {
-        if (is_null($key) || ! $this->getParsedOptions()) {
-            return $this->getParsedOptions();
+        if (is_null($key) || ! $this->getOptions()) {
+            return $this->getOptions();
         }
 
-        return Arr::get($this->getParsedOptions(), $key, $default);
+        return Arr::get($this->getOptions(), $key, $default);
     }
 
     /**
