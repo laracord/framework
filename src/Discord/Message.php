@@ -9,6 +9,7 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Discord\Parts\User\User;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
 use React\Promise\ExtendedPromiseInterface;
@@ -515,8 +516,16 @@ class Message
     /**
      * Set the message timestamp.
      */
-    public function timestamp(?string $timestamp): self
+    public function timestamp(mixed $timestamp = null): self
     {
+        if (! $timestamp) {
+            $timestamp = now();
+        }
+
+        if ($timestamp instanceof Carbon) {
+            $timestamp = $timestamp->toIso8601String();
+        }
+
         $this->timestamp = $timestamp;
 
         return $this;
