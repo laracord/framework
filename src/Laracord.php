@@ -19,11 +19,12 @@ use Laracord\Http\Server;
 use Laracord\Logging\Logger;
 use Laracord\Services\Service;
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
 use React\Stream\ReadableResourceStream;
 use React\Stream\WritableResourceStream;
 use ReflectionClass;
+use Throwable;
 
-use function Laravel\Prompts\table;
 use function React\Async\async;
 use function React\Async\await;
 use function React\Promise\all;
@@ -187,27 +188,30 @@ class Laracord
                 ->bootHttpServer()
                 ->registerSlashCommands();
 
-            $status = collect([
-                'command' => count($this->registeredCommands),
-                'event' => count($this->registeredEvents),
-                'service' => count($this->registeredServices),
-                'routes' => count(Route::getRoutes()->getRoutes()),
-            ])
-                ->filter()
-                ->map(function ($count, $type) {
-                    $string = Str::plural($type, $count);
+            $this->afterBoot();
 
-                    return "<fg=blue>{$count}</> {$string}";
-                })->implode(', ');
+            $this->getLoop()->addTimer(1, function () {
+                $status = collect([
+                    'command' => count($this->registeredCommands),
+                    'event' => count($this->registeredEvents),
+                    'service' => count($this->registeredServices),
+                    'routes' => count(Route::getRoutes()->getRoutes()),
+                ])
+                    ->filter()
+                    ->map(function ($count, $type) {
+                        $string = Str::plural($type, $count);
 
-            $status = Str::replaceLast(', ', ', and ', $status);
+                        return "<fg=blue>{$count}</> {$string}";
+                    })->implode(', ');
 
-            $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
+                $status = Str::replaceLast(', ', ', and ', $status);
 
-            $this
-                ->showCommands()
-                ->showInvite()
-                ->afterBoot();
+                $this->console()->log("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
+
+                $this
+                    ->showCommands()
+                    ->showInvite();
+            });
         });
 
         $this->discord()->run();
@@ -268,7 +272,7 @@ class Laracord
             'restart' => $this->restart(),
             'invite' => $this->showInvite(force: true),
             'commands' => $this->showCommands(),
-            '?' => table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
+            '?' => $this->console()->table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
                 ['shutdown', 'Shutdown the bot.'],
                 ['restart', 'Restart the bot.'],
                 ['invite', 'Show the invite link.'],
@@ -365,13 +369,19 @@ class Laracord
                 continue;
             }
 
-            $this->discord->registerCommand($command->getName(), fn ($message, $args) => $command->maybeHandle($message, $args), [
+            $options = [
                 'cooldown' => $command->getCooldown() ?: 0,
                 'cooldownMessage' => $command->getCooldownMessage() ?: '',
                 'description' => $command->getDescription() ?: '',
                 'usage' => $command->getUsage() ?: '',
                 'aliases' => $command->getAliases(),
-            ]);
+            ];
+
+            $this->discord->registerCommand(
+                $command->getName(),
+                fn ($message, $args) => $this->handleSafe($command->getName(), fn () => $command->maybeHandle($message, $args)),
+                $options
+            );
 
             $this->registeredCommands[] = $command;
         }
@@ -511,7 +521,10 @@ class Laracord
             return;
         }
 
-        $registered->each(fn ($command, $name) => $this->discord()->listenCommand($name, fn ($interaction) => $command['state']->maybeHandle($interaction)));
+        $registered->each(fn ($command, $name) => $this->discord()->listenCommand(
+            $name,
+            fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction))
+        ));
 
         $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
     }
@@ -570,22 +583,17 @@ class Laracord
     public function registerEvents(): self
     {
         foreach ($this->getEvents() as $event) {
-            $event = $event::make($this);
+            $this->handleSafe($event, function () use ($event) {
+                $event = $event::make($this);
 
-            if (! $event->isEnabled()) {
-                continue;
-            }
+                if (! $event->isEnabled()) {
+                    return;
+                }
 
-            try {
                 $this->registeredEvents[] = $event->register();
-            } catch (Exception $e) {
-                $this->console()->error("The <fg=red>{$event->getName()}</> event failed to register.");
-                $this->console()->error($e->getMessage());
 
-                continue;
-            }
-
-            $this->console()->log("The <fg=blue>{$event->getName()}</> event has been registered to <fg=blue>{$event->getHandler()}</>.");
+                $this->console()->log("The <fg=blue>{$event->getName()}</> event has been registered to <fg=blue>{$event->getHandler()}</>.");
+            });
         }
 
         return $this;
@@ -597,25 +605,35 @@ class Laracord
     public function bootServices(): self
     {
         foreach ($this->getServices() as $service) {
-            $service = $service::make($this);
+            $this->handleSafe($service, function () use ($service) {
+                $service = $service::make($this);
 
-            if (! $service->isEnabled()) {
-                continue;
-            }
+                if (! $service->isEnabled()) {
+                    return;
+                }
 
-            try {
                 $this->registeredServices[] = $service->boot();
-            } catch (Exception $e) {
-                $this->console()->error("The <fg=red>{$service->getName()}</> service failed to boot.");
-                $this->console()->error($e->getMessage());
 
-                continue;
-            }
-
-            $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
+                $this->console()->log("The <fg=blue>{$service->getName()}</> service has been booted.");
+            });
         }
 
         return $this;
+    }
+
+    /**
+     * Safely handle the provided callback.
+     */
+    public function handleSafe(string $name, callable $callback): mixed
+    {
+        try {
+            return $callback();
+        } catch (Throwable $e) {
+            $this->console()->error("An error occurred in <fg=red>{$name}</>.");
+            $this->console()->outputComponents()->bulletList([$e->getMessage()]);
+        }
+
+        return null;
     }
 
     /**
@@ -647,7 +665,7 @@ class Laracord
             return $this;
         }
 
-        table(
+        $this->console()->table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
             collect($this->registeredCommands)->map(fn ($command) => [
                 $command->getSignature(),
@@ -779,7 +797,7 @@ class Laracord
         $events = $this->extractClasses($this->getEventPath())
             ->merge(config('discord.events', []))
             ->unique()
-            ->filter(fn ($service) => is_subclass_of($service, Event::class) && ! (new ReflectionClass($service))->isAbstract())
+            ->filter(fn ($event) => $this->handleSafe($event, fn () => is_subclass_of($event, Event::class) && ! (new ReflectionClass($event))->isAbstract()))
             ->all();
 
         return $this->events = $events;
@@ -797,7 +815,7 @@ class Laracord
         $services = $this->extractClasses($this->getServicePath())
             ->merge(config('discord.services', []))
             ->unique()
-            ->filter(fn ($service) => is_subclass_of($service, Service::class) && ! (new ReflectionClass($service))->isAbstract())
+            ->filter(fn ($service) => $this->handleSafe($service, fn () => is_subclass_of($service, Service::class) && ! (new ReflectionClass($service))->isAbstract()))
             ->all();
 
         return $this->services = $services;
@@ -815,7 +833,7 @@ class Laracord
         $commands = $this->extractClasses($this->getCommandPath())
             ->merge(config('discord.commands', []))
             ->unique()
-            ->filter(fn ($command) => is_subclass_of($command, Command::class) && ! (new ReflectionClass($command))->isAbstract())
+            ->filter(fn ($command) => $this->handleSafe($command, fn () => is_subclass_of($command, Command::class) && ! (new ReflectionClass($command))->isAbstract()))
             ->all();
 
         return $this->commands = $commands;
@@ -833,7 +851,7 @@ class Laracord
         $slashCommands = $this->extractClasses($this->getSlashCommandPath())
             ->merge(config('discord.commands', []))
             ->unique()
-            ->filter(fn ($command) => is_subclass_of($command, SlashCommand::class) && ! (new ReflectionClass($command))->isAbstract())
+            ->filter(fn ($command) => $this->handleSafe($command, fn () => is_subclass_of($command, SlashCommand::class) && ! (new ReflectionClass($command))->isAbstract()))
             ->all();
 
         return $this->slashCommands = $slashCommands;
@@ -953,7 +971,7 @@ class Laracord
     /**
      * Get the event loop.
      */
-    public function getLoop()
+    public function getLoop(): LoopInterface
     {
         if ($this->loop) {
             return $this->loop;
