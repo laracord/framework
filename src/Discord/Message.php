@@ -626,7 +626,7 @@ class Message
     /**
      * Add a URL button to the message.
      */
-    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, array $options = []): self
+    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, bool $disabled = false, array $options = []): self
     {
         $style = match ($style) {
             'link' => Button::STYLE_LINK,
@@ -641,14 +641,15 @@ class Message
 
         $button = Button::new($style)
             ->setLabel($label)
-            ->setEmoji($emoji);
+            ->setEmoji($emoji)
+            ->setDisabled($disabled);
 
         if ($options) {
             foreach ($options as $key => $option) {
-                $key = Str::of($key)->camel()->ucfirst()->__toString();
+                $key = Str::of($key)->camel()->ucfirst()->toString();
 
                 try {
-                    $button = $button->{$key}($option);
+                    $button = $button->set{$key}($option);
                 } catch (Throwable) {
                     $this->bot->console()->error("Invalid button option <fg=red>{$key}</>");
 
