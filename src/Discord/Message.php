@@ -646,10 +646,10 @@ class Message
 
         if ($options) {
             foreach ($options as $key => $option) {
-                $key = Str::of($key)->camel()->ucfirst()->toString();
+                $key = Str::of($key)->camel()->ucfirst()->start('set')->toString();
 
                 try {
-                    $button = $button->set{$key}($option);
+                    $button = $button->{$key}($option);
                 } catch (Throwable) {
                     $this->bot->console()->error("Invalid button option <fg=red>{$key}</>");
 
