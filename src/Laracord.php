@@ -882,6 +882,15 @@ class Laracord
     }
 
     /**
+     * Get a registered command by name.
+     */
+    public function getCommand(string $name): Command|SlashCommand|null
+    {
+        return collect($this->registeredCommands)
+            ->first(fn ($command) => $command->getName() === $name);
+    }
+
+    /**
      * Get the path to the Discord commands.
      */
     public function getCommandPath(): string
