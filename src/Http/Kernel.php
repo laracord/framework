@@ -45,7 +45,7 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $middlewareAliases = [
-        'auth.token' => \Laracord\Http\Middleware\AuthorizeToken::class,
+        'auth' => \Laracord\Http\Middleware\AuthorizeToken::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'precognitive' => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
