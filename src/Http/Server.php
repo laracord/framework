@@ -68,7 +68,7 @@ class Server
      */
     public function boot(): self
     {
-        if (! $this->getAddress() || ! Route::getRoutes()->getRoutes()) {
+        if (! $this->getAddress() || count(Route::getRoutes()->getRoutes()) <= 1) {
             return $this;
         }
 
@@ -111,7 +111,15 @@ class Server
 
         return $this->server = new HttpServer($this->bot->getLoop(), function (ServerRequestInterface $request) {
             $headers = $request->getHeaders();
-            $request = Request::create($request->getUri()->getPath(), $request->getMethod(), $request->getQueryParams(), [], [], $_SERVER, $request->getBody()->getContents());
+            $request = Request::create(
+                $request->getUri()->getPath(),
+                $request->getMethod(),
+                $request->getQueryParams(),
+                $request->getCookieParams(),
+                $request->getUploadedFiles(),
+                $request->getServerParams(),
+                $request->getBody()->getContents()
+            );
 
             foreach ($headers as $header => $values) {
                 $request->headers->set($header, $values);
@@ -141,18 +149,10 @@ class Server
                 return $this->handleError($e);
             }
 
-            if ($response->getStatusCode() !== 200 && app()->isProduction()) {
-                return new Response(
-                    $response->getStatusCode(),
-                    ['Content-Type' => 'application/json'],
-                    json_encode(['status' => $response->getStatusCode()])
-                );
-            }
-
             return new Response(
                 $response->getStatusCode(),
-                $response->headers->allPreserveCaseWithoutCookies(),
-                $response->getContent() ?: $response->getFile()?->getContent()
+                $response->headers->allPreserveCase(),
+                $response->getContent() ?: $response->getFile()?->getContent() ?: ''
             );
         });
     }
