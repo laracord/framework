@@ -1,6 +1,6 @@
 <?php
 
-namespace Laracord\Http\Providers;
+namespace Laracord\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;

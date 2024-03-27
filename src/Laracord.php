@@ -5,6 +5,7 @@ namespace Laracord;
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
 use Exception;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -35,6 +36,13 @@ class Laracord
      * The event loop.
      */
     protected $loop;
+
+    /**
+     * The application instance.
+     *
+     * @var \Illuminate\Contracts\Foundation\Application
+     */
+    protected $app;
 
     /**
      * The console instance.
@@ -157,6 +165,7 @@ class Laracord
     public function __construct(ConsoleCommand $console)
     {
         $this->console = $console;
+        $this->app = $console->getLaravel();
         $this->admins = config('discord.admins', $this->admins);
     }
 
@@ -645,7 +654,12 @@ class Laracord
             return $this;
         }
 
-        Route::middleware('api')->group(fn () => $this->routes());
+        $this->routes();
+
+        $this->app->booted(function () {
+            $this->app['router']->getRoutes()->refreshNameLookups();
+            $this->app['router']->getRoutes()->refreshActionLookups();
+        });
 
         $this->httpServer = Server::make($this)->boot();
 
@@ -1002,6 +1016,14 @@ class Laracord
     public function httpServer(): ?Server
     {
         return $this->httpServer;
+    }
+
+    /**
+     * Get the Application instance.
+     */
+    public function getApplication(): Application
+    {
+        return $this->app;
     }
 
     /**
