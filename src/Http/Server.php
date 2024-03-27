@@ -77,7 +77,7 @@ class Server
      */
     public function boot(): self
     {
-        if (! $this->getAddress() || count(Route::getRoutes()->getRoutes()) <= 1) {
+        if (! $this->getAddress() || ! Route::getRoutes()->getRoutes()) {
             return $this;
         }
 
