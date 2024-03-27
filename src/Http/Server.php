@@ -3,6 +3,7 @@
 namespace Laracord\Http;
 
 use Exception;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -14,6 +15,13 @@ use React\Socket\SocketServer;
 
 class Server
 {
+    /**
+     * The application instance.
+     *
+     * @var \Illuminate\Foundation\Application
+     */
+    protected $app;
+
     /**
      * The Laracord instance.
      *
@@ -53,6 +61,7 @@ class Server
     public function __construct(Laracord $bot)
     {
         $this->bot = $bot;
+        $this->app = $bot->getApplication();
     }
 
     /**
@@ -111,25 +120,22 @@ class Server
 
         return $this->server = new HttpServer($this->bot->getLoop(), function (ServerRequestInterface $request) {
             $headers = $request->getHeaders();
+
             $request = Request::create(
                 $request->getUri()->getPath(),
                 $request->getMethod(),
                 $request->getQueryParams(),
                 $request->getCookieParams(),
-                $request->getUploadedFiles(),
+                [],
                 $request->getServerParams(),
                 $request->getBody()->getContents()
             );
 
-            foreach ($headers as $header => $values) {
-                $request->headers->set($header, $values);
-            }
+            $request->headers->replace($headers);
 
-            app()->instance('request', $request);
+            $this->app->instance('request', $request);
 
-            $kernel = class_exists($kernel = Str::start(app()->getNamespace(), '\\').'Http\\Kernel')
-                ? app()->make($kernel)
-                : app()->make(Kernel::class);
+            $kernel = $this->app->make(Kernel::class);
 
             if ($this->bot->prependMiddleware()) {
                 foreach ($this->bot->prependMiddleware() as $middleware) {
@@ -144,7 +150,7 @@ class Server
             }
 
             try {
-                $response = $kernel->handle($request);
+                $kernel->terminate($request, $response = $kernel->handle($request));
             } catch (Throwable $e) {
                 return $this->handleError($e);
             }
