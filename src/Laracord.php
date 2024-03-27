@@ -36,6 +36,13 @@ class Laracord
     protected $loop;
 
     /**
+     * The application instance.
+     *
+     * @var \Illuminate\Contracts\Foundation\Application
+     */
+    protected $app;
+
+    /**
      * The console instance.
      *
      * @var \Laracord\Console\Commands\Command
@@ -156,6 +163,7 @@ class Laracord
     public function __construct(ConsoleCommand $console)
     {
         $this->console = $console;
+        $this->app = $console->getLaravel();
         $this->admins = config('discord.admins', $this->admins);
     }
 
@@ -625,7 +633,18 @@ class Laracord
             return $this;
         }
 
-        Route::middleware('api')->group(fn () => $this->routes());
+        $this->routes();
+
+        $this->app->booted(function () {
+            $this->app['router']->getRoutes()->refreshNameLookups();
+            $this->app['router']->getRoutes()->refreshActionLookups();
+
+            $this->app['config']->set('services.discord', [
+                'client_id' => $this->discord()->id,
+                'client_secret' => env('DISCORD_CLIENT_SECRET'),
+                'redirect' => env('DISCORD_REDIRECT_URI', 'http://localhost:8080/auth/discord'),
+            ]);
+        });
 
         $this->httpServer = Server::make($this)->boot();
 
