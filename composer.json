@@ -15,8 +15,6 @@
   "require": {
     "php": "^8.1",
     "guzzlehttp/guzzle": "^7.5",
-    "illuminate/auth": "^10.0",
-    "illuminate/cookie": "^10.0",
     "illuminate/database": "^10.0",
     "illuminate/encryption": "^10.0",
     "illuminate/hashing": "^10.0",
@@ -28,10 +26,8 @@
     "laravel-zero/framework": "^10.2",
     "laravel/sanctum": "^3.3",
     "nunomaduro/termwind": "^1.15.1",
-    "nyholm/psr7": "^1.8",
     "react/async": "^4.2",
     "react/http": "^1.9",
-    "socialiteproviders/discord": "^4.2",
     "symfony/psr-http-message-bridge": "^6.4",
     "team-reflex/discord-php": "^7.3"
   },
