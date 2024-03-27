@@ -15,13 +15,18 @@ class LaracordServiceProvider extends ServiceProvider
      */
     protected $providers = [
         \Illuminate\Routing\RoutingServiceProvider::class,
-        \Illuminate\View\ViewServiceProvider::class,
+        \Illuminate\Auth\AuthServiceProvider::class,
+        \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Encryption\EncryptionServiceProvider::class,
-        \Illuminate\Session\SessionServiceProvider::class,
-        \Illuminate\Validation\ValidationServiceProvider::class,
+        \Illuminate\Hashing\HashServiceProvider::class,
         \Illuminate\Queue\QueueServiceProvider::class,
+        \Illuminate\Session\SessionServiceProvider::class,
         \Illuminate\Translation\TranslationServiceProvider::class,
-        \Laracord\Http\Providers\RouteServiceProvider::class,
+        \Illuminate\Validation\ValidationServiceProvider::class,
+        \Illuminate\View\ViewServiceProvider::class,
+        \Laracord\Providers\EventServiceProvider::class,
+        \Laracord\Providers\RouteServiceProvider::class,
+        \SocialiteProviders\Manager\ServiceProvider::class,
     ];
 
     /**
@@ -32,11 +37,13 @@ class LaracordServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__.'/../config/app.php', 'app');
+        $this->mergeConfigFrom(__DIR__.'/../config/auth.php', 'auth');
         $this->mergeConfigFrom(__DIR__.'/../config/cache.php', 'cache');
         $this->mergeConfigFrom(__DIR__.'/../config/commands.php', 'commands');
         $this->mergeConfigFrom(__DIR__.'/../config/database.php', 'database');
         $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
         $this->mergeConfigFrom(__DIR__.'/../config/filesystems.php', 'filesystems');
+        $this->mergeConfigFrom(__DIR__.'/../config/services.php', 'services');
         $this->mergeConfigFrom(__DIR__.'/../config/session.php', 'session');
         $this->mergeConfigFrom(__DIR__.'/../config/view.php', 'view');
 
