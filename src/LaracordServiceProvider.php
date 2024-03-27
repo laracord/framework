@@ -37,7 +37,6 @@ class LaracordServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/database.php', 'database');
         $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
         $this->mergeConfigFrom(__DIR__.'/../config/filesystems.php', 'filesystems');
-        $this->mergeConfigFrom(__DIR__.'/../config/services.php', 'services');
         $this->mergeConfigFrom(__DIR__.'/../config/view.php', 'view');
 
         $paths = [
