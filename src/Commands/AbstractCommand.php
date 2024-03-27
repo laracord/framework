@@ -151,7 +151,7 @@ abstract class AbstractCommand
      */
     public function getUser($user)
     {
-        $model = config('auth.providers.users.model');
+        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
 
         if (! class_exists($model)) {
             throw new Exception('The user model could not be found.');
