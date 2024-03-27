@@ -5,6 +5,7 @@ namespace Laracord;
 use Discord\DiscordCommandClient as Discord;
 use Discord\WebSockets\Intents;
 use Exception;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -658,12 +659,6 @@ class Laracord
         $this->app->booted(function () {
             $this->app['router']->getRoutes()->refreshNameLookups();
             $this->app['router']->getRoutes()->refreshActionLookups();
-
-            $this->app['config']->set('services.discord', [
-                'client_id' => $this->discord()->id,
-                'client_secret' => env('DISCORD_CLIENT_SECRET'),
-                'redirect' => env('DISCORD_REDIRECT_URI', 'http://localhost:8080/auth/discord'),
-            ]);
         });
 
         $this->httpServer = Server::make($this)->boot();
@@ -1021,6 +1016,14 @@ class Laracord
     public function httpServer(): ?Server
     {
         return $this->httpServer;
+    }
+
+    /**
+     * Get the Application instance.
+     */
+    public function getApplication(): Application
+    {
+        return $this->app;
     }
 
     /**
