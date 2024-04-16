@@ -133,6 +133,19 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     }
 
     /**
+     * Retrieve the 'value' field from the parsed command option for a given key.
+     * This function specifically accesses the 'value' key within the option array.
+     *
+     * @param $key
+     * @param $default
+     * @return mixed|null
+     */
+    protected function getOptionValue(string $key = null, $default = null)
+    {
+        return $this->option($key, $default)['value'] ?? $default;
+    }
+    
+    /**
      * Get the parsed options.
      */
     protected function getOptions(): array
