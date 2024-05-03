@@ -3,7 +3,7 @@
 set -eux
 
 # Add a welcome message
-echo '👋 Welcome to Laracord Development 🤖' | tee /usr/local/etc/vscode-dev-containers/first-run-notice.txt
+echo '👋 Welcome to Laracord Development 🤖' | sudo tee /usr/local/etc/vscode-dev-containers/first-run-notice.txt
 
 # This is the default .env file used by the application
 FALLBACK_APP_ENV_FILE="/app/framework/.devcontainer/.env.example";
@@ -21,14 +21,14 @@ fi
 
 REPOSITORY_URL="${REPOSITORY_URL:-"https://github.com/laracord/laracord.git"}"
 
-mkdir -p /app/laracord
-chown -R vscode:vscode /app/laracord
+sudo mkdir -p /app/laracord
+sudo chown -R vscode:vscode /app/laracord
 cd /app/laracord
 
 # Install composer
 curl -s https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
-chmod +x /usr/local/bin/composer
+sudo mv composer.phar /usr/local/bin/composer
+sudo chmod +x /usr/local/bin/composer
 
 # if composer.json already exists, exit early
 if [ -f "composer.json" ]; then
@@ -62,6 +62,6 @@ cat /app/laracord/composer.json | jq ".repositories += [{ type: \"path\", url: \
   && composer require -d /app/laracord $(cat "/app/framework/composer.json" | jq '.name' | tr -d '"') --no-interaction -W
 
 # Set filesystem permissions
-chown -R vscode:vscode /app/laracord
-find /app/laracord/ -type d -exec chmod g+s {} \;
-chmod g+w -R /app/laracord
+sudo chown -R vscode:vscode /app/laracord
+sudo find /app/laracord/ -type d -exec chmod g+s {} \;
+sudo chmod g+w -R /app/laracord
