@@ -28,7 +28,7 @@
     "laravel/sanctum": "^4.0",
     "react/async": "^4.2",
     "react/http": "^1.9",
-    "symfony/psr-http-message-bridge": "^6.4",
+    "symfony/psr-http-message-bridge": "^7.0",
     "team-reflex/discord-php": "^7.3"
   },
   "require-dev": {
