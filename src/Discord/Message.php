@@ -626,7 +626,7 @@ class Message
     /**
      * Add a URL button to the message.
      */
-    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, bool $disabled = false, array $options = []): self
+    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, bool $disabled = false, ?string $id = null, array $options = []): self
     {
         $style = match ($style) {
             'link' => Button::STYLE_LINK,
@@ -643,6 +643,10 @@ class Message
             ->setLabel($label)
             ->setEmoji($emoji)
             ->setDisabled($disabled);
+
+        if ($id) {
+            $button = $button->setCustomId($id);
+        }
 
         if ($options) {
             foreach ($options as $key => $option) {
