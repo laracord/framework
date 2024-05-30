@@ -564,10 +564,10 @@ class Message
     /**
      * Set the message fields.
      */
-    public function fields(array $fields): self
+    public function fields(array $fields, bool $inline = true): self
     {
         foreach ($fields as $key => $value) {
-            $this->field($key, $value);
+            $this->field($key, $value, $inline);
         }
 
         return $this;
