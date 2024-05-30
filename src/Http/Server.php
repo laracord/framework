@@ -135,6 +135,7 @@ class Server
 
             $this->app->instance('request', $request);
 
+            /** @var \Laracord\Http\Kernel $kernel */
             $kernel = $this->app->make(Kernel::class);
 
             if ($this->bot->prependMiddleware()) {
