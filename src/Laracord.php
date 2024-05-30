@@ -190,7 +190,7 @@ class Laracord
 
         $this->registerCommands();
 
-        $this->discord()->on('ready', function () {
+        $this->discord()->on('init', function () {
             $this
                 ->registerEvents()
                 ->bootServices()
