@@ -5,6 +5,7 @@ namespace Laracord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
+use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Discord\Parts\Channel\Webhook;
@@ -212,45 +213,7 @@ class Message
         }
 
         if ($this->webhook) {
-            try {
-                /** @var WebhookRepository $webhooks */
-                $webhooks = await($this->getChannel()->webhooks->freshen());
-            } catch (Exception) {
-                $this->bot->console()->error("\nUnable to fetch channel webhooks. Does the bot have permission?");
-
-                return null;
-            }
-
-            if (! $webhooks) {
-                $this->bot->console()->error('Failed to fetch channel webhooks.');
-
-                return null;
-            }
-
-            if ($this->webhook === true) {
-                $webhook = $webhooks->find(fn (Webhook $webhook) => $webhook->name === $this->bot->discord()->username);
-
-                if (! $webhook) {
-                    return $webhooks->save(new Webhook($this->bot->discord(), [
-                        'name' => $this->bot->discord()->username,
-                    ]))->then(
-                        fn (Webhook $webhook) => $webhook->execute($this->build()),
-                        fn () => $this->bot->console()->error('Failed to create message webhook.')
-                    );
-                }
-
-                return $webhook->execute($this->build());
-            }
-
-            $webhook = $this->getChannel()->webhooks->get('url', $this->webhook);
-
-            if (! $webhook) {
-                $this->bot->console()->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
-
-                return null;
-            }
-
-            return $webhook->execute($this->build());
+            return $this->handleWebhook();
         }
 
         return $this->getChannel()->sendMessage($this->build());
@@ -284,6 +247,52 @@ class Message
         }
 
         return $user->sendMessage($this->build());
+    }
+
+    /**
+     * Send the message as a webhook.
+     */
+    protected function handleWebhook(): ?ExtendedPromiseInterface
+    {
+        try {
+            /** @var WebhookRepository $webhooks */
+            $webhooks = await($this->getChannel()->webhooks->freshen());
+        } catch (NoPermissionsException) {
+            $this->bot->console()->error("\nMissing permission to fetch channel webhooks.");
+
+            return null;
+        }
+
+        if (! $webhooks) {
+            $this->bot->console()->error('Failed to fetch channel webhooks.');
+
+            return null;
+        }
+
+        if ($this->webhook === true) {
+            $webhook = $webhooks->find(fn (Webhook $webhook) => $webhook->name === $this->bot->discord()->username);
+
+            if (! $webhook) {
+                return $webhooks->save(new Webhook($this->bot->discord(), [
+                    'name' => $this->bot->discord()->username,
+                ]))->then(
+                    fn (Webhook $webhook) => $webhook->execute($this->build()),
+                    fn () => $this->bot->console()->error('Failed to create message webhook.')
+                );
+            }
+
+            return $webhook->execute($this->build());
+        }
+
+        $webhook = $this->getChannel()->webhooks->get('url', $this->webhook);
+
+        if (! $webhook) {
+            $this->bot->console()->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
+
+            return null;
+        }
+
+        return $webhook->execute($this->build());
     }
 
     /**
