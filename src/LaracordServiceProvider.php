@@ -2,11 +2,11 @@
 
 namespace Laracord;
 
-use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
 use Illuminate\Support\ServiceProvider;
 use Laracord\Http\Kernel;
 use LaravelZero\Framework\Components\Database\Provider as DatabaseProvider;
+use Symfony\Component\Finder\Finder;
 
 class LaracordServiceProvider extends ServiceProvider
 {
@@ -68,17 +68,30 @@ class LaracordServiceProvider extends ServiceProvider
     }
 
     /**
+     * Retrieve configuration files from the specified path.
+     */
+    protected function getConfigs(string $path): array
+    {
+        $config = [];
+
+        foreach (Finder::create()->files()->name('*.php')->in($path) as $file) {
+            $config[basename($file->getRealPath(), '.php')] = require $file->getRealPath();
+        }
+
+        return $config;
+    }
+
+    /**
      * Merge the application configuration.
      */
     protected function mergeConfigs(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/app.php', 'app');
-        $this->mergeConfigFrom(__DIR__.'/../config/cache.php', 'cache');
-        $this->mergeConfigFrom(__DIR__.'/../config/commands.php', 'commands');
-        $this->mergeConfigFrom(__DIR__.'/../config/database.php', 'database');
-        $this->mergeConfigFrom(__DIR__.'/../config/discord.php', 'discord');
-        $this->mergeConfigFrom(__DIR__.'/../config/filesystems.php', 'filesystems');
-        $this->mergeConfigFrom(__DIR__.'/../config/view.php', 'view');
+        $base = $this->getConfigs(__DIR__.'/../config');
+        $configs = $this->getConfigs($this->app->configPath());
+
+        foreach ($base as $key => $value) {
+            $this->app['config']->set($key, array_merge($value, $configs[$key] ?? []));
+        }
     }
 
     /**
@@ -105,24 +118,6 @@ class LaracordServiceProvider extends ServiceProvider
     {
         if (! (new DatabaseProvider($this->app))->isAvailable()) {
             $this->app->booting(fn () => $this->app->register(DatabaseProvider::class));
-        }
-    }
-
-    /**
-     * Merge the given configuration with the existing configuration.
-     *
-     * @param  string  $path
-     * @param  string  $key
-     * @return void
-     */
-    protected function mergeConfigFrom($path, $key)
-    {
-        if (! ($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
-            $config = $this->app->make('config');
-
-            $config->set($key, array_merge(
-                $config->get($key, []), require $path
-            ));
         }
     }
 }
