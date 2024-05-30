@@ -35,7 +35,7 @@ class {{ class }} extends SlashCommand
     protected $permissions = [];
 
     /**
-     * Indiciates whether the command requires admin permissions.
+     * Indicates whether the command requires admin permissions.
      *
      * @var bool
      */
