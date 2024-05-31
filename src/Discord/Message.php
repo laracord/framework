@@ -426,6 +426,10 @@ class Message
             default => $color,
         };
 
+        if (str_starts_with($color, '#')) {
+            $color = hexdec(substr($color, 1));
+        }
+
         $this->color = $color;
 
         return $this;
