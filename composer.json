@@ -29,7 +29,7 @@
     "react/async": "^4.2",
     "react/http": "^1.9",
     "symfony/psr-http-message-bridge": "^7.0",
-    "team-reflex/discord-php": "^7.3"
+    "team-reflex/discord-php": "v10.0.0-RC7"
   },
   "require-dev": {
     "laravel/pint": "^1.15"
