@@ -99,6 +99,14 @@ abstract class AbstractCommand
     }
 
     /**
+     * The command interaction routes.
+     */
+    public function interactions(): array
+    {
+        return [];
+    }
+
+    /**
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
@@ -106,7 +114,7 @@ abstract class AbstractCommand
      */
     public function message($content = '')
     {
-        return $this->bot()->message($content);
+        return $this->bot()->message($content)->routePrefix($this->getName());
     }
 
     /**

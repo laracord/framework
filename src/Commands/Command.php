@@ -3,7 +3,6 @@
 namespace Laracord\Commands;
 
 use Laracord\Commands\Contracts\Command as CommandContract;
-use Laracord\Discord\Message;
 
 abstract class Command extends AbstractCommand implements CommandContract
 {

@@ -3,6 +3,8 @@
 namespace Laracord;
 
 use Discord\DiscordCommandClient as Discord;
+use Discord\Parts\Interactions\Interaction;
+use Discord\WebSockets\Event as DiscordEvent;
 use Discord\WebSockets\Intents;
 use Exception;
 use Illuminate\Contracts\Foundation\Application;
@@ -114,6 +116,11 @@ class Laracord
     protected array $services = [];
 
     /**
+     * The bot interaction routes.
+     */
+    protected array $interactions = [];
+
+    /**
      * The console input stream.
      *
      * @var \React\Stream\ReadableResourceStream
@@ -195,7 +202,8 @@ class Laracord
                 ->registerEvents()
                 ->bootServices()
                 ->bootHttpServer()
-                ->registerSlashCommands();
+                ->registerSlashCommands()
+                ->handleInteractions();
 
             $this->afterBoot();
 
@@ -229,7 +237,7 @@ class Laracord
     /**
      * Boot the Discord client.
      */
-    public function bootDiscord(): void
+    protected function bootDiscord(): void
     {
         $this->discord = new Discord([
             'token' => $this->getToken(),
@@ -243,7 +251,7 @@ class Laracord
     /**
      * Register the input and output streams.
      */
-    public function registerStream(): self
+    protected function registerStream(): self
     {
         if (windows_os()) {
             return $this;
@@ -264,7 +272,7 @@ class Laracord
     /**
      * Handle the input stream.
      */
-    public function handleStream(string $data): void
+    protected function handleStream(string $data): void
     {
         $command = trim($data);
 
@@ -393,6 +401,8 @@ class Laracord
             );
 
             $this->registeredCommands[] = $command;
+
+            $this->registerInteractions($command->getName(), $command->interactions());
         }
 
         return $this;
@@ -401,7 +411,7 @@ class Laracord
     /**
      * Handle the bot slash commands.
      */
-    protected function registerSlashCommands()
+    protected function registerSlashCommands(): self
     {
         $existing = cache()->get('laracord.slash-commands');
 
@@ -527,15 +537,18 @@ class Laracord
         }
 
         if ($registered->isEmpty()) {
-            return;
+            return $this;
         }
 
-        $registered->each(fn ($command, $name) => $this->discord()->listenCommand(
-            $name,
-            fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction))
-        ));
+        $registered->each(function ($command, $name) {
+            $this->discord()->listenCommand($name, fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)));
+
+            $this->registerInteractions($name, $command['state']->interactions());
+        });
 
         $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
+
+        return $this;
     }
 
     /**
@@ -587,9 +600,25 @@ class Laracord
     }
 
     /**
+     * Register the interaction routes.
+     */
+    protected function registerInteractions(string $name, array $routes = []): void
+    {
+        $routes = collect($routes)
+            ->mapWithKeys(fn ($value, $route) => ["{$name}@{$route}" => $value])
+            ->all();
+
+        if (! $routes) {
+            return;
+        }
+
+        $this->interactions = array_merge($this->interactions, $routes);
+    }
+
+    /**
      * Register the Discord events.
      */
-    public function registerEvents(): self
+    protected function registerEvents(): self
     {
         foreach ($this->getEvents() as $event) {
             $this->handleSafe($event, function () use ($event) {
@@ -611,7 +640,7 @@ class Laracord
     /**
      * Boot the bot services.
      */
-    public function bootServices(): self
+    protected function bootServices(): self
     {
         foreach ($this->getServices() as $service) {
             $this->handleSafe($service, function () use ($service) {
@@ -631,24 +660,62 @@ class Laracord
     }
 
     /**
-     * Safely handle the provided callback.
+     * Handle the interaction routes.
      */
-    public function handleSafe(string $name, callable $callback): mixed
+    protected function handleInteractions(): self
     {
-        try {
-            return $callback();
-        } catch (Throwable $e) {
-            $this->console()->error("An error occurred in <fg=red>{$name}</>.");
-            $this->console()->outputComponents()->bulletList([$e->getMessage()]);
-        }
+        $this->discord()->on(DiscordEvent::INTERACTION_CREATE, function (Interaction $interaction) {
+            $id = $interaction->data->custom_id;
 
-        return null;
+            $handlers = collect($this->getInteractions())
+                ->partition(fn ($route, $name) => ! Str::contains($name, '{'));
+
+            $static = $handlers[0];
+            $dynamic = $handlers[1];
+
+            if ($route = $static->get($id)) {
+                return $this->handleSafe($id, fn () => $route($interaction));
+            }
+
+            if (! $route) {
+                $route = $dynamic->first(fn ($route, $name) => Str::before($name, ':') === Str::before($id, ':'));
+            }
+
+            if (! $route) {
+                return;
+            }
+
+            $parameters = [];
+            $requiredParameters = [];
+
+            if (Str::contains($id, ':')) {
+                $parameters = explode(':', Str::after($id, ':'));
+            }
+
+            $routeName = $dynamic->keys()->first(fn ($name) => Str::before($name, ':') === Str::before($id, ':'));
+
+            if ($routeName && preg_match_all('/\{(.*?)\}/', $routeName, $matches)) {
+                $requiredParameters = $matches[1];
+            }
+
+            foreach ($requiredParameters as $index => $param) {
+                if (! Str::endsWith($param, '?') && (! isset($parameters[$index]) || $parameters[$index] === '')) {
+                    $this->console()->error("Missing required parameter `{$param}` for interaction route `{$routeName}`.");
+
+                    return;
+                }
+            }
+
+            $this->handleSafe($id, fn () => $route($interaction, ...$parameters));
+        });
+
+        return $this;
     }
 
     /**
      * Boot the HTTP server.
      */
-    public function bootHttpServer(): self
+    protected function bootHttpServer(): self
     {
         if ($this->httpServer) {
             return $this;
@@ -872,6 +939,14 @@ class Laracord
     }
 
     /**
+     * Get the bot interaction routes.
+     */
+    public function getInteractions(): array
+    {
+        return $this->interactions;
+    }
+
+    /**
      * Extract classes from the provided application path.
      */
     protected function extractClasses(string $path): Collection
@@ -1024,6 +1099,21 @@ class Laracord
     public function getApplication(): Application
     {
         return $this->app;
+    }
+
+    /**
+     * Safely handle the provided callback.
+     */
+    public function handleSafe(string $name, callable $callback): mixed
+    {
+        try {
+            return $callback();
+        } catch (Throwable $e) {
+            $this->console()->error("An error occurred in <fg=red>{$name}</>.");
+            $this->console()->outputComponents()->bulletList([$e->getMessage()]);
+        }
+
+        return null;
     }
 
     /**
