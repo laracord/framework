@@ -9,6 +9,7 @@ use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Discord\Parts\Channel\Webhook;
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
 use Discord\Repository\Channel\WebhookRepository;
 use Exception;
@@ -148,6 +149,11 @@ class Message
         'warning' => 15105570,
         'info' => 3447003,
     ];
+
+    /**
+     * The interaction route prefix.
+     */
+    protected ?string $routePrefix = null;
 
     /**
      * Create a new Discord message instance.
@@ -303,6 +309,18 @@ class Message
         $this->webhook = $value;
 
         return $this;
+    }
+  
+    /**
+     * Reply to a message or interaction.
+     */
+    public function reply(Interaction|ChannelMessage $message, bool $ephemeral = false): ExtendedPromiseInterface
+    {
+        if ($message instanceof Interaction) {
+            return $message->respondWithMessage($this->build(), ephemeral: $ephemeral);
+        }
+
+        return $message->reply($this->build());
     }
 
     /**
@@ -509,6 +527,10 @@ class Message
             default => $color,
         };
 
+        if (str_starts_with($color, '#')) {
+            $color = hexdec(substr($color, 1));
+        }
+
         $this->color = $color;
 
         return $this;
@@ -655,10 +677,10 @@ class Message
     /**
      * Set the message fields.
      */
-    public function fields(array $fields): self
+    public function fields(array $fields, bool $inline = true): self
     {
         foreach ($fields as $key => $value) {
-            $this->field($key, $value);
+            $this->field($key, $value, $inline);
         }
 
         return $this;
@@ -717,7 +739,7 @@ class Message
     /**
      * Add a URL button to the message.
      */
-    public function button(string $label, mixed $value, mixed $emoji = null, ?string $style = null, bool $disabled = false, ?string $id = null, array $options = []): self
+    public function button(string $label, mixed $value = null, mixed $emoji = null, ?string $style = null, bool $disabled = false, ?string $id = null, ?string $route = null, array $options = []): self
     {
         $style = match ($style) {
             'link' => Button::STYLE_LINK,
@@ -739,6 +761,12 @@ class Message
             $button = $button->setCustomId($id);
         }
 
+        if ($route) {
+            $button = $this->getRoutePrefix()
+                ? $button->setCustomId("{$this->getRoutePrefix()}@{$route}")
+                : $button->setCustomId($route);
+        }
+
         if ($options) {
             foreach ($options as $key => $option) {
                 $key = Str::of($key)->camel()->ucfirst()->start('set')->toString();
@@ -755,8 +783,14 @@ class Message
 
         $button = match ($style) {
             Button::STYLE_LINK => $button->setUrl($value),
-            default => $button->setListener($value, $this->bot->discord()),
+            default => $value ? $button->setListener($value, $this->bot->discord()) : $button,
         };
+
+        if (! $value && ! $route && ! $id) {
+            throw new Exception('Message buttons must contain a valid `value`, `route`, or `id`.');
+
+            return $this;
+        }
 
         $this->buttons[] = $button;
 
@@ -787,5 +821,23 @@ class Message
         $this->buttons = [];
 
         return $this;
+    }
+
+    /**
+     * Set the interaction route prefix.
+     */
+    public function routePrefix(?string $routePrefix): self
+    {
+        $this->routePrefix = Str::slug($routePrefix);
+
+        return $this;
+    }
+
+    /**
+     * Retrieve the interaction route prefix.
+     */
+    public function getRoutePrefix(): ?string
+    {
+        return $this->routePrefix;
     }
 }

@@ -150,12 +150,8 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
 
     /**
      * Retrieve the parsed command options.
-     *
-     * @param  string|null  $key
-     * @param  mixed  $default
-     * @return mixed
      */
-    protected function option($key = null, $default = null)
+    protected function option(?string $key = null, mixed $default = null): mixed
     {
         if (is_null($key) || ! $this->getOptions()) {
             return $this->getOptions();
@@ -165,11 +161,23 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     }
 
     /**
-     * Set the command options.
-     *
-     * @return array
+     * Retrieve the option value.
      */
-    public function options()
+    public function value(?string $option = null, mixed $default = null): mixed
+    {
+        $options = $this->flattenOptions($this->getOptions());
+
+        if (is_null($option)) {
+            return $options;
+        }
+
+        return $options[$option] ?? $default;
+    }
+
+    /**
+     * Set the command options.
+     */
+    public function options(): array
     {
         return [];
     }
@@ -210,10 +218,8 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
 
     /**
      * Retrieve the slash command options.
-     *
-     * @return array
      */
-    public function getRegisteredOptions()
+    public function getRegisteredOptions(): ?array
     {
         if ($this->registeredOptions) {
             return $this->registeredOptions;
@@ -229,5 +235,32 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             ? $option
             : new DiscordOption($this->discord(), $option)
         )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
+    }
+
+    /**
+     * Flatten the options into dot notated keys.
+     */
+    protected function flattenOptions(array $options, ?string $parent = null): array
+    {
+        return collect($options)->flatMap(function ($option) use ($parent) {
+            $key = $parent ? "{$parent}.{$option['name']}" : $option['name'];
+
+            if (is_array($option) && isset($option['options'])) {
+                $options = $this->flattenOptions($option['options'], $key);
+
+                if (array_key_exists('value', $option)) {
+                    return [
+                        ...[$key => $option['value']],
+                        ...$options,
+                    ];
+                }
+
+                return $options;
+            }
+
+            return isset($option['value'])
+                ? [$key => $option['value']]
+                : [];
+        })->all();
     }
 }

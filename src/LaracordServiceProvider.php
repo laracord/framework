@@ -72,13 +72,13 @@ class LaracordServiceProvider extends ServiceProvider
      */
     protected function getConfigs(string $path): array
     {
-        $config = [];
+        $configs = [];
 
         foreach (Finder::create()->files()->name('*.php')->in($path) as $file) {
-            $config[basename($file->getRealPath(), '.php')] = require $file->getRealPath();
+            $configs[basename($file->getPathname(), '.php')] = require $file->getPathname();
         }
 
-        return $config;
+        return $configs;
     }
 
     /**

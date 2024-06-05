@@ -2,6 +2,7 @@
 
 namespace {{ namespace }};
 
+use Discord\Parts\Interactions\Interaction;
 use Laracord\Commands\Command;
 
 class {{ class }} extends Command
@@ -47,6 +48,17 @@ class {{ class }} extends Command
             ->message()
             ->title('{{ class }}')
             ->content('Hello world!')
+            ->button('👋', route: 'wave')
             ->send($message);
+    }
+
+    /**
+     * The command interaction routes.
+     */
+    public function interactions(): array
+    {
+        return [
+            'wave' => fn (Interaction $interaction) => $this->message('👋')->reply($interaction), 
+        ];
     }
 }
