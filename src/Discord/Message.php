@@ -310,7 +310,7 @@ class Message
 
         return $this;
     }
-  
+
     /**
      * Reply to a message or interaction.
      */
