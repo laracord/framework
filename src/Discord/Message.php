@@ -5,16 +5,22 @@ namespace Laracord\Discord;
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
 use Discord\Builders\MessageBuilder;
+use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
+use Discord\Parts\Channel\Webhook;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
+use Discord\Repository\Channel\WebhookRepository;
 use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
 use React\Promise\ExtendedPromiseInterface;
+use React\Promise\PromiseInterface;
 use Throwable;
+
+use function React\Async\await;
 
 class Message
 {
@@ -129,6 +135,11 @@ class Message
     protected array $files = [];
 
     /**
+     * The message webhook.
+     */
+    protected string|bool $webhook = false;
+
+    /**
      * The default embed colors.
      */
     protected array $colors = [
@@ -154,8 +165,10 @@ class Message
         $this->bot = $bot ?: app('bot');
 
         $this
-            ->authorName($this->bot->discord()->user->username)
-            ->authorIcon($this->bot->discord()->user->avatar)
+            ->username($username = $this->bot->discord()->username)
+            ->avatar($avatar = $this->bot->discord()->avatar)
+            ->authorName($username)
+            ->authorIcon($avatar)
             ->success();
     }
 
@@ -173,6 +186,8 @@ class Message
     public function build(): MessageBuilder
     {
         $message = MessageBuilder::new()
+            ->setUsername($this->username)
+            ->setAvatarUrl($this->avatarUrl)
             ->setTts($this->tts)
             ->setContent($this->body)
             ->setComponents($this->getComponents());
@@ -197,10 +212,14 @@ class Message
     /**
      * Send the message.
      */
-    public function send(mixed $destination = null): ?ExtendedPromiseInterface
+    public function send(mixed $destination = null): PromiseInterface|ExtendedPromiseInterface|null
     {
         if ($destination) {
             $this->channel($destination);
+        }
+
+        if ($this->webhook) {
+            return $this->handleWebhook();
         }
 
         return $this->getChannel()->sendMessage($this->build());
@@ -234,6 +253,62 @@ class Message
         }
 
         return $user->sendMessage($this->build());
+    }
+
+    /**
+     * Send the message as a webhook.
+     */
+    protected function handleWebhook(): ?ExtendedPromiseInterface
+    {
+        try {
+            /** @var WebhookRepository $webhooks */
+            $webhooks = await($this->getChannel()->webhooks->freshen());
+        } catch (NoPermissionsException) {
+            $this->bot->console()->error("\nMissing permission to fetch channel webhooks.");
+
+            return null;
+        }
+
+        if (! $webhooks) {
+            $this->bot->console()->error('Failed to fetch channel webhooks.');
+
+            return null;
+        }
+
+        if ($this->webhook === true) {
+            $webhook = $webhooks->find(fn (Webhook $webhook) => $webhook->name === $this->bot->discord()->username);
+
+            if (! $webhook) {
+                return $webhooks->save(new Webhook($this->bot->discord(), [
+                    'name' => $this->bot->discord()->username,
+                ]))->then(
+                    fn (Webhook $webhook) => $webhook->execute($this->build()),
+                    fn () => $this->bot->console()->error('Failed to create message webhook.')
+                );
+            }
+
+            return $webhook->execute($this->build());
+        }
+
+        $webhook = $this->getChannel()->webhooks->get('url', $this->webhook);
+
+        if (! $webhook) {
+            $this->bot->console()->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
+
+            return null;
+        }
+
+        return $webhook->execute($this->build());
+    }
+
+    /**
+     * Send the message as a webhook.
+     */
+    public function webhook(string|bool $value = true): self
+    {
+        $this->webhook = $value;
+
+        return $this;
     }
 
     /**
@@ -356,6 +431,14 @@ class Message
         $this->content = $content;
 
         return $this;
+    }
+
+    /**
+     * Set the message avatar.
+     */
+    public function avatar(?string $avatarUrl): self
+    {
+        return $this->avatarUrl($avatarUrl);
     }
 
     /**
@@ -508,6 +591,16 @@ class Message
     /**
      * Set the message thumbnail URL.
      */
+    public function thumbnail(?string $thumbnailUrl): self
+    {
+        $this->thumbnailUrl = $thumbnailUrl;
+
+        return $this;
+    }
+
+    /**
+     * Set the message thumbnail URL.
+     */
     public function thumbnailUrl(?string $thumbnailUrl): self
     {
         $this->thumbnailUrl = $thumbnailUrl;
@@ -521,6 +614,16 @@ class Message
     public function url(?string $url): self
     {
         $this->url = $url;
+
+        return $this;
+    }
+
+    /**
+     * Set the message image URL.
+     */
+    public function image(?string $imageUrl): self
+    {
+        $this->imageUrl = $imageUrl;
 
         return $this;
     }
@@ -581,6 +684,14 @@ class Message
         $this->authorIcon = $authorIcon;
 
         return $this;
+    }
+
+    /**
+     * Clear the message author.
+     */
+    public function clearAuthor(): self
+    {
+        return $this->authorName('')->authorIcon('');
     }
 
     /**
