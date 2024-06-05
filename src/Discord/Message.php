@@ -591,6 +591,16 @@ class Message
     /**
      * Set the message thumbnail URL.
      */
+    public function thumbnail(?string $thumbnailUrl): self
+    {
+        $this->thumbnailUrl = $thumbnailUrl;
+
+        return $this;
+    }
+
+    /**
+     * Set the message thumbnail URL.
+     */
     public function thumbnailUrl(?string $thumbnailUrl): self
     {
         $this->thumbnailUrl = $thumbnailUrl;
@@ -604,6 +614,16 @@ class Message
     public function url(?string $url): self
     {
         $this->url = $url;
+
+        return $this;
+    }
+
+    /**
+     * Set the message image URL.
+     */
+    public function image(?string $imageUrl): self
+    {
+        $this->imageUrl = $imageUrl;
 
         return $this;
     }
