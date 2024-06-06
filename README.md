@@ -21,6 +21,7 @@ Build functional, elegant bots harnessing the full power of [Laravel](https://la
 - ⚡️ Out of the box support for databases, caching, and many other Laravel features thanks to [Laravel Zero](https://laravel-zero.com/).
 - 🚀 Instantly generate working bot [commands](https://laracord.com/docs/commands) and [event listeners](https://laracord.com/docs/events) with 0 knowledge.
 - 🧑‍💻 Automatic handling of registering/updating/unregistering application [slash commands](https://laracord.com/docs/slash-commands).
+- 🚚 Easy to use [interaction routing](https://laracord.com/docs/interactions) for persistence on message buttons and actions.
 - 👷 Generate asynchronous [services/tasks](https://laracord.com/docs/services) that run parallel to the bot.
 - 🌎 Optional [HTTP Server](https://laracord.com/docs/http-server) with native Laravel routing and [Livewire support](https://laracord.com/docs/livewire).
 - 🔧 Fully configurable and extendable.
