@@ -146,7 +146,7 @@ abstract class Event
         }
 
         $classes = collect(File::allFiles($source))
-            ->mapWithKeys(fn ($file) => [Str::of($file->getFilename())->replace('.php', '')->__toString() => $file->getPathname()]);
+            ->mapWithKeys(fn ($file) => [Str::of($file->getFilename())->replace('.php', '')->toString() => $file->getPathname()]);
 
         return collect($events)->mapWithKeys(function ($path, $event) use ($classes) {
             $class = Str::of($event)
@@ -154,13 +154,17 @@ abstract class Event
                 ->replace('_', ' ')
                 ->headline()
                 ->replace(' ', '')
-                ->__toString();
+                ->toString();
 
             if (! $classes->has($class)) {
                 return [];
             }
 
-            $name = Str::of($event)->lower()->replace('_', ' ')->headline()->__toString();
+            $name = Str::of($event)
+                ->lower()
+                ->replace('_', ' ')
+                ->headline()
+                ->toString();
 
             return [$event => [
                 'key' => $event,
