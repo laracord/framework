@@ -23,6 +23,7 @@ class LaracordServiceProvider extends ServiceProvider
         \Illuminate\Translation\TranslationServiceProvider::class,
         \Illuminate\Validation\ValidationServiceProvider::class,
         \Illuminate\View\ViewServiceProvider::class,
+        \Illuminate\Session\SessionServiceProvider::class,
         \Laracord\Providers\RouteServiceProvider::class,
     ];
 
@@ -101,6 +102,7 @@ class LaracordServiceProvider extends ServiceProvider
     {
         $paths = [
             'cache' => $this->app['config']->get('cache.stores.file.path'),
+            'sessions' => $this->app['config']->get('session.files'),
             'view' => $this->app['config']->get('view.compiled'),
         ];
 
