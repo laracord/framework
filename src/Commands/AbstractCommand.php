@@ -2,6 +2,7 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Guild\Guild;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
@@ -56,6 +57,13 @@ abstract class AbstractCommand
      * @var string|null
      */
     protected $description;
+
+    /**
+     * The guild the command belongs to.
+     *
+     * @var string
+     */
+    protected $guild;
 
     /**
      * Determines whether the command requires admin permissions.
@@ -225,6 +233,14 @@ abstract class AbstractCommand
     public function getDescription()
     {
         return $this->description;
+    }
+
+    /**
+     * Retrieve the command guild.
+     */
+    public function getGuild(): ?string
+    {
+        return $this->guild ?? null;
     }
 
     /**

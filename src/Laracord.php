@@ -37,7 +37,7 @@ class Laracord
     /**
      * The event loop.
      */
-    protected $loop;
+    protected ?LoopInterface $loop = null;
 
     /**
      * The application instance.
@@ -142,6 +142,13 @@ class Laracord
     protected $httpServer;
 
     /**
+     * The logger instance.
+     *
+     * @var \Laracord\Logging\Logger
+     */
+    protected $logger;
+
+    /**
      * The registered bot commands.
      */
     protected array $registeredCommands = [];
@@ -208,18 +215,10 @@ class Laracord
             $this->afterBoot();
 
             $this->getLoop()->addTimer(1, function () {
-                $status = collect([
-                    'command' => count($this->registeredCommands),
-                    'event' => count($this->registeredEvents),
-                    'service' => count($this->registeredServices),
-                    'routes' => count(Route::getRoutes()->getRoutes()),
-                ])
-                    ->filter()
-                    ->map(function ($count, $type) {
-                        $string = Str::plural($type, $count);
-
-                        return "<fg=blue>{$count}</> {$string}";
-                    })->implode(', ');
+                $status = $this
+                    ->getStatus()
+                    ->map(fn ($count, $type) => "<fg=blue>{$count}</> {$type}")
+                    ->implode(', ');
 
                 $status = Str::replaceLast(', ', ', and ', $status);
 
@@ -289,11 +288,13 @@ class Laracord
             'restart' => $this->restart(),
             'invite' => $this->showInvite(force: true),
             'commands' => $this->showCommands(),
+            'status' => $this->showStatus(),
             '?' => $this->console()->table(['<fg=blue>Command</>', '<fg=blue>Description</>'], [
                 ['shutdown', 'Shutdown the bot.'],
                 ['restart', 'Restart the bot.'],
                 ['invite', 'Show the invite link.'],
                 ['commands', 'Show the registered commands.'],
+                ['status', 'Show the bot status.'],
             ]),
             default => $this->console()->error("Unknown command: <fg=red>{$command}</>"),
         };
@@ -758,6 +759,27 @@ class Laracord
     }
 
     /**
+     * Print the bot status to console.
+     */
+    public function showStatus(): self
+    {
+        $uptime = now()->createFromTimestamp(LARAVEL_START)->diffForHumans();
+
+        $status = $this->getStatus()
+            ->prepend($this->discord()->users->count(), 'user')
+            ->prepend($this->discord()->guilds->count(), 'guild')
+            ->mapWithKeys(fn ($count, $type) => [Str::plural($type, $count) => $count])
+            ->prepend($uptime, 'uptime')
+            ->prepend("{$this->discord()->username} ({$this->discord()->id})", 'bot')
+            ->map(fn ($count, $type) => Str::of($type)->title()->finish(": <fg=blue>{$count}</>")->toString());
+
+        $this->console()->line('  <options=bold>Status</>');
+        $this->console()->outputComponents()->bulletList($status->all());
+
+        return $this;
+    }
+
+    /**
      * Show the invite link if the bot is not in any guilds.
      */
     public function showInvite(bool $force = false): self
@@ -848,7 +870,7 @@ class Laracord
 
         $defaultOptions = [
             'intents' => $this->getIntents(),
-            'logger' => Logger::make($this->console),
+            'logger' => $this->getLogger(),
             'loop' => $this->getLoop(),
         ];
 
@@ -856,6 +878,14 @@ class Laracord
             ...config('discord.options', []),
             ...$defaultOptions,
         ];
+    }
+
+    /**
+     * Get the logger instance.
+     */
+    public function getLogger(): Logger
+    {
+        return $this->logger ??= Logger::make($this->console);
     }
 
     /**
@@ -1099,6 +1129,20 @@ class Laracord
     public function getApplication(): Application
     {
         return $this->app;
+    }
+
+    /**
+     * Retrieve the bot status collection.
+     */
+    public function getStatus(): Collection
+    {
+        return collect([
+            'command' => count($this->registeredCommands),
+            'event' => count($this->registeredEvents),
+            'service' => count($this->registeredServices),
+            'interaction' => count($this->interactions),
+            'route' => count(Route::getRoutes()->getRoutes()),
+        ])->filter()->mapWithKeys(fn ($count, $type) => [Str::plural($type, $count) => $count]);
     }
 
     /**

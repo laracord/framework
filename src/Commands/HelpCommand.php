@@ -48,7 +48,10 @@ class HelpCommand extends Command
      */
     public function handle($message, $args)
     {
-        $commands = collect($this->bot()->getRegisteredCommands())->filter(fn ($command) => ! $command->isHidden());
+        $commands = collect($this->bot()->getRegisteredCommands())
+            ->filter(fn ($command) => ! $command->isHidden())
+            ->filter(fn ($command) => $command->getGuild() ? $message->guild_id === $command->getGuild() : true)
+            ->sortBy('name');
 
         $fields = [];
 

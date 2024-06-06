@@ -14,13 +14,6 @@ use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
 abstract class SlashCommand extends AbstractCommand implements SlashCommandContract
 {
     /**
-     * The guild the command belongs to.
-     *
-     * @var string
-     */
-    protected $guild;
-
-    /**
      * The permissions required to use the command.
      *
      * @var array
@@ -91,6 +84,8 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     public function maybeHandle($interaction)
     {
+        $this->server = $interaction->guild;
+
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
@@ -100,8 +95,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
 
             return;
         }
-
-        $this->server = $interaction->guild;
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
             return $interaction->respondWithMessage(
@@ -190,14 +183,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     public function getSignature()
     {
         return Str::start($this->getName(), '/');
-    }
-
-    /**
-     * Retrieve the slash command guild.
-     */
-    public function getGuild(): ?string
-    {
-        return $this->guild ?? null;
     }
 
     /**
