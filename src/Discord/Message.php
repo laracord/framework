@@ -528,10 +528,12 @@ class Message
         };
 
         if (str_starts_with($color, '#')) {
-            $color = hexdec(substr($color, 1));
+            $color = hexdec(
+                Str::of($color)->replace('#', '')->limit(6, '')->toString()
+            );
         }
 
-        $this->color = $color;
+        $this->color = (string) $color;
 
         return $this;
     }
