@@ -4,6 +4,12 @@ namespace Laracord\Discord;
 
 use Discord\Builders\Components\ActionRow;
 use Discord\Builders\Components\Button;
+use Discord\Builders\Components\ChannelSelect;
+use Discord\Builders\Components\MentionableSelect;
+use Discord\Builders\Components\Option;
+use Discord\Builders\Components\RoleSelect;
+use Discord\Builders\Components\StringSelect;
+use Discord\Builders\Components\UserSelect;
 use Discord\Builders\MessageBuilder;
 use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
@@ -130,6 +136,11 @@ class Message
     protected array $buttons = [];
 
     /**
+     * The message select menus.
+     */
+    protected array $selects = [];
+
+    /**
      * The message files.
      */
     protected array $files = [];
@@ -194,6 +205,12 @@ class Message
 
         if ($this->content || $this->fields) {
             $message->addEmbed($this->getEmbed());
+        }
+
+        if ($this->selects) {
+            foreach ($this->selects as $select) {
+                $message->addComponent($select);
+            }
         }
 
         if ($this->buttons) {
@@ -377,6 +394,14 @@ class Message
         }
 
         return $buttons;
+    }
+
+    /**
+     * Get the select menus.
+     */
+    public function getSelects()
+    {
+        return $this->selects;
     }
 
     /**
@@ -759,7 +784,71 @@ class Message
     }
 
     /**
-     * Add a URL button to the message.
+     * Add a select menu to the message.
+     */
+    public function select(
+        array $options = [],
+        ?callable $listener = null,
+        ?string $placeholder = null,
+        ?string $id = null,
+        bool $disabled = false,
+        int $minValues = 1,
+        int $maxValues = 1,
+        ?string $type = null,
+        ?string $route = null,
+    ): self {
+        $select = match ($type) {
+            'channel' => ChannelSelect::new(),
+            'mentionable' => MentionableSelect::new(),
+            'role' => RoleSelect::new(),
+            'user' => UserSelect::new(),
+            default => StringSelect::new(),
+        };
+
+        $select = $select
+            ->setPlaceholder($placeholder)
+            ->setMinValues($minValues)
+            ->setMaxValues($maxValues)
+            ->setDisabled($disabled);
+
+        if ($id) {
+            $select = $select->setCustomId($id);
+        }
+
+        if ($route) {
+            $select = $this->getRoutePrefix()
+                ? $select->setCustomId("{$this->getRoutePrefix()}@{$route}")
+                : $select->setCustomId($route);
+        }
+
+        if ($listener) {
+            $select = $select->setListener($listener, $this->bot->discord());
+        }
+
+        foreach ($options as $key => $option) {
+            if (! is_array($option)) {
+                $select->addOption(
+                    Option::new(is_int($key) ? $option : $key, $option)
+                );
+
+                continue;
+            }
+
+            $option = Option::new($option['label'] ?? $key, $option['value'] ?? $key)
+                ->setDescription($option['description'] ?? '')
+                ->setEmoji($option['emoji'] ?? '')
+                ->setDefault($option['default'] ?? false);
+
+            $select->addOption($option);
+        }
+
+        $this->selects[] = $select;
+
+        return $this;
+    }
+
+    /**
+     * Add a button to the message.
      */
     public function button(string $label, mixed $value = null, mixed $emoji = null, ?string $style = null, bool $disabled = false, ?string $id = null, ?string $route = null, array $options = []): self
     {
