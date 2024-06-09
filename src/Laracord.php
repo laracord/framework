@@ -2,6 +2,7 @@
 
 namespace Laracord;
 
+use Carbon\Carbon;
 use Discord\DiscordCommandClient as Discord;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event as DiscordEvent;
@@ -1143,6 +1144,14 @@ class Laracord
             'interaction' => count($this->interactions),
             'route' => count(Route::getRoutes()->getRoutes()),
         ])->filter()->mapWithKeys(fn ($count, $type) => [Str::plural($type, $count) => $count]);
+    }
+
+    /**
+     * Retrieve the bot uptime.
+     */
+    public function getUptime(): Carbon
+    {
+        return now()->createFromTimestamp(LARAVEL_START);
     }
 
     /**

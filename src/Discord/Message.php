@@ -397,14 +397,6 @@ class Message
     }
 
     /**
-     * Get the select menus.
-     */
-    public function getSelects()
-    {
-        return $this->selects;
-    }
-
-    /**
      * Get the message channel.
      */
     public function getChannel(): Channel
@@ -787,7 +779,7 @@ class Message
      * Add a select menu to the message.
      */
     public function select(
-        array $options = [],
+        array $items = [],
         ?callable $listener = null,
         ?string $placeholder = null,
         ?string $id = null,
@@ -796,6 +788,7 @@ class Message
         int $maxValues = 1,
         ?string $type = null,
         ?string $route = null,
+        ?array $options = []
     ): self {
         $select = match ($type) {
             'channel' => ChannelSelect::new(),
@@ -825,19 +818,33 @@ class Message
             $select = $select->setListener($listener, $this->bot->discord());
         }
 
-        foreach ($options as $key => $option) {
-            if (! is_array($option)) {
+        if ($options) {
+            foreach ($options as $key => $option) {
+                $key = Str::of($key)->camel()->ucfirst()->start('set')->toString();
+
+                try {
+                    $select = $select->{$key}($option);
+                } catch (Throwable) {
+                    $this->bot->console()->error("Invalid select menu option <fg=red>{$key}</>");
+
+                    continue;
+                }
+            }
+        }
+
+        foreach ($items as $key => $value) {
+            if (! is_array($value)) {
                 $select->addOption(
-                    Option::new(is_int($key) ? $option : $key, $option)
+                    Option::new(is_int($key) ? $value : $key, $value)
                 );
 
                 continue;
             }
 
-            $option = Option::new($option['label'] ?? $key, $option['value'] ?? $key)
-                ->setDescription($option['description'] ?? '')
-                ->setEmoji($option['emoji'] ?? '')
-                ->setDefault($option['default'] ?? false);
+            $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
+                ->setDescription($value['description'] ?? '')
+                ->setEmoji($value['emoji'] ?? '')
+                ->setDefault($value['default'] ?? false);
 
             $select->addOption($option);
         }
@@ -850,8 +857,16 @@ class Message
     /**
      * Add a button to the message.
      */
-    public function button(string $label, mixed $value = null, mixed $emoji = null, ?string $style = null, bool $disabled = false, ?string $id = null, ?string $route = null, array $options = []): self
-    {
+    public function button(
+        string $label,
+        mixed $value = null,
+        mixed $emoji = null,
+        ?string $style = null,
+        bool $disabled = false,
+        ?string $id = null,
+        ?string $route = null,
+        array $options = []
+    ): self {
         $style = match ($style) {
             'link' => Button::STYLE_LINK,
             'primary' => Button::STYLE_PRIMARY,
@@ -930,6 +945,16 @@ class Message
     public function clearButtons(): self
     {
         $this->buttons = [];
+
+        return $this;
+    }
+
+    /**
+     * Clear the select menus from the message.
+     */
+    public function clearSelects(): self
+    {
+        $this->selects = [];
 
         return $this;
     }
