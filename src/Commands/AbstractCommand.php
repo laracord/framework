@@ -5,10 +5,13 @@ namespace Laracord\Commands;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
+use Laracord\Discord\Concerns\HasModal;
 use Laracord\Laracord;
 
 abstract class AbstractCommand
 {
+    use HasModal;
+
     /**
      * The bot instance.
      *
