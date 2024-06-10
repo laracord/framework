@@ -4,6 +4,7 @@ namespace Laracord;
 
 use Illuminate\Contracts\Http\Kernel as KernelContract;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -140,6 +141,9 @@ class LaracordServiceProvider extends ServiceProvider
 
         Http::macro('getAsync', fn (string $url, array|string|null $query = []) => Laracord::handleAsync(fn () => Http::get($url, $query)));
         Http::macro('postAsync', fn (string $url, array $data = []) => Laracord::handleAsync(fn () => Http::post($url, $data = [])));
+
+        File::macro('getAsync', fn (string $path) => Laracord::handleAsync(fn () => File::get($path)));
+        File::macro('putAsync', fn (string $path, mixed $contents) => Laracord::handleAsync(fn () => File::put($path, $contents)));
 
         Storage::macro('getAsync', fn (string $path) => Laracord::handleAsync(fn () => Storage::get($path)));
         Storage::macro('putAsync', fn (string $path, mixed $contents) => Laracord::handleAsync(fn () => Storage::put($path, $contents)));
