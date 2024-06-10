@@ -3,6 +3,9 @@
 namespace Laracord;
 
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use Laracord\Http\Kernel;
 use LaravelZero\Framework\Components\Database\Provider as DatabaseProvider;
@@ -66,6 +69,8 @@ class LaracordServiceProvider extends ServiceProvider
             Console\Commands\ServiceMakeCommand::class,
             Console\Commands\TokenMakeCommand::class,
         ]);
+
+        $this->registerMacros();
     }
 
     /**
@@ -121,5 +126,22 @@ class LaracordServiceProvider extends ServiceProvider
         if (! (new DatabaseProvider($this->app))->isAvailable()) {
             $this->app->booting(fn () => $this->app->register(DatabaseProvider::class));
         }
+    }
+
+    /**
+     * Register the macros.
+     */
+    protected function registerMacros(): void
+    {
+        Cache::macro('getAsync', fn (string $key) => Laracord::handleAsync(fn () => Cache::get($key)));
+        Cache::macro('putAsync', fn (string $key, mixed $value, int $seconds) => Laracord::handleAsync(fn () => Cache::put($key, $value, $seconds)));
+        Cache::macro('rememberAsync', fn (string $key, int $seconds, callable $callback) => Laracord::handleAsync(fn () => Cache::remember($key, $seconds, $callback)));
+        Cache::macro('rememberForeverAsync', fn (string $key, callable $callback) => Laracord::handleAsync(fn () => Cache::rememberForever($key, $callback)));
+
+        Http::macro('getAsync', fn (string $url, array|string|null $query = []) => Laracord::handleAsync(fn () => Http::get($url, $query)));
+        Http::macro('postAsync', fn (string $url, array $data = []) => Laracord::handleAsync(fn () => Http::post($url, $data = [])));
+
+        Storage::macro('getAsync', fn (string $path) => Laracord::handleAsync(fn () => Storage::get($path)));
+        Storage::macro('putAsync', fn (string $path, mixed $contents) => Laracord::handleAsync(fn () => Storage::put($path, $contents)));
     }
 }
