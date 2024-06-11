@@ -15,6 +15,7 @@
   "require": {
     "php": "^8.2",
     "guzzlehttp/guzzle": "^7.5",
+    "illuminate/cookie": "^11.0",
     "illuminate/database": "^11.0",
     "illuminate/encryption": "^11.0",
     "illuminate/hashing": "^11.0",
@@ -38,7 +39,10 @@
   "autoload": {
     "psr-4": {
       "Laracord\\": "src/"
-    }
+    },
+    "files": [
+      "src/helpers.php"
+    ]
   },
   "config": {
     "sort-packages": true,
