@@ -23,6 +23,7 @@ class LaracordServiceProvider extends ServiceProvider
         \Illuminate\Translation\TranslationServiceProvider::class,
         \Illuminate\Validation\ValidationServiceProvider::class,
         \Illuminate\View\ViewServiceProvider::class,
+        \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Session\SessionServiceProvider::class,
         \Laracord\Providers\RouteServiceProvider::class,
     ];

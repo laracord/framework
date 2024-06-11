@@ -723,18 +723,20 @@ class Laracord
             return $this;
         }
 
-        $this->routes();
+        $this->handleSafe(Server::class, function () {
+            $this->routes();
 
-        $this->app->booted(function () {
-            $this->app['router']->getRoutes()->refreshNameLookups();
-            $this->app['router']->getRoutes()->refreshActionLookups();
+            $this->app->booted(function () {
+                $this->app['router']->getRoutes()->refreshNameLookups();
+                $this->app['router']->getRoutes()->refreshActionLookups();
+            });
+
+            $this->httpServer = Server::make($this)->boot();
+
+            if ($this->httpServer->isBooted()) {
+                $this->console()->log("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
+            }
         });
-
-        $this->httpServer = Server::make($this)->boot();
-
-        if ($this->httpServer->isBooted()) {
-            $this->console()->log("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
-        }
 
         return $this;
     }

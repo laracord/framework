@@ -32,10 +32,7 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH', config('app.env') === 'production'
-                ? getcwd().'/storage'
-                : base_path('storage')
-            ),
+            'root' => env('STORAGE_PATH', laracord_path('storage', basePath: false)),
             'throw' => false,
         ],
 

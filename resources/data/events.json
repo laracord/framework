@@ -346,7 +346,7 @@
     },
     {
         "VoiceStateUpdate": {
-            "state": "Discord\\WebSockets\\Events\\VoiceStateUpdate",
+            "state": "Discord\\Parts\\WebSockets\\VoiceStateUpdate",
             "discord": "Discord\\Discord",
             "oldstate": "$oldstate"
         }

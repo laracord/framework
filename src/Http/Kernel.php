@@ -14,6 +14,7 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
+        \Laracord\Http\Middleware\FlushState::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \Laracord\Http\Middleware\TrimStrings::class,
@@ -27,7 +28,11 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
