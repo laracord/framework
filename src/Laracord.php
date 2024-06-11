@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
 use Laracord\Commands\SlashCommand;
+use Laracord\Concerns\CanAsync;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Discord\Message;
 use Laracord\Events\Event;
@@ -35,6 +36,8 @@ use function React\Promise\all;
 
 class Laracord
 {
+    use CanAsync;
+
     /**
      * The event loop.
      */
