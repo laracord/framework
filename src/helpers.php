@@ -4,10 +4,12 @@ if (! function_exists('laracord_path')) {
     /**
      * Retrieve the path to a file or directory relative to Laracord.
      */
-    function laracord_path(string $path = '', bool $useBasePath = true): string
+    function laracord_path(string $path = '', bool $basePath = true): string
     {
-        $basePath = $useBasePath ? '.laracord' : '';
-        $appPath = \Phar::running(false) ? pathinfo(\Phar::running(false), PATHINFO_DIRNAME) : null;
+        $binary = \Phar::running(false);
+
+        $basePath = $basePath ? '.laracord' : '';
+        $appPath = $binary ? pathinfo($binary, PATHINFO_DIRNAME) : null;
 
         return match ($appPath) {
             null => base_path($basePath ? "{$basePath}/{$path}" : $path),
