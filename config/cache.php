@@ -32,10 +32,7 @@ return [
     'stores' => [
         'file' => [
             'driver' => 'file',
-            'path' => env('CACHE_PATH', config('app.env') === 'production'
-                ? getcwd().'/cache'
-                : base_path('cache')
-            ),
+            'path' => env('CACHE_PATH', laracord_path('cache')),
         ],
     ],
 

@@ -28,8 +28,5 @@ return [
     |
     */
 
-    'compiled' => config('app.env') === 'production'
-        ? getcwd().'/cache/views'
-        : base_path('cache/views'),
-
+    'compiled' => env('VIEW_COMPILED_PATH', laracord_path('cache/views')),
 ];

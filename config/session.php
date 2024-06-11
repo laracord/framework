@@ -60,10 +60,7 @@ return [
     |
     */
 
-    'files' => env('SESSION_PATH', config('app.env') === 'production'
-        ? getcwd().'/cache/sessions'
-        : base_path('cache/sessions')
-    ),
+    'files' => env('SESSION_PATH', laracord_path('sessions')),
 
     /*
     |--------------------------------------------------------------------------
