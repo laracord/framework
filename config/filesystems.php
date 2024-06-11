@@ -32,7 +32,7 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH', laracord_path('storage', false)),
+            'root' => env('STORAGE_PATH', laracord_path('storage', basePath: false)),
             'throw' => false,
         ],
 

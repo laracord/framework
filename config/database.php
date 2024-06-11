@@ -39,7 +39,7 @@ return [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
             'database' => env('DB_DATABASE', config('app.env') === 'production'
-                ? laracord_path('database.sqlite', false)
+                ? laracord_path('database.sqlite', basePath: false)
                 : database_path('database.sqlite')
             ),
             'prefix' => '',
