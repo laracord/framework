@@ -3,6 +3,7 @@
 namespace Laracord\Http;
 
 use Exception;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -12,36 +13,29 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use React\Socket\SocketServer;
+use Throwable;
 
 class Server
 {
     /**
      * The application instance.
-     *
-     * @var \Illuminate\Foundation\Application
      */
-    protected $app;
+    protected Application $app;
 
     /**
      * The Laracord instance.
-     *
-     * @var \Laracord\Laracord
      */
-    protected $bot;
+    protected Laracord $bot;
 
     /**
      * The HTTP server instance.
-     *
-     * @var \React\Http\HttpServer
      */
-    protected $server;
+    protected ?HttpServer $server = null;
 
     /**
      * The socket server instance.
-     *
-     * @var \React\Socket\SocketServer
      */
-    protected $socket;
+    protected SocketServer $socket;
 
     /**
      * The server address.
@@ -55,8 +49,6 @@ class Server
 
     /**
      * Create a new server instance.
-     *
-     * @return void
      */
     public function __construct(Laracord $bot)
     {
@@ -138,17 +130,7 @@ class Server
             /** @var \Laracord\Http\Kernel $kernel */
             $kernel = $this->app->make(Kernel::class);
 
-            if ($this->bot->prependMiddleware()) {
-                foreach ($this->bot->prependMiddleware() as $middleware) {
-                    $kernel->prependMiddleware($middleware);
-                }
-            }
-
-            if ($this->bot->middleware()) {
-                foreach ($this->bot->middleware() as $middleware) {
-                    $kernel->pushMiddleware($middleware);
-                }
-            }
+            $kernel = $this->attachMiddleware($kernel);
 
             try {
                 $kernel->terminate($request, $response = $kernel->handle($request));
@@ -182,6 +164,26 @@ class Server
             ['Content-Type' => 'application/json'],
             json_encode(['code' => 500, 'message' => $response])
         );
+    }
+
+    /**
+     * Attach the middleware to the kernel.
+     */
+    protected function attachMiddleware(Kernel $kernel): Kernel
+    {
+        if ($this->bot->prependMiddleware()) {
+            foreach ($this->bot->prependMiddleware() as $middleware) {
+                $kernel->prependMiddleware($middleware);
+            }
+        }
+
+        if ($this->bot->middleware()) {
+            foreach ($this->bot->middleware() as $middleware) {
+                $kernel->pushMiddleware($middleware);
+            }
+        }
+
+        return $kernel;
     }
 
     /**
