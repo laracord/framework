@@ -30,6 +30,7 @@ class LaracordServiceProvider extends ServiceProvider
         \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Session\SessionServiceProvider::class,
         \Laracord\Providers\RouteServiceProvider::class,
+        \Intonate\TinkerZero\TinkerZeroServiceProvider::class,
     ];
 
     /**

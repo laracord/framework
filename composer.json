@@ -26,6 +26,7 @@
     "illuminate/translation": "^11.0",
     "illuminate/validation": "^11.0",
     "illuminate/view": "^11.0",
+    "intonate/tinker-zero": "^1.2",
     "laravel-zero/framework": "^11.0",
     "laravel/sanctum": "^4.0",
     "react/async": "^4.2",
