@@ -4,6 +4,7 @@ namespace Laracord;
 
 use Illuminate\Contracts\Http\Kernel as KernelContract;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -148,5 +149,14 @@ class LaracordServiceProvider extends ServiceProvider
 
         Storage::macro('getAsync', fn (string $path) => Laracord::handleAsync(fn () => Storage::get($path)));
         Storage::macro('putAsync', fn (string $path, mixed $contents) => Laracord::handleAsync(fn () => Storage::put($path, $contents)));
+
+        Date::macro('toDiscord', function ($format = 'R') {
+            $format = match ($format) {
+                't', 'T', 'd', 'D', 'f', 'F', 'R' => $format,
+                default => 'R',
+            };
+
+            return "<t:{$this->timestamp}:{$format}>";
+        });
     }
 }
