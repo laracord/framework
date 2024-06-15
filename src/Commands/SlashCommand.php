@@ -3,6 +3,7 @@
 namespace Laracord\Commands;
 
 use Discord\Builders\CommandBuilder;
+use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option as DiscordOption;
 use Discord\Parts\Interactions\Interaction;
@@ -115,6 +116,43 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     }
 
     /**
+     * Maybe handle the slash command's autocomplete.
+     *
+     * @param  \Discord\Parts\Interactions\Interaction  $interaction
+     * @return array<Choice>
+     */
+    public function maybeHandleAutocomplete(Interaction $interaction): array
+    {
+        $this->server = $interaction->guild;
+
+        if (empty($this->autocomplete())){
+            return [];
+        };
+
+        foreach ($interaction->data->options as $option){
+            $value = Arr::get($this->autocomplete(), $option->name);
+            if ($option->focused && $value){
+                $choices = $value($interaction, $value);
+
+                // This way it supports multiple syntaxes, an array of Choices, an array of strings and an array of key value pairs
+                return collect($choices)->map(function ($choice, $key) use ($choices) {
+                    if ($choice instanceof Choice){
+                        return $choice;
+                    }
+
+                    if (!Arr::isAssoc($choices)){
+                        $key = Str::slug($choice);
+                    }
+
+                    return Choice::new($this->discord(), $key, $choice);
+                })->toArray();
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * Parse the options inside of the interaction.
      *
      * We serialize the options and then decode them back to an array
@@ -171,6 +209,14 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      * Set the command options.
      */
     public function options(): array
+    {
+        return [];
+    }
+
+    /**
+     * Set autocomplete actions based on the option
+     */
+    public function autocomplete(): array
     {
         return [];
     }

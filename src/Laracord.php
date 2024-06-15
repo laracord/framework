@@ -546,7 +546,11 @@ class Laracord
         }
 
         $registered->each(function ($command, $name) {
-            $this->discord()->listenCommand($name, fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)));
+            $this->discord()->listenCommand(
+                $name,
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+            );
 
             $this->registerInteractions($name, $command['state']->interactions());
         });
