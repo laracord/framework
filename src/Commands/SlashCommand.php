@@ -5,6 +5,7 @@ namespace Laracord\Commands;
 use Discord\Builders\CommandBuilder;
 use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Command\Option as DiscordOption;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
@@ -129,27 +130,42 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             return [];
         };
 
-        foreach ($interaction->data->options as $option){
-            $value = Arr::get($this->autocomplete(), $option->name);
-            if ($option->focused && $value){
-                $choices = $value($interaction, $value);
+        return $this->handleAutocompleteOptions($interaction->data->options, $interaction);
+    }
+
+    private function handleAutocompleteOptions($options, $interaction, $parentName = ''): array
+    {
+        foreach ($options as $option) {
+            $value = Arr::get($this->autocomplete(), Arr::join([$parentName, $option->name], '.'));
+
+            if ($option->focused && $value) {
+                $choices = $value($interaction, $option->value);
 
                 // This way it supports multiple syntaxes, an array of Choices, an array of strings and an array of key value pairs
                 return collect($choices)->map(function ($choice, $key) use ($choices) {
-                    if ($choice instanceof Choice){
+                    if ($choice instanceof Choice) {
                         return $choice;
                     }
 
-                    if (!Arr::isAssoc($choices)){
+                    if (!Arr::isAssoc($choices)) {
                         $key = Str::slug($choice);
                     }
 
                     return Choice::new($this->discord(), $key, $choice);
                 })->toArray();
             }
+
+            if ($option->type === Option::SUB_COMMAND) {
+                return $this->handleAutocompleteOptions($option->options, $interaction, $option->name);
+            }
         }
 
         return [];
+    }
+
+    protected function getChoices()
+    {
+
     }
 
     /**

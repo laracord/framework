@@ -4,6 +4,7 @@ namespace Laracord;
 
 use Carbon\Carbon;
 use Discord\DiscordCommandClient as Discord;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event as DiscordEvent;
 use Discord\WebSockets\Intents;
@@ -546,11 +547,28 @@ class Laracord
         }
 
         $registered->each(function ($command, $name) {
-            $this->discord()->listenCommand(
-                $name,
-                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
-                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
-            );
+            $subcommands = collect($command['state']->getRegisteredOptions())
+                ->filter(function (Option $option){
+                    return $option->type === Option::SUB_COMMAND;
+                })->map(function (Option $subcommand) use ($name){
+                    return [$name, $subcommand->name];
+                });
+
+            if ($subcommands->isNotEmpty()){
+                $subcommands->each(function ($names) use ($command, $name) {
+                    $this->discord()->listenCommand(
+                        $names,
+                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                    );
+                });
+            }else{
+                $this->discord()->listenCommand(
+                    $name,
+                    fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                    fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                );
+            }
 
             $this->registerInteractions($name, $command['state']->interactions());
         });
