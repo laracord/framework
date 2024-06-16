@@ -153,7 +153,7 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
                     }
 
                     return Choice::new($this->discord(), $key, $choice);
-                })->values()->all();
+                })->values()->take(25)->all();
             }
 
             if ($option->type === Option::SUB_COMMAND || $option->type === Option::SUB_COMMAND_GROUP) {
