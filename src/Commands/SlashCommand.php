@@ -3,10 +3,10 @@
 namespace Laracord\Commands;
 
 use Discord\Builders\CommandBuilder;
+use Discord\Helpers\Collection;
 use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option;
-use Discord\Parts\Interactions\Command\Option as DiscordOption;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
 use Illuminate\Support\Arr;
@@ -118,54 +118,50 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
 
     /**
      * Maybe handle the slash command's autocomplete.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return array<Choice>
      */
     public function maybeHandleAutocomplete(Interaction $interaction): array
     {
-        $this->server = $interaction->guild;
-
-        if (empty($this->autocomplete())){
+        if (! $this->autocomplete()) {
             return [];
-        };
+        }
 
-        return $this->handleAutocompleteOptions($interaction->data->options, $interaction);
+        return $this->handleAutocomplete($interaction->data->options, $interaction);
     }
 
-    private function handleAutocompleteOptions($options, $interaction, $parentName = ''): array
+    /**
+     * Handle the slash command's autocomplete.
+     */
+    protected function handleAutocomplete(Collection $options, Interaction $interaction, string $parent = ''): array
     {
         foreach ($options as $option) {
-            $value = Arr::get($this->autocomplete(), Arr::join([$parentName, $option->name], '.'));
+            $path = $parent
+                ? rtrim("{$parent}.{$option->name}", '.')
+                : $option->name;
+
+            $value = Arr::get($this->autocomplete(), $path);
 
             if ($option->focused && $value) {
                 $choices = $value($interaction, $option->value);
 
-                // This way it supports multiple syntaxes, an array of Choices, an array of strings and an array of key value pairs
                 return collect($choices)->map(function ($choice, $key) use ($choices) {
                     if ($choice instanceof Choice) {
                         return $choice;
                     }
 
-                    if (!Arr::isAssoc($choices)) {
-                        $key = Str::slug($choice);
+                    if (Arr::isList($choices)) {
+                        $key = $choice;
                     }
 
                     return Choice::new($this->discord(), $key, $choice);
-                })->toArray();
+                })->values()->all();
             }
 
-            if ($option->type === Option::SUB_COMMAND) {
-                return $this->handleAutocompleteOptions($option->options, $interaction, $option->name);
+            if ($option->type === Option::SUB_COMMAND || $option->type === Option::SUB_COMMAND_GROUP) {
+                return $this->handleAutocomplete($option->options, $interaction, $path);
             }
         }
 
         return [];
-    }
-
-    protected function getChoices()
-    {
-
     }
 
     /**
@@ -230,7 +226,7 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     }
 
     /**
-     * Set autocomplete actions based on the option
+     * Set the autocomplete choices.
      */
     public function autocomplete(): array
     {
@@ -278,9 +274,9 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             return $this->registeredOptions = null;
         }
 
-        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof DiscordOption
+        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof Option
             ? $option
-            : new DiscordOption($this->discord(), $option)
+            : new Option($this->discord(), $option)
         )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
     }
 

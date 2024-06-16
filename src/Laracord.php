@@ -547,14 +547,22 @@ class Laracord
         }
 
         $registered->each(function ($command, $name) {
-            $subcommands = collect($command['state']->getRegisteredOptions())
-                ->filter(function (Option $option){
-                    return $option->type === Option::SUB_COMMAND;
-                })->map(function (Option $subcommand) use ($name){
-                    return [$name, $subcommand->name];
-                });
+            $this->registerInteractions($name, $command['state']->interactions());
 
-            if ($subcommands->isNotEmpty()){
+            $subcommands = collect($command['state']->getRegisteredOptions())
+                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
+                ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
+
+            $subcommandGroups = collect($command['state']->getRegisteredOptions())
+                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND_GROUP)
+                ->flatMap(fn (Option $group) => collect($group->options)
+                    ->filter(fn (Option $subcommand) => $subcommand->type === Option::SUB_COMMAND)
+                    ->map(fn (Option $subcommand) => [$name, $group->name, $subcommand->name])
+                );
+
+            $subcommands = $subcommands->merge($subcommandGroups);
+
+            if ($subcommands->isNotEmpty()) {
                 $subcommands->each(function ($names) use ($command, $name) {
                     $this->discord()->listenCommand(
                         $names,
@@ -562,15 +570,15 @@ class Laracord
                         fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
                     );
                 });
-            }else{
-                $this->discord()->listenCommand(
-                    $name,
-                    fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
-                    fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
-                );
+
+                return;
             }
 
-            $this->registerInteractions($name, $command['state']->interactions());
+            $this->discord()->listenCommand(
+                $name,
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+            );
         });
 
         $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
