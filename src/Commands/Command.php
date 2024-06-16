@@ -47,8 +47,6 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
-        $this->server = $message->channel->guild;
-
         if (! $this->isAdminCommand()) {
             $this->handle($message, $args);
 

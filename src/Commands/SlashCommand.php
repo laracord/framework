@@ -3,8 +3,10 @@
 namespace Laracord\Commands;
 
 use Discord\Builders\CommandBuilder;
+use Discord\Helpers\Collection;
+use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
-use Discord\Parts\Interactions\Command\Option as DiscordOption;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
 use Illuminate\Support\Arr;
@@ -84,8 +86,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     public function maybeHandle($interaction)
     {
-        $this->server = $interaction->guild;
-
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
@@ -112,6 +112,56 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
         $this->handle($interaction);
 
         $this->clearOptions();
+    }
+
+    /**
+     * Maybe handle the slash command's autocomplete.
+     */
+    public function maybeHandleAutocomplete(Interaction $interaction): array
+    {
+        if (! $this->autocomplete()) {
+            return [];
+        }
+
+        return $this->handleAutocomplete($interaction->data->options, $interaction);
+    }
+
+    /**
+     * Handle the slash command's autocomplete.
+     */
+    protected function handleAutocomplete(Collection $options, Interaction $interaction, string $parent = ''): array
+    {
+        foreach ($options as $option) {
+            $path = $parent
+                ? rtrim("{$parent}.{$option->name}", '.')
+                : $option->name;
+
+            $value = Arr::get($this->autocomplete(), $path);
+
+            if ($option->focused && $value) {
+                $choices = is_callable($value)
+                    ? $value($interaction, $option->value)
+                    : Arr::wrap($value);
+
+                return collect($choices)->map(function ($choice, $key) use ($choices) {
+                    if ($choice instanceof Choice) {
+                        return $choice;
+                    }
+
+                    if (Arr::isList($choices)) {
+                        $key = $choice;
+                    }
+
+                    return Choice::new($this->discord(), $key, $choice);
+                })->values()->take(25)->all();
+            }
+
+            if ($option->type === Option::SUB_COMMAND || $option->type === Option::SUB_COMMAND_GROUP) {
+                return $this->handleAutocomplete($option->options, $interaction, $path);
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -176,6 +226,14 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     }
 
     /**
+     * Set the autocomplete choices.
+     */
+    public function autocomplete(): array
+    {
+        return [];
+    }
+
+    /**
      * Retrieve the command signature.
      *
      * @return string
@@ -216,9 +274,9 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             return $this->registeredOptions = null;
         }
 
-        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof DiscordOption
+        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof Option
             ? $option
-            : new DiscordOption($this->discord(), $option)
+            : new Option($this->discord(), $option)
         )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
     }
 

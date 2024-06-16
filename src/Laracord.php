@@ -4,6 +4,7 @@ namespace Laracord;
 
 use Carbon\Carbon;
 use Discord\DiscordCommandClient as Discord;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event as DiscordEvent;
 use Discord\WebSockets\Intents;
@@ -546,9 +547,38 @@ class Laracord
         }
 
         $registered->each(function ($command, $name) {
-            $this->discord()->listenCommand($name, fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)));
-
             $this->registerInteractions($name, $command['state']->interactions());
+
+            $subcommands = collect($command['state']->getRegisteredOptions())
+                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
+                ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
+
+            $subcommandGroups = collect($command['state']->getRegisteredOptions())
+                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND_GROUP)
+                ->flatMap(fn (Option $group) => collect($group->options)
+                    ->filter(fn (Option $subcommand) => $subcommand->type === Option::SUB_COMMAND)
+                    ->map(fn (Option $subcommand) => [$name, $group->name, $subcommand->name])
+                );
+
+            $subcommands = $subcommands->merge($subcommandGroups);
+
+            if ($subcommands->isNotEmpty()) {
+                $subcommands->each(function ($names) use ($command, $name) {
+                    $this->discord()->listenCommand(
+                        $names,
+                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                    );
+                });
+
+                return;
+            }
+
+            $this->discord()->listenCommand(
+                $name,
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+            );
         });
 
         $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());

@@ -41,13 +41,6 @@ abstract class AbstractCommand
     protected $user;
 
     /**
-     * The server instance.
-     *
-     * @var \Discord\Parts\Guild\Guild
-     */
-    protected $server;
-
-    /**
      * The command name.
      *
      * @var string
@@ -149,16 +142,13 @@ abstract class AbstractCommand
 
     /**
      * Resolve a Discord user.
-     *
-     * @param  string  $username
-     * @return \Discord\Parts\User\User|null
      */
-    public function resolveUser($username = null)
+    public function resolveUser(string $username): ?User
     {
-        return ! empty($username) ? $this->getServer()->members->filter(function ($member) use ($username) {
+        return ! empty($username) ? $this->discord()->users->filter(function ($user) use ($username) {
             $username = str_replace(['<', '@', '>'], '', strtolower($username));
 
-            return ($member->user->username === $username || $member->user->id === $username) && ! $member->user->bot;
+            return ($user->username === $username || $user->id === $username) && ! $user->bot;
         })->first() : null;
     }
 
@@ -180,16 +170,6 @@ abstract class AbstractCommand
             'discord_id' => $user->id,
             'username' => $user->username,
         ]) ?? null;
-    }
-
-    /**
-     * Get the command server.
-     *
-     * @return \Discord\Parts\Guild\Guild
-     */
-    public function getServer()
-    {
-        return $this->server;
     }
 
     /**
