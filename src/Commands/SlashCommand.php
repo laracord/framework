@@ -86,8 +86,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     public function maybeHandle($interaction)
     {
-        $this->server = $interaction->guild;
-
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
