@@ -139,7 +139,9 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
             $value = Arr::get($this->autocomplete(), $path);
 
             if ($option->focused && $value) {
-                $choices = $value($interaction, $option->value);
+                $choices = is_callable($value)
+                    ? $value($interaction, $option->value)
+                    : Arr::wrap($value);
 
                 return collect($choices)->map(function ($choice, $key) use ($choices) {
                     if ($choice instanceof Choice) {
