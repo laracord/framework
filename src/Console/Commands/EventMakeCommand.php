@@ -86,6 +86,7 @@ class EventMakeCommand extends GeneratorCommand
 
         $namespaces = collect($attributes)
             ->filter(fn ($namespace) => Str::contains($namespace, '\\'))
+            ->map(fn ($namespace) => str_replace('?', '', $namespace))
             ->unique()
             ->map(fn ($namespace) => "use {$namespace};")
             ->implode("\n");
