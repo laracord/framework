@@ -203,21 +203,21 @@ class Message
             ->setContent($this->body)
             ->setComponents($this->getComponents());
 
-        if ($this->content || $this->fields) {
+        if ($this->hasContent() || $this->hasFields()) {
             $message->addEmbed($this->getEmbed());
         }
 
-        if ($this->selects) {
+        if ($this->hasSelects()) {
             foreach ($this->selects as $select) {
                 $message->addComponent($select);
             }
         }
 
-        if ($this->buttons) {
+        if ($this->hasButtons()) {
             $message->addComponent($this->getButtons());
         }
 
-        if ($this->files) {
+        if ($this->hasFiles()) {
             foreach ($this->files as $file) {
                 $message->addFileFromContent($file['filename'], $file['content']);
             }
@@ -383,7 +383,7 @@ class Message
      */
     public function getButtons()
     {
-        if (empty($this->buttons)) {
+        if (! $this->hasButtons()) {
             return;
         }
 
@@ -448,6 +448,14 @@ class Message
         $this->content = $content;
 
         return $this;
+    }
+
+    /**
+     * Determine if the message has content.
+     */
+    public function hasContent(): bool
+    {
+        return ! empty($this->content);
     }
 
     /**
@@ -529,6 +537,14 @@ class Message
         $this->file(file_get_contents($path), $filename);
 
         return $this;
+    }
+
+    /**
+     * Determine if the message has files.
+     */
+    public function hasFiles(): bool
+    {
+        return ! empty($this->files);
     }
 
     /**
@@ -766,6 +782,14 @@ class Message
     }
 
     /**
+     * Determine if the message has fields.
+     */
+    public function hasFields(): bool
+    {
+        return ! empty($this->fields);
+    }
+
+    /**
      * Set the message components.
      */
     public function components(array $components): self
@@ -852,6 +876,24 @@ class Message
         $this->selects[] = $select;
 
         return $this;
+    }
+
+    /**
+     * Clear the select menus from the message.
+     */
+    public function clearSelects(): self
+    {
+        $this->selects = [];
+
+        return $this;
+    }
+
+    /**
+     * Determine if the message has select menus.
+     */
+    public function hasSelects(): bool
+    {
+        return ! empty($this->selects);
     }
 
     /**
@@ -950,13 +992,11 @@ class Message
     }
 
     /**
-     * Clear the select menus from the message.
+     * Determine if the message has buttons.
      */
-    public function clearSelects(): self
+    public function hasButtons(): bool
     {
-        $this->selects = [];
-
-        return $this;
+        return ! empty($this->buttons);
     }
 
     /**
