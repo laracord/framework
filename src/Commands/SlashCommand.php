@@ -206,7 +206,7 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     /**
      * Retrieve the option value.
      */
-    public function value(?string $option = null, mixed $default = null): mixed
+    protected function value(?string $option = null, mixed $default = null): mixed
     {
         $options = $this->flattenOptions($this->getOptions());
 
