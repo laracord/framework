@@ -91,9 +91,17 @@ abstract class Event
             return $this;
         }
 
-        $this->discord()->on($this->getHandler(), [$this, 'handle']);
+        $this->discord()->on($this->getHandler(), [$this, 'maybeHandle']);
 
         return $this;
+    }
+
+    /**
+     * Maybe handle the event.
+     */
+    public function maybeHandle(...$event): void
+    {
+        $this->handle(...$event);
     }
 
     /**
