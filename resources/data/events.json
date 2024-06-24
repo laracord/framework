@@ -265,7 +265,7 @@
     },
     {
         "PresenceUpdate": {
-            "presence": "Discord\\WebSockets\\Events\\PresenceUpdate",
+            "presence": "Discord\\Parts\\WebSockets\\PresenceUpdate",
             "discord": "Discord\\Discord"
         }
     },
