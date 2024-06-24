@@ -1,0 +1,47 @@
+{
+  "name": "Bot",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "options": [
+      "--add-host=host.docker.internal:host-gateway"
+    ]
+  },
+  "runArgs": [
+    "--privileged"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "true",
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000",
+      "upgradePackages": "true"
+    }
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=,type=bind,readonly"
+  ],
+  "overrideCommand": true,
+  "initializeCommand": "[ ! -f '.devcontainer/.env' ] && cp '.devcontainer/config/app/.env.example' '.devcontainer/.env' || true",
+  "onCreateCommand": "chmod +x /app/framework/.devcontainer/install.sh && /app/framework/.devcontainer/install.sh",
+  "forwardPorts": [],
+  "workspaceFolder": "/app",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/app/framework,type=bind,consistency=cached",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mikestead.dotenv",
+        "amiralizadeh9480.laravel-extra-intellisense",
+        "ryannaddy.laravel-artisan",
+        "onecentlin.laravel5-snippets",
+        "onecentlin.laravel-blade",
+        "bmewburn.vscode-intelephense-client"
+      ],
+      "settings": {
+        "php.validate.executablePath": "/usr/local/bin/php"
+      }
+    }
+  }
+}
