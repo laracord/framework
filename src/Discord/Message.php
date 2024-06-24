@@ -341,6 +341,18 @@ class Message
     }
 
     /**
+     * Edit an existing message or interaction message.
+     */
+    public function edit(Interaction|ChannelMessage $message): ExtendedPromiseInterface
+    {
+        if ($message instanceof Interaction) {
+            return $message->updateMessage($this->build());
+        }
+
+        return $message->edit($this->build());
+    }
+
+    /**
      * Get the embed.
      */
     public function getEmbed(): array
@@ -866,8 +878,8 @@ class Message
             }
 
             $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
-                ->setDescription($value['description'] ?? '')
-                ->setEmoji($value['emoji'] ?? '')
+                ->setDescription($value['description'] ?? null)
+                ->setEmoji($value['emoji'] ?? null)
                 ->setDefault($value['default'] ?? false);
 
             $select->addOption($option);
