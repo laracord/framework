@@ -33,6 +33,6 @@ trait CanAsync
      */
     public function async(callable $callback): Promise
     {
-        return static::async($callback);
+        return static::handleAsync($callback);
     }
 }
