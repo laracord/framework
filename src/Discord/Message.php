@@ -353,6 +353,22 @@ class Message
     }
 
     /**
+     * Edit an existing message if it is owned by the bot, otherwise replying instead.
+     */
+    public function editOrReply(Interaction|ChannelMessage $message, bool $ephemeral = false): ExtendedPromiseInterface
+    {
+        if ($message instanceof Interaction) {
+            return $message->user->id === $this->bot->discord()->id
+                ? $this->edit($message)
+                : $this->reply($message, $ephemeral);
+        }
+
+        return $message->author->id === $this->bot->discord()->id
+            ? $this->edit($message)
+            : $this->reply($message);
+    }
+
+    /**
      * Get the embed.
      */
     public function getEmbed(): array
