@@ -358,7 +358,7 @@ class Message
     public function editOrReply(Interaction|ChannelMessage $message, bool $ephemeral = false): ExtendedPromiseInterface
     {
         if ($message instanceof Interaction) {
-            return $message->user->id === $this->bot->discord()->id
+            return $message->message?->user_id === $this->bot->discord()->id
                 ? $this->edit($message)
                 : $this->reply($message, $ephemeral);
         }
