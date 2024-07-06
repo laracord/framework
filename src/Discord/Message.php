@@ -780,7 +780,7 @@ class Message
 
         $this->fields[] = [
             'name' => $name,
-            'value' => "{$value}",
+            'value' => (string) $value,
             'inline' => $inline,
         ];
 
@@ -790,13 +790,13 @@ class Message
     /**
      * Add a code field to the message.
      */
-    public function codeField(string $name, string $value, string $language = 'py', bool $condition = false): self
+    public function codeField(string $name, string $value, string $language = 'php', bool $condition = false): self
     {
         if ($condition) {
             return $this;
         }
 
-        return $this->field($name, "```{$language}\n{$value}\n```", false);
+        return $this->field($name, "```{$language}\n{$value}\n```", inline: false);
     }
 
     /**
@@ -836,12 +836,17 @@ class Message
         ?string $placeholder = null,
         ?string $id = null,
         bool $disabled = false,
+        bool $hidden = false,
         int $minValues = 1,
         int $maxValues = 1,
         ?string $type = null,
         ?string $route = null,
         ?array $options = []
     ): self {
+        if ($hidden) {
+            return $this;
+        }
+
         $select = match ($type) {
             'channel' => ChannelSelect::new(),
             'mentionable' => MentionableSelect::new(),
@@ -933,10 +938,15 @@ class Message
         mixed $emoji = null,
         ?string $style = null,
         bool $disabled = false,
+        bool $hidden = false,
         ?string $id = null,
         ?string $route = null,
         array $options = []
     ): self {
+        if ($hidden) {
+            return $this;
+        }
+
         $style = match ($style) {
             'link' => Button::STYLE_LINK,
             'primary' => Button::STYLE_PRIMARY,
