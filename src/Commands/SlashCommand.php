@@ -50,7 +50,13 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     {
         $command = CommandBuilder::new()
             ->setName($this->getName())
+            ->setType($this->getType())
             ->setDescription($this->getDescription());
+
+//        Possible issue with upstream dependency, not allowing empty descriptions
+//        if($this->getType() !== DiscordCommand::CHAT_INPUT) {
+//            $command = $command->setDescription(null);
+//        }
 
         if ($permissions = $this->getPermissions()) {
             $command = $command->setDefaultMemberPermissions($permissions);
@@ -172,6 +178,11 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     protected function parseOptions(Interaction $interaction): void
     {
+        if ($interaction->type !== DiscordCommand::CHAT_INPUT) {
+            $this->parsedOptions = [];
+            return;
+        }
+
         $this->parsedOptions = json_decode($interaction->data->options->serialize(), true);
     }
 

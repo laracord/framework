@@ -3,6 +3,7 @@
 namespace Laracord\Commands;
 
 use Discord\Parts\Guild\Guild;
+use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
 use Laracord\Discord\Concerns\HasModal;
@@ -81,6 +82,13 @@ abstract class AbstractCommand
      * @var bool
      */
     protected $enabled = true;
+
+    /**
+     * The command type, determining how the command should be accessed on Discord.
+     *
+     * @var int
+     */
+    protected $type = DiscordCommand::CHAT_INPUT;
 
     /**
      * Create a new command instance.
@@ -278,5 +286,13 @@ abstract class AbstractCommand
     public function isEnabled(): bool
     {
         return $this->enabled;
+    }
+
+    /**
+     * Retrieve the command type.
+     */
+    public function getType()
+    {
+        return $this->type;
     }
 }
