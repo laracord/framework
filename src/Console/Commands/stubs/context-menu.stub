@@ -3,9 +3,10 @@
 namespace {{ namespace }};
 
 use Discord\Parts\Interactions\Interaction;
-use Laracord\Commands\SlashCommand;
+use Laracord\Commands\ContextMenu;
+use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 
-class {{ class }} extends SlashCommand
+class {{ class }} extends ContextMenu
 {
     /**
      * The command name.
@@ -19,14 +20,7 @@ class {{ class }} extends SlashCommand
      *
      * @var string
      */
-    protected $description = 'The {{ command }} slash command.';
-
-    /**
-     * The command options.
-     *
-     * @var array
-     */
-    protected $options = [];
+    protected $description = 'The {{ command }} context menu.';
 
     /**
      * The permissions required to use the command.
@@ -48,6 +42,13 @@ class {{ class }} extends SlashCommand
      * @var bool
      */
     protected $hidden = false;
+
+    /**
+     * The command type, determining how the command should be accessed on Discord. Default is MESSAGE.
+     *
+     * @var int
+     */
+    protected $type = DiscordCommand::MESSAGE;
 
     /**
      * Handle the slash command.

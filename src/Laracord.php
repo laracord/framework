@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Commands\Command;
+use Laracord\Commands\ContextMenu;
 use Laracord\Commands\SlashCommand;
 use Laracord\Concerns\CanAsync;
 use Laracord\Console\Commands\Command as ConsoleCommand;
@@ -109,6 +110,11 @@ class Laracord
      * The Discord bot slash commands.
      */
     protected array $slashCommands = [];
+
+    /**
+     * The Discord bot context menus.
+     */
+    protected array $contextMenus = [];
 
     /**
      * The Discord events.
@@ -446,7 +452,9 @@ class Laracord
 
         $existing = $existing instanceof Collection ? $existing : collect();
 
-        $registered = collect($this->getSlashCommands())
+        $registeredCommands = array_merge($this->getSlashCommands(), $this->getContextMenuCommands());
+
+        $registered = collect($registeredCommands)
             ->map(fn ($command) => $command::make($this))
             ->filter(fn ($command) => $command->isEnabled())
             ->mapWithKeys(function ($command) {
@@ -549,31 +557,37 @@ class Laracord
         $registered->each(function ($command, $name) {
             $this->registerInteractions($name, $command['state']->interactions());
 
-            $subcommands = collect($command['state']->getRegisteredOptions())
-                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
-                ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
+            if($command instanceof SlashCommand) {
+                $subcommands = collect($command['state']->getRegisteredOptions())
+                    ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
+                    ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
 
-            $subcommandGroups = collect($command['state']->getRegisteredOptions())
-                ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND_GROUP)
-                ->flatMap(fn (Option $group) => collect($group->options)
-                    ->filter(fn (Option $subcommand) => $subcommand->type === Option::SUB_COMMAND)
-                    ->map(fn (Option $subcommand) => [$name, $group->name, $subcommand->name])
-                );
-
-            $subcommands = $subcommands->merge($subcommandGroups);
-
-            if ($subcommands->isNotEmpty()) {
-                $subcommands->each(function ($names) use ($command, $name) {
-                    $this->discord()->listenCommand(
-                        $names,
-                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
-                        fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                $subcommandGroups = collect($command['state']->getRegisteredOptions())
+                    ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND_GROUP)
+                    ->flatMap(fn (Option $group) => collect($group->options)
+                        ->filter(fn (Option $subcommand) => $subcommand->type === Option::SUB_COMMAND)
+                        ->map(fn (Option $subcommand) => [$name, $group->name, $subcommand->name])
                     );
-                });
 
-                return;
+                $subcommands = $subcommands->merge($subcommandGroups);
+
+                if ($subcommands->isNotEmpty()) {
+                    $subcommands->each(function ($names) use ($command, $name) {
+                        $this->discord()->listenCommand(
+                            $names,
+                            fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
+                            fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                        );
+                    });
+
+                    return;
+                }
             }
 
+            if($command instanceof ContextMenu) {
+                $name = $command['state']->getCleanName();
+            }
+            //$commandName = instanceof SlashCommand ? $name : $command['state']->getName();
             $this->discord()->listenCommand(
                 $name,
                 fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
@@ -589,7 +603,7 @@ class Laracord
     /**
      * Register the specified slash command.
      */
-    public function registerSlashCommand(SlashCommand $command): void
+    public function registerSlashCommand(SlashCommand|ContextMenu $command): void
     {
         cache()->forget('laracord.slash-commands');
 
@@ -1005,6 +1019,23 @@ class Laracord
     }
 
     /**
+     * Get the bot context menus.
+     */
+    public function getContextMenuCommands(): array
+    {
+        if ($this->contextMenus) {
+            return $this->contextMenus;
+        }
+
+        $contextMenus = $this->extractClasses($this->getContextMenuPath())
+            ->unique()
+            ->filter(fn ($contextMenu) => $this->handleSafe($contextMenu, fn () => is_subclass_of($contextMenu, ContextMenu::class) && ! (new ReflectionClass($contextMenu))->isAbstract()))
+            ->all();
+
+        return $this->contextMenus = $contextMenus;
+    }
+
+    /**
      * Get the bot interaction routes.
      */
     public function getInteractions(): array
@@ -1077,6 +1108,14 @@ class Laracord
     public function getSlashCommandPath(): string
     {
         return app_path('SlashCommands');
+    }
+
+    /**
+     * Get the path to the Discord context menus.
+     */
+    public function getContextMenuPath(): string
+    {
+        return app_path('ContextMenus');
     }
 
     /**

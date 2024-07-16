@@ -50,13 +50,7 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     {
         $command = CommandBuilder::new()
             ->setName($this->getName())
-            ->setType($this->getType())
             ->setDescription($this->getDescription());
-
-//        Possible issue with upstream dependency, not allowing empty descriptions
-//        if($this->getType() !== DiscordCommand::CHAT_INPUT) {
-//            $command = $command->setDescription(null);
-//        }
 
         if ($permissions = $this->getPermissions()) {
             $command = $command->setDefaultMemberPermissions($permissions);

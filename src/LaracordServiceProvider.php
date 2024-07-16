@@ -69,6 +69,7 @@ class LaracordServiceProvider extends ServiceProvider
             Console\Commands\KeyGenerateCommand::class,
             Console\Commands\MakeCommand::class,
             Console\Commands\MakeSlashCommand::class,
+            Console\Commands\MakeContextCommand::class,
             Console\Commands\ModelMakeCommand::class,
             Console\Commands\ServiceMakeCommand::class,
             Console\Commands\TokenMakeCommand::class,
