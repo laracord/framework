@@ -4,6 +4,7 @@ namespace Laracord;
 
 use Carbon\Carbon;
 use Discord\DiscordCommandClient as Discord;
+use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use Discord\WebSockets\Event as DiscordEvent;
@@ -459,6 +460,7 @@ class Laracord
             ->filter(fn ($command) => $command->isEnabled())
             ->mapWithKeys(function ($command) {
                 $attributes = $command->create()->getUpdatableAttributes();
+                $commandName = $command->getName();
 
                 $attributes = array_merge($attributes, [
                     'type' => $attributes['type'] ?? 1,
@@ -466,7 +468,12 @@ class Laracord
                     'guild_id' => $attributes['guild_id'] ?? false,
                 ]);
 
-                return [$command->getName() => [
+                if($command->getType() !== DiscordCommand::CHAT_INPUT) {
+                    $commandName = $command->getCleanName();
+                    $attributes['name'] = $commandName;
+                }
+
+                return [$commandName => [
                     'state' => $command,
                     'attributes' => $attributes,
                 ]];
@@ -521,7 +528,7 @@ class Laracord
 
                 return false;
             })->each(function ($command) use ($existing) {
-                $state = $existing->get($command['state']->getName());
+                $state = $existing->get($command['state']->getType() === DiscordCommand::CHAT_INPUT ? $command['state']->getName() : $command['state']->getCleanName());
 
                 if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
                     $this->unregisterSlashCommand($state['id']);
@@ -557,7 +564,7 @@ class Laracord
         $registered->each(function ($command, $name) {
             $this->registerInteractions($name, $command['state']->interactions());
 
-            if($command instanceof SlashCommand) {
+            if($command['state'] instanceof SlashCommand) {
                 $subcommands = collect($command['state']->getRegisteredOptions())
                     ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
                     ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
@@ -584,14 +591,17 @@ class Laracord
                 }
             }
 
-            if($command instanceof ContextMenu) {
-                $name = $command['state']->getCleanName();
+            $name = $command['state']->getName();
+            $interactionName = $name;
+
+            if($command['state'] instanceof ContextMenu) {
+                $interactionName = $command['state']->getCleanName();
             }
-            //$commandName = instanceof SlashCommand ? $name : $command['state']->getName();
+
             $this->discord()->listenCommand(
                 $name,
-                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction)),
-                fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                fn ($interaction) => $this->handleSafe($interactionName, fn () => $command['state']->maybeHandle($interaction)),
+                fn ($interaction) => $this->handleSafe($interactionName, fn () => $command['state']->maybeHandleAutocomplete($interaction))
             );
         });
 
@@ -1253,5 +1263,16 @@ class Laracord
     {
         return Message::make($this)
             ->content($content);
+    }
+
+    /**
+     * Clean the interaction name.
+     *
+     * @param string $string
+     * @return string
+     */
+    public function cleanInteractionName(string $string): string {
+        // Current Discord-PHP doesn't support context menu names with spaces, we'll work around this for the moment.
+        return str_replace(' ', '-', strtolower($string));
     }
 }

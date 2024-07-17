@@ -86,37 +86,6 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
     }
 
     /**
-     * Retrieve the option value.
-     */
-    protected function value(?string $option = null, mixed $default = null): mixed
-    {
-//        $options = $this->flattenOptions($this->getOptions());
-//
-//        if (is_null($option)) {
-//            return $options;
-//        }
-//
-//        return $options[$option] ?? $default;
-        return $default;
-    }
-
-//    /**
-//     * Set the command options.
-//     */
-//    public function options(): array
-//    {
-//        return [];
-//    }
-//
-//    /**
-//     * Set the autocomplete choices.
-//     */
-//    public function autocomplete(): array
-//    {
-//        return [];
-//    }
-
-    /**
      * Retrieve the command signature.
      *
      * @return string
@@ -141,54 +110,6 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
 
         return (new RolePermission($this->discord(), $permissions))->__toString();
     }
-
-//    /**
-//     * Retrieve the slash command options.
-//     */
-//    public function getRegisteredOptions(): ?array
-//    {
-//        if ($this->registeredOptions) {
-//            return $this->registeredOptions;
-//        }
-//
-//        $options = collect($this->options())->merge($this->options);
-//
-//        if ($options->isEmpty()) {
-//            return $this->registeredOptions = null;
-//        }
-//
-//        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof Option
-//            ? $option
-//            : new Option($this->discord(), $option)
-//        )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
-//    }
-//
-//    /**
-//     * Flatten the options into dot notated keys.
-//     */
-//    protected function flattenOptions(array $options, ?string $parent = null): array
-//    {
-//        return collect($options)->flatMap(function ($option) use ($parent) {
-//            $key = $parent ? "{$parent}.{$option['name']}" : $option['name'];
-//
-//            if (is_array($option) && isset($option['options'])) {
-//                $options = $this->flattenOptions($option['options'], $key);
-//
-//                if (array_key_exists('value', $option)) {
-//                    return [
-//                        ...[$key => $option['value']],
-//                        ...$options,
-//                    ];
-//                }
-//
-//                return $options;
-//            }
-//
-//            return isset($option['value'])
-//                ? [$key => $option['value']]
-//                : [];
-//        })->all();
-//    }
 
     public function getCleanName() {
         // Current Discord-PHP doesn't support context menu names with spaces, we'll work around this for the moment.

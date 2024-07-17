@@ -172,11 +172,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
      */
     protected function parseOptions(Interaction $interaction): void
     {
-        if ($interaction->type !== DiscordCommand::CHAT_INPUT) {
-            $this->parsedOptions = [];
-            return;
-        }
-
         $this->parsedOptions = json_decode($interaction->data->options->serialize(), true);
     }
 
