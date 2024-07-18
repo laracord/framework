@@ -3,7 +3,7 @@
 namespace Laracord\Commands;
 
 use Discord\Parts\Guild\Guild;
-use Discord\Parts\Interactions\Command\Command as DiscordCommand;
+use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
 use Laracord\Discord\Concerns\HasModal;
@@ -56,6 +56,11 @@ abstract class AbstractCommand
     protected $description;
 
     /**
+     * The command type.
+     */
+    protected string|int $type = 'chat';
+
+    /**
      * The guild the command belongs to.
      *
      * @var string
@@ -82,13 +87,6 @@ abstract class AbstractCommand
      * @var bool
      */
     protected $enabled = true;
-
-    /**
-     * The command type, determining how the command should be accessed on Discord.
-     *
-     * @var int
-     */
-    protected $type = DiscordCommand::CHAT_INPUT;
 
     /**
      * Create a new command instance.
@@ -197,7 +195,7 @@ abstract class AbstractCommand
      */
     public function getSignature()
     {
-        return Str::start($this->getName(), $this->bot()->getPrefix());
+        return $this->getName();
     }
 
     /**
@@ -224,6 +222,17 @@ abstract class AbstractCommand
     public function getDescription()
     {
         return $this->description;
+    }
+
+    /**
+     * Get the command type.
+     */
+    public function getType(): string
+    {
+        return match ($this->type) {
+            Command::CHAT_INPUT => Command::CHAT_INPUT,
+            default => Command::CHAT_INPUT,
+        };
     }
 
     /**
@@ -286,13 +295,5 @@ abstract class AbstractCommand
     public function isEnabled(): bool
     {
         return $this->enabled;
-    }
-
-    /**
-     * Retrieve the command type.
-     */
-    public function getType()
-    {
-        return $this->type;
     }
 }
