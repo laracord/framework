@@ -3,13 +3,10 @@
 namespace Laracord\Commands;
 
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
-use Laracord\Commands\Concerns\HasRolePermissions;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
 
-abstract class ContextMenu extends AbstractCommand implements ContextMenuContract
+abstract class ContextMenu extends ApplicationCommand implements ContextMenuContract
 {
-    use HasRolePermissions;
-
     /**
      * The context menu type.
      */
@@ -26,7 +23,9 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
             'guild_id' => $this->getGuild(),
             'default_member_permissions' => $this->getPermissions(),
             'default_permission' => true,
-        ])->filter();
+            'dm_permission' => $this->canDirectMessage(),
+            'nsfw' => $this->isNsfw(),
+        ])->reject(fn ($value) => blank($value));
 
         return new DiscordCommand($this->discord(), $menu->all());
     }

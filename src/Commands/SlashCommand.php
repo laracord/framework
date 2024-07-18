@@ -10,13 +10,10 @@ use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Laracord\Commands\Concerns\HasRolePermissions;
 use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
 
-abstract class SlashCommand extends AbstractCommand implements SlashCommandContract
+abstract class SlashCommand extends ApplicationCommand implements SlashCommandContract
 {
-    use HasRolePermissions;
-
     /**
      * The command options.
      *
@@ -45,7 +42,10 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     {
         $command = CommandBuilder::new()
             ->setName($this->getName())
-            ->setDescription($this->getDescription());
+            ->setDescription($this->getDescription())
+            ->setType($this->getType())
+            ->setDmPermission($this->canDirectMessage())
+            ->setNsfw($this->isNsfw());
 
         if ($permissions = $this->getPermissions()) {
             $command = $command->setDefaultMemberPermissions($permissions);
