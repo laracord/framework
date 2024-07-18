@@ -6,6 +6,8 @@ interface Service
 {
     /**
      * Handle the service.
+     *
+     * @return mixed
      */
     public function handle();
 }

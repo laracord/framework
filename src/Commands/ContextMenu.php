@@ -2,7 +2,10 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
+use Discord\Parts\Interactions\Interaction;
+use Discord\Parts\User\User;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
 
 abstract class ContextMenu extends ApplicationCommand implements ContextMenuContract
@@ -32,22 +35,25 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
 
     /**
      * Handle the context menu interaction.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return void
      */
-    abstract public function handle($interaction);
+    abstract public function handle(Interaction $interaction, Message|User|null $target): mixed;
 
     /**
      * Maybe handle the context menu interaction.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return void
+     * @return mixed
      */
     public function maybeHandle($interaction)
     {
+        $target = match ($this->getType()) {
+            DiscordCommand::USER => $interaction->data->resolved->users?->first(),
+            DiscordCommand::MESSAGE => $interaction->data->resolved->messages?->first(),
+            default => null,
+        };
+
         if (! $this->isAdminCommand()) {
-            $this->handle($interaction);
+            $this->handle($interaction, $target);
 
             return;
         }
@@ -63,7 +69,7 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
             );
         }
 
-        $this->handle($interaction);
+        $this->handle($interaction, $target);
     }
 
     /**

@@ -71,7 +71,7 @@ abstract class Service implements ServiceContract
     /**
      * Handle the service.
      *
-     * @return void
+     * @return mixed
      */
     abstract public function handle();
 

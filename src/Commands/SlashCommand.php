@@ -69,7 +69,7 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
      * Handle the slash command.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return void
+     * @return mixed
      */
     abstract public function handle($interaction);
 
@@ -77,7 +77,7 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
      * Maybe handle the slash command.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return void
+     * @return mixed
      */
     public function maybeHandle($interaction)
     {

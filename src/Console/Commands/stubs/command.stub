@@ -19,7 +19,7 @@ class {{ class }} extends Command
      *
      * @var string
      */
-    protected $description = 'The {{ command }} command.';
+    protected $description = 'The {{ title }} command.';
 
     /**
      * Determines whether the command requires admin permissions.
@@ -46,7 +46,7 @@ class {{ class }} extends Command
     {
         return $this
             ->message()
-            ->title('{{ class }}')
+            ->title('{{ title }}')
             ->content('Hello world!')
             ->button('👋', route: 'wave')
             ->send($message);
