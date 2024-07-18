@@ -44,6 +44,10 @@ abstract class Command extends AbstractCommand implements CommandContract
      */
     public function maybeHandle($message, $args)
     {
+        if (! $this->canDirectMessage() && ! $message->guild_id) {
+            return;
+        }
+
         if ($this->getGuild() && $message->guild_id !== $this->getGuild()) {
             return;
         }
