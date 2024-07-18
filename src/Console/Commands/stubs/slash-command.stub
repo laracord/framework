@@ -19,7 +19,7 @@ class {{ class }} extends SlashCommand
      *
      * @var string
      */
-    protected $description = 'The {{ command }} slash command.';
+    protected $description = 'The {{ title }} slash command.';
 
     /**
      * The command options.
@@ -60,7 +60,7 @@ class {{ class }} extends SlashCommand
         $interaction->respondWithMessage(
             $this
               ->message()
-              ->title('{{ class }}')
+              ->title('{{ title }}')
               ->content('Hello world!')
               ->button('👋', route: 'wave')
               ->build()

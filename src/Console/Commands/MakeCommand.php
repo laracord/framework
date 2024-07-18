@@ -43,7 +43,11 @@ class MakeCommand extends GeneratorCommand
 
         $command = $this->option('command') ?: Str::of($name)->classBasename()->kebab()->value();
 
-        return str_replace(['dummy:command', '{{ command }}'], $command, $stub);
+        $title = Str::of($command)->replace('-', ' ')->apa();
+
+        $stub = str_replace(['dummy:command', '{{ command }}', '{{ title }}'], [$command, $command, $title], $stub);
+
+        return $stub;
     }
 
     /**
