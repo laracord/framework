@@ -4,7 +4,6 @@ namespace {{ namespace }};
 
 use Discord\Parts\Interactions\Interaction;
 use Laracord\Commands\ContextMenu;
-use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 
 class {{ class }} extends ContextMenu
 {
@@ -14,6 +13,11 @@ class {{ class }} extends ContextMenu
      * @var string
      */
     protected $name = '{{ command }}';
+
+    /**
+     * The context menu type.
+     */
+    protected string|int $type = 'message';
 
     /**
      * The permissions required to use the context menu.
@@ -28,11 +32,6 @@ class {{ class }} extends ContextMenu
      * @var bool
      */
     protected $admin = false;
-
-    /**
-     * The context menu type.
-     */
-    protected string|int $type = 'message';
 
     /**
      * Handle the context menu interaction.
