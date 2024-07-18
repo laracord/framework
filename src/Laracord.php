@@ -1188,7 +1188,7 @@ class Laracord
      */
     public function getContextMenuPath(): string
     {
-        return app_path('ContextMenus');
+        return app_path('Menus');
     }
 
     /**
