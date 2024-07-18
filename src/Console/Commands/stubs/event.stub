@@ -17,7 +17,7 @@ class {{ class }} extends Event
     /**
      * Handle the event.
      */
-    public function handle({{ attributes }})
+    public function handle({{ attributes }}): mixed
     {
         $this->console()->log('The {{ eventName }} event has fired!');
     }
