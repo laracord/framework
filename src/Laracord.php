@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laracord\Commands\ApplicationCommand;
 use Laracord\Commands\Command;
 use Laracord\Commands\ContextMenu;
 use Laracord\Commands\SlashCommand;
@@ -641,7 +642,7 @@ class Laracord
     /**
      * Register the specified application command.
      */
-    public function registerApplicationCommand(SlashCommand|ContextMenu $command): void
+    public function registerApplicationCommand(ApplicationCommand $command): void
     {
         cache()->forget('laracord.application-commands');
 
