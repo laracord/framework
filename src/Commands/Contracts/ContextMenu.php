@@ -7,7 +7,7 @@ use Discord\Parts\Interactions\Interaction;
 interface ContextMenu
 {
     /**
-     * Handle the context menu.
+     * Handle the context menu interaction.
      */
     public function handle(Interaction $interaction);
 }
