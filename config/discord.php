@@ -139,6 +139,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Additional Context Menus
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify any additional context menus for the Discord bot.
+    | These context menus will be loaded in addition to the context menus
+    | automatically loaded in your project.
+    |
+    */
+
+    'menus' => [
+        //
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Additional Services
     |--------------------------------------------------------------------------
     |
