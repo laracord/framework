@@ -32,7 +32,6 @@ use React\Stream\WritableResourceStream;
 use ReflectionClass;
 use Throwable;
 
-use function React\Async\async;
 use function React\Async\await;
 use function React\Promise\all;
 
@@ -431,45 +430,69 @@ class Laracord
      */
     protected function registerApplicationCommands(): self
     {
-        $existing = cache()->get('laracord.application-commands');
-
-        if (! $existing) {
-            $existing = [];
-
-            $existing[] = async(fn () => await($this->discord->application->commands->freshen()))();
-
-            foreach ($this->discord->guilds as $guild) {
-                $existing[] = async(fn () => await($guild->commands->freshen()))();
+        $normalize = function ($data) use (&$normalize) {
+            if (is_object($data)) {
+                $data = (array) $data;
             }
 
-            $existing = all($existing)->then(function ($commands) {
-                return collect($commands)
-                    ->flatMap(fn ($command) => $command->toArray())
-                    ->map(fn ($command) => collect($command->getUpdatableAttributes())->prepend($command->id, 'id')->filter()->all())
-                    ->map(fn ($command) => array_merge($command, [
-                        'guild_id' => $command['guild_id'] ?? null,
-                        'dm_permission' => $command['dm_permission'] ?? null,
-                        'default_permission' => $command['default_permission'] ?? true,
-                        'options' => collect($command['options'] ?? [])->map(fn ($option) => collect($option)->sortKeys()->all())->all(),
-                    ]))
-                    ->keyBy('name');
-            })->then(fn ($commands) => cache()->rememberForever('laracord.application-commands', fn () => $commands));
+            if (is_array($data)) {
+                ksort($data);
+
+                return array_map($normalize, $data);
+            }
+
+            return $data;
+        };
+
+        $existing = cache()->get('laracord.application-commands', []);
+
+        if (! $existing) {
+            $existing[] = $this->discord->application->commands->freshen();
+
+            foreach ($this->discord->guilds as $guild) {
+                $existing[] = $guild->commands->freshen();
+            }
+
+            $existing = all($existing)->then(fn ($commands) => collect($commands)
+                ->flatMap(fn ($command) => $command->toArray())
+                ->map(fn ($command) => collect($command->getCreatableAttributes())
+                    ->merge([
+                        'id' => $command->id,
+                        'guild_id' => $command->guild_id ?? null,
+                        'dm_permission' => $command->guild_id ? null : ($command->dm_permission ?? false),
+                        'default_permission' => $command->default_permission ?? true,
+                    ])
+                    ->all()
+                )
+                ->map(fn ($command) => array_merge($command, [
+                    'options' => json_decode(json_encode($command['options'] ?? []), true),
+                ]))
+                ->filter(fn ($command) => ! blank($command))
+                ->keyBy('name')
+            );
+
+            $existing = await($existing);
+
+            cache()->forever('laracord.application-commands', $existing);
         }
 
-        $existing = $existing instanceof Collection ? $existing : collect();
+        $existing = collect($existing);
 
         $registered = collect($this->getSlashCommands())
             ->merge($this->getContextMenus())
             ->map(fn ($command) => $command::make($this))
             ->filter(fn ($command) => $command->isEnabled())
             ->mapWithKeys(function ($command) {
-                $attributes = $command->create()->getUpdatableAttributes();
+                $attributes = $command->create()->getCreatableAttributes();
 
-                $attributes = array_merge($attributes, [
-                    'type' => $attributes['type'] ?? 1,
-                    'dm_permission' => $attributes['dm_permission'] ?? null,
-                    'guild_id' => $attributes['guild_id'] ?? false,
-                ]);
+                $attributes = collect($attributes)
+                    ->merge([
+                        'guild_id' => $command->getGuild() ?? null,
+                        'dm_permission' => ! $command->getGuild() ? $command->canDirectMessage() : null,
+                        'nsfw' => $command->isNsfw(),
+                    ])
+                    ->sortKeys()
+                    ->all();
 
                 return [$command->getName() => [
                     'state' => $command,
@@ -482,42 +505,36 @@ class Laracord
 
         $updated = $registered
             ->map(function ($command) {
-                $options = collect($command['attributes']['options'] ?? [])
-                    ->filter()
-                    ->all();
-
-                $attributes = collect($command['attributes']);
-
-                $attributes = $attributes
-                    ->put('options', collect($options)->map(fn ($option) => collect($option)->filter()->all())->all())
-                    ->forget('guild_id')
-                    ->filter()
-                    ->prepend($command['state']->getGuild(), 'guild_id')
+                $attributes = collect($command['attributes'])
+                    ->reject(fn ($value) => blank($value))
                     ->all();
 
                 return array_merge($command, ['attributes' => $attributes]);
             })
-            ->filter(function ($command, $name) use ($existing) {
+            ->filter(function ($command, $name) use ($existing, $normalize) {
                 if (! $existing->has($name)) {
                     return false;
                 }
 
-                $current = collect($existing->get($name))->forget('id');
+                $current = collect($existing->get($name))
+                    ->forget('id')
+                    ->reject(fn ($value) => blank($value));
 
-                foreach ($command['attributes'] as $key => $value) {
-                    $attributes = $current->get($key);
+                $attributes = collect($command['attributes'])
+                    ->reject(fn ($value) => blank($value));
 
-                    if (is_array($attributes) && is_array($value)) {
-                        $attributes = collect($attributes)
-                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                            ->toJson();
+                $keys = collect($current->keys())
+                    ->merge($attributes->keys())
+                    ->unique();
 
-                        $value = collect($value)
-                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                            ->toJson();
-                    }
+                foreach ($keys as $key) {
+                    $attribute = $current->get($key);
+                    $value = $attributes->get($key);
 
-                    if ($attributes === $value) {
+                    $attribute = $normalize($attribute);
+                    $value = $normalize($value);
+
+                    if ($attribute === $value) {
                         continue;
                     }
 
@@ -525,22 +542,30 @@ class Laracord
                 }
 
                 return false;
-            })->each(function ($command) use ($existing) {
+            })
+            ->each(function ($command) use ($existing) {
                 $state = $existing->get($command['state']->getName());
 
-                if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
+                $current = Arr::get($command, 'attributes.guild_id');
+                $existing = Arr::get($state, 'guild_id');
+
+                if ($current && ! $existing) {
                     $this->unregisterApplicationCommand($state['id']);
                 }
 
-                if (! Arr::get($command, 'attributes.guild_id') && $guild = Arr::get($state, 'guild_id')) {
-                    $this->unregisterApplicationCommand($state['id'], $guild);
+                if ((! $current && $existing) || $current !== $existing) {
+                    $this->unregisterApplicationCommand($state['id'], $existing);
                 }
             });
 
         if ($updated->isNotEmpty()) {
             $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
 
-            $updated->each(fn ($command) => $this->registerApplicationCommand($command['state']));
+            $updated->each(function ($command) {
+                $state = $command['state'];
+
+                $this->registerApplicationCommand($state);
+            });
         }
 
         if ($deleted->isNotEmpty()) {
@@ -729,7 +754,7 @@ class Laracord
         $this->discord()->on(DiscordEvent::INTERACTION_CREATE, function (Interaction $interaction) {
             $id = $interaction->data->custom_id;
 
-            $handlers = collect($this->getInteractions())
+            $handlers = collect($this->getRegisteredInteractions())
                 ->partition(fn ($route, $name) => ! Str::contains($name, '{'));
 
             $static = $handlers[0];
