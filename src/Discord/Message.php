@@ -1052,6 +1052,12 @@ class Message
      */
     public function poll(string $question, array $answers, int $duration = 24, bool $multiselect = false): self
     {
+        $answers = collect($answers)
+            ->map(fn ($value, $key) => is_string($key)
+                ? ['emoji' => $key, 'text' => $value]
+                : ['text' => $value]
+            )->all();
+
         $this->poll = (new Poll($this->bot->discord()))
             ->setQuestion($question)
             ->setAnswers($answers)
