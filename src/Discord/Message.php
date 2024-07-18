@@ -14,7 +14,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
-use Discord\Parts\Channel\Poll\Request\Poll;
+use Discord\Parts\Channel\Poll\Poll;
 use Discord\Parts\Channel\Webhook;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
