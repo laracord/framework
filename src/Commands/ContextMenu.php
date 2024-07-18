@@ -70,7 +70,7 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
     /**
      * Get the context menu type.
      */
-    public function getType(): string
+    public function getType(): int
     {
         return match ($this->type) {
             'user' => DiscordCommand::USER,

@@ -227,10 +227,9 @@ abstract class AbstractCommand
     /**
      * Get the command type.
      */
-    public function getType(): string
+    public function getType(): int
     {
         return match ($this->type) {
-            Command::CHAT_INPUT => Command::CHAT_INPUT,
             default => Command::CHAT_INPUT,
         };
     }
