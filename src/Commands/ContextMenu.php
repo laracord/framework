@@ -2,49 +2,37 @@
 
 namespace Laracord\Commands;
 
-use Discord\Builders\CommandBuilder;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
-use Discord\Parts\Permissions\RolePermission;
+use Laracord\Commands\Concerns\HasRolePermissions;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
 
 abstract class ContextMenu extends AbstractCommand implements ContextMenuContract
 {
+    use HasRolePermissions;
+
     /**
-     * The permissions required to use the command.
-     *
-     * @var array
+     * The context menu type.
      */
-    protected $permissions = [];
+    protected string|int $type = 'message';
 
     /**
      * Create a Discord command instance.
      */
     public function create(): DiscordCommand
     {
-        $command = CommandBuilder::new()
-            ->setName($this->getCleanName())
-            ->setType($this->getType())
-            ->setDescription($this->getDescription());
+        $menu = collect([
+            'name' => $this->getName(),
+            'type' => $this->getType(),
+            'guild_id' => $this->getGuild(),
+            'default_member_permissions' => $this->getPermissions(),
+            'default_permission' => true,
+        ])->filter();
 
-        if ($permissions = $this->getPermissions()) {
-            $command = $command->setDefaultMemberPermissions($permissions);
-        }
-
-        $command = $command->toArray();
-
-        unset($command['description']);
-        $command['name'] = $this->getName();
-
-        $command = collect($command)
-            ->put('guild_id', $this->getGuild())
-            ->filter()
-            ->all();
-
-        return new DiscordCommand($this->discord(), $command);
+        return new DiscordCommand($this->discord(), $menu->all());
     }
 
     /**
-     * Handle the slash command.
+     * Handle the context menu interaction.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
      * @return void
@@ -52,7 +40,7 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
     abstract public function handle($interaction);
 
     /**
-     * Maybe handle the slash command.
+     * Maybe handle the context menu interaction.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
      * @return void
@@ -80,34 +68,15 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
     }
 
     /**
-     * Retrieve the command signature.
-     *
-     * @return string
+     * Get the context menu type.
      */
-    public function getSignature()
+    public function getType(): string
     {
-        return $this->getName();
-    }
-
-    /**
-     * Retrieve the slash command bitwise permission.
-     */
-    public function getPermissions(): ?string
-    {
-        if (! $this->permissions) {
-            return null;
-        }
-
-        $permissions = collect($this->permissions)
-            ->mapWithKeys(fn ($permission) => [$permission => true])
-            ->all();
-
-        return (new RolePermission($this->discord(), $permissions))->__toString();
-    }
-
-    public function getCleanName()
-    {
-        // Current Discord-PHP doesn't support context menu names with spaces, we'll work around this for the moment.
-        return str_replace(' ', '-', strtolower($this->name));
+        return match ($this->type) {
+            'user' => DiscordCommand::USER,
+            DiscordCommand::USER => DiscordCommand::USER,
+            DiscordCommand::MESSAGE => DiscordCommand::MESSAGE,
+            default => DiscordCommand::MESSAGE,
+        };
     }
 }
