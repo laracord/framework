@@ -560,7 +560,7 @@ class Laracord
             });
 
         if ($updated->isNotEmpty()) {
-            $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
+            $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> application command(s).");
 
             $updated->each(function ($command) {
                 $state = $command['state'];
@@ -570,13 +570,13 @@ class Laracord
         }
 
         if ($deleted->isNotEmpty()) {
-            $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> slash command(s).");
+            $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> application command(s).");
 
             $deleted->each(fn ($command) => $this->unregisterApplicationCommand($command['id'], $command['guild_id'] ?? null));
         }
 
         if ($created->isNotEmpty()) {
-            $this->console()->log("Creating <fg=blue>{$created->count()}</> new slash command(s).");
+            $this->console()->log("Creating <fg=blue>{$created->count()}</> new application command(s).");
 
             $created->each(fn ($command) => $this->registerApplicationCommand($command['state']));
         }
