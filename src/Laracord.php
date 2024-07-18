@@ -468,7 +468,7 @@ class Laracord
                     'guild_id' => $attributes['guild_id'] ?? false,
                 ]);
 
-                if($command->getType() !== DiscordCommand::CHAT_INPUT) {
+                if ($command->getType() !== DiscordCommand::CHAT_INPUT) {
                     $commandName = $command->getCleanName();
                     $attributes['name'] = $commandName;
                 }
@@ -564,7 +564,7 @@ class Laracord
         $registered->each(function ($command, $name) {
             $this->registerInteractions($name, $command['state']->interactions());
 
-            if($command['state'] instanceof SlashCommand) {
+            if ($command['state'] instanceof SlashCommand) {
                 $subcommands = collect($command['state']->getRegisteredOptions())
                     ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
                     ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
@@ -594,7 +594,7 @@ class Laracord
             $name = $command['state']->getName();
             $interactionName = $name;
 
-            if($command['state'] instanceof ContextMenu) {
+            if ($command['state'] instanceof ContextMenu) {
                 $interactionName = $command['state']->getCleanName();
             }
 
@@ -1267,11 +1267,9 @@ class Laracord
 
     /**
      * Clean the interaction name.
-     *
-     * @param string $string
-     * @return string
      */
-    public function cleanInteractionName(string $string): string {
+    public function cleanInteractionName(string $string): string
+    {
         // Current Discord-PHP doesn't support context menu names with spaces, we'll work around this for the moment.
         return str_replace(' ', '-', strtolower($string));
     }

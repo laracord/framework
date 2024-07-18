@@ -79,7 +79,7 @@ class MakeContextCommand extends GeneratorCommand
     protected function getArguments()
     {
         return [
-            ['name', InputArgument::REQUIRED, 'The name of the context menu']
+            ['name', InputArgument::REQUIRED, 'The name of the context menu'],
         ];
     }
 

@@ -3,14 +3,8 @@
 namespace Laracord\Commands;
 
 use Discord\Builders\CommandBuilder;
-use Discord\Helpers\Collection;
-use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
-use Discord\Parts\Interactions\Command\Option;
-use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
 
 abstract class ContextMenu extends AbstractCommand implements ContextMenuContract
@@ -111,7 +105,8 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
         return (new RolePermission($this->discord(), $permissions))->__toString();
     }
 
-    public function getCleanName() {
+    public function getCleanName()
+    {
         // Current Discord-PHP doesn't support context menu names with spaces, we'll work around this for the moment.
         return str_replace(' ', '-', strtolower($this->name));
     }
