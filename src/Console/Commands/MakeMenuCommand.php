@@ -7,14 +7,14 @@ use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
-class MakeContextCommand extends GeneratorCommand
+class MakeMenuCommand extends GeneratorCommand
 {
     /**
      * The command name.
      *
      * @var string
      */
-    protected $name = 'make:context';
+    protected $name = 'make:menu';
 
     /**
      * The command description.
@@ -68,7 +68,7 @@ class MakeContextCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return $rootNamespace.'\ContextMenus';
+        return $rootNamespace.'\Menus';
     }
 
     /**
