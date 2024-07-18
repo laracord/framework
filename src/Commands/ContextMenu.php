@@ -75,7 +75,6 @@ abstract class ContextMenu extends AbstractCommand implements ContextMenuContrac
         return match ($this->type) {
             'user' => DiscordCommand::USER,
             DiscordCommand::USER => DiscordCommand::USER,
-            DiscordCommand::MESSAGE => DiscordCommand::MESSAGE,
             default => DiscordCommand::MESSAGE,
         };
     }
