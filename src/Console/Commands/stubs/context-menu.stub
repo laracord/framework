@@ -32,7 +32,7 @@ class {{ class }} extends ContextMenu
     /**
      * The context menu type.
      */
-    protected string $type = 'message';
+    protected string|int $type = 'message';
 
     /**
      * Handle the context menu interaction.
