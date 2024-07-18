@@ -3,54 +3,38 @@
 namespace {{ namespace }};
 
 use Discord\Parts\Interactions\Interaction;
-use Laracord\Commands\SlashCommand;
+use Laracord\Commands\ContextMenu;
 
-class {{ class }} extends SlashCommand
+class {{ class }} extends ContextMenu
 {
     /**
-     * The command name.
+     * The context menu name.
      *
      * @var string
      */
     protected $name = '{{ command }}';
 
     /**
-     * The command description.
-     *
-     * @var string
+     * The context menu type.
      */
-    protected $description = 'The {{ command }} slash command.';
+    protected string|int $type = 'message';
 
     /**
-     * The command options.
-     *
-     * @var array
-     */
-    protected $options = [];
-
-    /**
-     * The permissions required to use the command.
+     * The permissions required to use the context menu.
      *
      * @var array
      */
     protected $permissions = [];
 
     /**
-     * Indicates whether the command requires admin permissions.
+     * Indicates whether the context menu requires admin permissions.
      *
      * @var bool
      */
     protected $admin = false;
 
     /**
-     * Indicates whether the command should be displayed in the commands list.
-     *
-     * @var bool
-     */
-    protected $hidden = false;
-
-    /**
-     * Handle the slash command.
+     * Handle the context menu interaction.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
      * @return void
@@ -68,7 +52,7 @@ class {{ class }} extends SlashCommand
     }
 
     /**
-     * The command interaction routes.
+     * The context menu interaction routes.
      */
     public function interactions(): array
     {

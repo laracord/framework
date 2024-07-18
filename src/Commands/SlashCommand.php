@@ -8,20 +8,12 @@ use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
-use Discord\Parts\Permissions\RolePermission;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
 
-abstract class SlashCommand extends AbstractCommand implements SlashCommandContract
+abstract class SlashCommand extends ApplicationCommand implements SlashCommandContract
 {
-    /**
-     * The permissions required to use the command.
-     *
-     * @var array
-     */
-    protected $permissions = [];
-
     /**
      * The command options.
      *
@@ -50,7 +42,10 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     {
         $command = CommandBuilder::new()
             ->setName($this->getName())
-            ->setDescription($this->getDescription());
+            ->setDescription($this->getDescription())
+            ->setType($this->getType())
+            ->setDmPermission($this->canDirectMessage())
+            ->setNsfw($this->isNsfw());
 
         if ($permissions = $this->getPermissions()) {
             $command = $command->setDefaultMemberPermissions($permissions);
@@ -241,22 +236,6 @@ abstract class SlashCommand extends AbstractCommand implements SlashCommandContr
     public function getSignature()
     {
         return Str::start($this->getName(), '/');
-    }
-
-    /**
-     * Retrieve the slash command bitwise permission.
-     */
-    public function getPermissions(): ?string
-    {
-        if (! $this->permissions) {
-            return null;
-        }
-
-        $permissions = collect($this->permissions)
-            ->mapWithKeys(fn ($permission) => [$permission => true])
-            ->all();
-
-        return (new RolePermission($this->discord(), $permissions))->__toString();
     }
 
     /**

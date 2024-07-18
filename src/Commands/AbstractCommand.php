@@ -3,6 +3,7 @@
 namespace Laracord\Commands;
 
 use Discord\Parts\Guild\Guild;
+use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
 use Laracord\Discord\Concerns\HasModal;
@@ -55,11 +56,21 @@ abstract class AbstractCommand
     protected $description;
 
     /**
+     * The command type.
+     */
+    protected string|int $type = 'chat';
+
+    /**
      * The guild the command belongs to.
      *
      * @var string
      */
     protected $guild;
+
+    /**
+     * Determine whether the command can be used in a direct message.
+     */
+    protected bool $directMessage = true;
 
     /**
      * Determines whether the command requires admin permissions.
@@ -141,6 +152,14 @@ abstract class AbstractCommand
     }
 
     /**
+     * Determine if the command can be used in a direct message.
+     */
+    public function canDirectMessage(): bool
+    {
+        return $this->directMessage;
+    }
+
+    /**
      * Resolve a Discord user.
      */
     public function resolveUser(string $username): ?User
@@ -189,7 +208,7 @@ abstract class AbstractCommand
      */
     public function getSignature()
     {
-        return Str::start($this->getName(), $this->bot()->getPrefix());
+        return $this->getName();
     }
 
     /**
@@ -216,6 +235,16 @@ abstract class AbstractCommand
     public function getDescription()
     {
         return $this->description;
+    }
+
+    /**
+     * Get the command type.
+     */
+    public function getType(): int
+    {
+        return match ($this->type) {
+            default => Command::CHAT_INPUT,
+        };
     }
 
     /**

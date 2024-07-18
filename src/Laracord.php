@@ -15,7 +15,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laracord\Commands\ApplicationCommand;
 use Laracord\Commands\Command;
+use Laracord\Commands\ContextMenu;
 use Laracord\Commands\SlashCommand;
 use Laracord\Concerns\CanAsync;
 use Laracord\Console\Commands\Command as ConsoleCommand;
@@ -31,7 +33,6 @@ use React\Stream\WritableResourceStream;
 use ReflectionClass;
 use Throwable;
 
-use function React\Async\async;
 use function React\Async\await;
 use function React\Promise\all;
 
@@ -111,6 +112,11 @@ class Laracord
     protected array $slashCommands = [];
 
     /**
+     * The Discord bot context menus.
+     */
+    protected array $contextMenus = [];
+
+    /**
      * The Discord events.
      */
     protected array $events = [];
@@ -119,11 +125,6 @@ class Laracord
      * The bot services.
      */
     protected array $services = [];
-
-    /**
-     * The bot interaction routes.
-     */
-    protected array $interactions = [];
 
     /**
      * The console input stream.
@@ -159,6 +160,11 @@ class Laracord
     protected array $registeredCommands = [];
 
     /**
+     * The registered context menus.
+     */
+    protected array $registeredContextMenus = [];
+
+    /**
      * The registered Discord events.
      */
     protected array $registeredEvents = [];
@@ -167,6 +173,11 @@ class Laracord
      * The registered bot services.
      */
     protected array $registeredServices = [];
+
+    /**
+     * The registered bot interaction routes.
+     */
+    protected array $registeredInteractions = [];
 
     /**
      * Determine whether to show the commands on boot.
@@ -214,7 +225,7 @@ class Laracord
                 ->registerEvents()
                 ->bootServices()
                 ->bootHttpServer()
-                ->registerSlashCommands()
+                ->registerApplicationCommands()
                 ->handleInteractions();
 
             $this->afterBoot();
@@ -334,6 +345,7 @@ class Laracord
         $this->discord = null;
 
         $this->registeredCommands = [];
+        $this->registeredContextMenus = [];
         $this->registeredEvents = [];
         $this->registeredServices = [];
 
@@ -415,48 +427,73 @@ class Laracord
     }
 
     /**
-     * Handle the bot slash commands.
+     * Register the bot application commands.
      */
-    protected function registerSlashCommands(): self
+    protected function registerApplicationCommands(): self
     {
-        $existing = cache()->get('laracord.slash-commands');
-
-        if (! $existing) {
-            $existing = [];
-
-            $existing[] = async(fn () => await($this->discord->application->commands->freshen()))();
-
-            foreach ($this->discord->guilds as $guild) {
-                $existing[] = async(fn () => await($guild->commands->freshen()))();
+        $normalize = function ($data) use (&$normalize) {
+            if (is_object($data)) {
+                $data = (array) $data;
             }
 
-            $existing = all($existing)->then(function ($commands) {
-                return collect($commands)
-                    ->flatMap(fn ($command) => $command->toArray())
-                    ->map(fn ($command) => collect($command->getUpdatableAttributes())->prepend($command->id, 'id')->filter()->all())
-                    ->map(fn ($command) => array_merge($command, [
-                        'guild_id' => $command['guild_id'] ?? null,
-                        'dm_permission' => $command['dm_permission'] ?? null,
-                        'default_permission' => $command['default_permission'] ?? true,
-                        'options' => collect($command['options'] ?? [])->map(fn ($option) => collect($option)->sortKeys()->all())->all(),
-                    ]))
-                    ->keyBy('name');
-            })->then(fn ($commands) => cache()->rememberForever('laracord.slash-commands', fn () => $commands));
+            if (is_array($data)) {
+                ksort($data);
+
+                return array_map($normalize, $data);
+            }
+
+            return $data;
+        };
+
+        $existing = cache()->get('laracord.application-commands', []);
+
+        if (! $existing) {
+            $existing[] = $this->discord->application->commands->freshen();
+
+            foreach ($this->discord->guilds as $guild) {
+                $existing[] = $guild->commands->freshen();
+            }
+
+            $existing = all($existing)->then(fn ($commands) => collect($commands)
+                ->flatMap(fn ($command) => $command->toArray())
+                ->map(fn ($command) => collect($command->getCreatableAttributes())
+                    ->merge([
+                        'id' => $command->id,
+                        'guild_id' => $command->guild_id ?? null,
+                        'dm_permission' => $command->guild_id ? null : ($command->dm_permission ?? false),
+                        'default_permission' => $command->default_permission ?? true,
+                    ])
+                    ->all()
+                )
+                ->map(fn ($command) => array_merge($command, [
+                    'options' => json_decode(json_encode($command['options'] ?? []), true),
+                ]))
+                ->filter(fn ($command) => ! blank($command))
+                ->keyBy('name')
+            );
+
+            $existing = await($existing);
+
+            cache()->forever('laracord.application-commands', $existing);
         }
 
-        $existing = $existing instanceof Collection ? $existing : collect();
+        $existing = collect($existing);
 
         $registered = collect($this->getSlashCommands())
+            ->merge($this->getContextMenus())
             ->map(fn ($command) => $command::make($this))
             ->filter(fn ($command) => $command->isEnabled())
             ->mapWithKeys(function ($command) {
-                $attributes = $command->create()->getUpdatableAttributes();
+                $attributes = $command->create()->getCreatableAttributes();
 
-                $attributes = array_merge($attributes, [
-                    'type' => $attributes['type'] ?? 1,
-                    'dm_permission' => $attributes['dm_permission'] ?? null,
-                    'guild_id' => $attributes['guild_id'] ?? false,
-                ]);
+                $attributes = collect($attributes)
+                    ->merge([
+                        'guild_id' => $command->getGuild() ?? null,
+                        'dm_permission' => ! $command->getGuild() ? $command->canDirectMessage() : null,
+                        'nsfw' => $command->isNsfw(),
+                    ])
+                    ->sortKeys()
+                    ->all();
 
                 return [$command->getName() => [
                     'state' => $command,
@@ -469,42 +506,36 @@ class Laracord
 
         $updated = $registered
             ->map(function ($command) {
-                $options = collect($command['attributes']['options'] ?? [])
-                    ->filter()
-                    ->all();
-
-                $attributes = collect($command['attributes']);
-
-                $attributes = $attributes
-                    ->put('options', collect($options)->map(fn ($option) => collect($option)->filter()->all())->all())
-                    ->forget('guild_id')
-                    ->filter()
-                    ->prepend($command['state']->getGuild(), 'guild_id')
+                $attributes = collect($command['attributes'])
+                    ->reject(fn ($value) => blank($value))
                     ->all();
 
                 return array_merge($command, ['attributes' => $attributes]);
             })
-            ->filter(function ($command, $name) use ($existing) {
+            ->filter(function ($command, $name) use ($existing, $normalize) {
                 if (! $existing->has($name)) {
                     return false;
                 }
 
-                $current = collect($existing->get($name))->forget('id');
+                $current = collect($existing->get($name))
+                    ->forget('id')
+                    ->reject(fn ($value) => blank($value));
 
-                foreach ($command['attributes'] as $key => $value) {
-                    $attributes = $current->get($key);
+                $attributes = collect($command['attributes'])
+                    ->reject(fn ($value) => blank($value));
 
-                    if (is_array($attributes) && is_array($value)) {
-                        $attributes = collect($attributes)
-                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                            ->toJson();
+                $keys = collect($current->keys())
+                    ->merge($attributes->keys())
+                    ->unique();
 
-                        $value = collect($value)
-                            ->map(fn ($attribute) => collect($attribute)->sortKeys()->all())
-                            ->toJson();
-                    }
+                foreach ($keys as $key) {
+                    $attribute = $current->get($key);
+                    $value = $attributes->get($key);
 
-                    if ($attributes === $value) {
+                    $attribute = $normalize($attribute);
+                    $value = $normalize($value);
+
+                    if ($attribute === $value) {
                         continue;
                     }
 
@@ -512,34 +543,42 @@ class Laracord
                 }
 
                 return false;
-            })->each(function ($command) use ($existing) {
+            })
+            ->each(function ($command) use ($existing) {
                 $state = $existing->get($command['state']->getName());
 
-                if (Arr::get($command, 'attributes.guild_id') && ! Arr::get($state, 'guild_id')) {
-                    $this->unregisterSlashCommand($state['id']);
+                $current = Arr::get($command, 'attributes.guild_id');
+                $existing = Arr::get($state, 'guild_id');
+
+                if ($current && ! $existing) {
+                    $this->unregisterApplicationCommand($state['id']);
                 }
 
-                if (! Arr::get($command, 'attributes.guild_id') && $guild = Arr::get($state, 'guild_id')) {
-                    $this->unregisterSlashCommand($state['id'], $guild);
+                if ((! $current && $existing) || $current !== $existing) {
+                    $this->unregisterApplicationCommand($state['id'], $existing);
                 }
             });
 
         if ($updated->isNotEmpty()) {
-            $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> slash command(s).");
+            $this->console()->warn("Updating <fg=yellow>{$updated->count()}</> application command(s).");
 
-            $updated->each(fn ($command) => $this->registerSlashCommand($command['state']));
+            $updated->each(function ($command) {
+                $state = $command['state'];
+
+                $this->registerApplicationCommand($state);
+            });
         }
 
         if ($deleted->isNotEmpty()) {
-            $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> slash command(s).");
+            $this->console()->warn("Deleting <fg=yellow>{$deleted->count()}</> application command(s).");
 
-            $deleted->each(fn ($command) => $this->unregisterSlashCommand($command['id'], $command['guild_id'] ?? null));
+            $deleted->each(fn ($command) => $this->unregisterApplicationCommand($command['id'], $command['guild_id'] ?? null));
         }
 
         if ($created->isNotEmpty()) {
-            $this->console()->log("Creating <fg=blue>{$created->count()}</> new slash command(s).");
+            $this->console()->log("Creating <fg=blue>{$created->count()}</> new application command(s).");
 
-            $created->each(fn ($command) => $this->registerSlashCommand($command['state']));
+            $created->each(fn ($command) => $this->registerApplicationCommand($command['state']));
         }
 
         if ($registered->isEmpty()) {
@@ -548,6 +587,17 @@ class Laracord
 
         $registered->each(function ($command, $name) {
             $this->registerInteractions($name, $command['state']->interactions());
+
+            if ($command['state'] instanceof ContextMenu) {
+                $this->discord()->listenCommand(
+                    $name,
+                    fn ($interaction) => $this->handleSafe($name, fn () => $command['state']->maybeHandle($interaction))
+                );
+
+                $this->registeredContextMenus[] = $command['state'];
+
+                return;
+            }
 
             $subcommands = collect($command['state']->getRegisteredOptions())
                 ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
@@ -581,17 +631,20 @@ class Laracord
             );
         });
 
-        $this->registeredCommands = array_merge($this->registeredCommands, $registered->pluck('state')->all());
+        $this->registeredCommands = array_merge(
+            $this->registeredCommands,
+            $registered->pluck('state')->reject(fn ($command) => $command instanceof ContextMenu)->all()
+        );
 
         return $this;
     }
 
     /**
-     * Register the specified slash command.
+     * Register the specified application command.
      */
-    public function registerSlashCommand(SlashCommand $command): void
+    public function registerApplicationCommand(ApplicationCommand $command): void
     {
-        cache()->forget('laracord.slash-commands');
+        cache()->forget('laracord.application-commands');
 
         if ($command->getGuild()) {
             $guild = $this->discord()->guilds->get('id', $command->getGuild());
@@ -611,11 +664,11 @@ class Laracord
     }
 
     /**
-     * Unregister the specified slash command.
+     * Unregister the specified application command.
      */
-    public function unregisterSlashCommand(string $id, ?string $guildId = null): void
+    public function unregisterApplicationCommand(string $id, ?string $guildId = null): void
     {
-        cache()->forget('laracord.slash-commands');
+        cache()->forget('laracord.application-commands');
 
         if ($guildId) {
             $guild = $this->discord()->guilds->get('id', $guildId);
@@ -647,7 +700,7 @@ class Laracord
             return;
         }
 
-        $this->interactions = array_merge($this->interactions, $routes);
+        $this->registeredInteractions = array_merge($this->registeredInteractions, $routes);
     }
 
     /**
@@ -702,7 +755,7 @@ class Laracord
         $this->discord()->on(DiscordEvent::INTERACTION_CREATE, function (Interaction $interaction) {
             $id = $interaction->data->custom_id;
 
-            $handlers = collect($this->getInteractions())
+            $handlers = collect($this->getRegisteredInteractions())
                 ->partition(fn ($route, $name) => ! Str::contains($name, '{'));
 
             $static = $handlers[0];
@@ -785,7 +838,7 @@ class Laracord
 
         $this->console()->table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
-            collect($this->registeredCommands)->map(fn ($command) => [
+            collect($this->getRegisteredCommands())->map(fn ($command) => [
                 $command->getSignature(),
                 $command->getDescription(),
             ])->toArray()
@@ -1005,11 +1058,21 @@ class Laracord
     }
 
     /**
-     * Get the bot interaction routes.
+     * Get the bot context menus.
      */
-    public function getInteractions(): array
+    public function getContextMenus(): array
     {
-        return $this->interactions;
+        if ($this->contextMenus) {
+            return $this->contextMenus;
+        }
+
+        $contextMenus = $this->extractClasses($this->getContextMenuPath())
+            ->merge(config('discord.menus', []))
+            ->unique()
+            ->filter(fn ($contextMenu) => $this->handleSafe($contextMenu, fn () => is_subclass_of($contextMenu, ContextMenu::class) && ! (new ReflectionClass($contextMenu))->isAbstract()))
+            ->all();
+
+        return $this->contextMenus = $contextMenus;
     }
 
     /**
@@ -1055,12 +1118,53 @@ class Laracord
     }
 
     /**
+     * Get the registered context menus.
+     */
+    public function getRegisteredContextMenus(): array
+    {
+        return $this->registeredContextMenus;
+    }
+
+    /**
+     * Get the registered events.
+     */
+    public function getRegisteredEvents(): array
+    {
+        return $this->registeredEvents;
+    }
+
+    /**
+     * Get the registered services.
+     */
+    public function getRegisteredServices(): array
+    {
+        return $this->registeredServices;
+    }
+
+    /**
+     * Get the registered interactions.
+     */
+    public function getRegisteredInteractions(): array
+    {
+        return $this->registeredInteractions;
+    }
+
+    /**
      * Get a registered command by name.
      */
     public function getCommand(string $name): Command|SlashCommand|null
     {
-        return collect($this->registeredCommands)
+        return collect($this->getRegisteredCommands())
             ->first(fn ($command) => $command->getName() === $name);
+    }
+
+    /**
+     * Get a registered context menu by name.
+     */
+    public function getContextMenu(string $name): ?ContextMenu
+    {
+        return collect($this->getRegisteredContextMenus())
+            ->first(fn ($contextMenu) => $contextMenu->getName() === $name);
     }
 
     /**
@@ -1077,6 +1181,14 @@ class Laracord
     public function getSlashCommandPath(): string
     {
         return app_path('SlashCommands');
+    }
+
+    /**
+     * Get the path to the Discord context menus.
+     */
+    public function getContextMenuPath(): string
+    {
+        return app_path('Menus');
     }
 
     /**
@@ -1173,10 +1285,11 @@ class Laracord
     public function getStatus(): Collection
     {
         return collect([
-            'command' => count($this->registeredCommands),
-            'event' => count($this->registeredEvents),
-            'service' => count($this->registeredServices),
-            'interaction' => count($this->interactions),
+            'command' => count($this->getRegisteredCommands()),
+            'menu' => count($this->getRegisteredContextMenus()),
+            'event' => count($this->getRegisteredEvents()),
+            'service' => count($this->getRegisteredServices()),
+            'interaction' => count($this->getRegisteredInteractions()),
             'route' => count(Route::getRoutes()->getRoutes()),
         ])->filter()->mapWithKeys(fn ($count, $type) => [Str::plural($type, $count) => $count]);
     }

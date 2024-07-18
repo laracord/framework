@@ -2,6 +2,7 @@
 
 namespace Laracord\Commands;
 
+use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\Command as CommandContract;
 
 abstract class Command extends AbstractCommand implements CommandContract
@@ -43,6 +44,10 @@ abstract class Command extends AbstractCommand implements CommandContract
      */
     public function maybeHandle($message, $args)
     {
+        if (! $this->canDirectMessage() && ! $message->guild_id) {
+            return;
+        }
+
         if ($this->getGuild() && $message->guild_id !== $this->getGuild()) {
             return;
         }
@@ -87,6 +92,16 @@ abstract class Command extends AbstractCommand implements CommandContract
     public function getCooldownMessage()
     {
         return $this->cooldownMessage;
+    }
+
+    /**
+     * Retrieve the command signature.
+     *
+     * @return string
+     */
+    public function getSignature()
+    {
+        return Str::start($this->getName(), $this->bot()->getPrefix());
     }
 
     /**
