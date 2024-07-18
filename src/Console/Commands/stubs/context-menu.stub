@@ -9,49 +9,33 @@ use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 class {{ class }} extends ContextMenu
 {
     /**
-     * The command name.
+     * The context menu name.
      *
      * @var string
      */
     protected $name = '{{ command }}';
 
     /**
-     * The command description.
-     *
-     * @var string
-     */
-    protected $description = 'The {{ command }} context menu.';
-
-    /**
-     * The permissions required to use the command.
+     * The permissions required to use the context menu.
      *
      * @var array
      */
     protected $permissions = [];
 
     /**
-     * Indicates whether the command requires admin permissions.
+     * Indicates whether the context menu requires admin permissions.
      *
      * @var bool
      */
     protected $admin = false;
 
     /**
-     * Indicates whether the command should be displayed in the commands list.
-     *
-     * @var bool
+     * The context menu type.
      */
-    protected $hidden = false;
+    protected string $type = 'message';
 
     /**
-     * The command type, determining how the command should be accessed on Discord. Default is MESSAGE.
-     *
-     * @var int
-     */
-    protected $type = DiscordCommand::MESSAGE;
-
-    /**
-     * Handle the slash command.
+     * Handle the context menu interaction.
      *
      * @param  \Discord\Parts\Interactions\Interaction  $interaction
      * @return void
@@ -69,7 +53,7 @@ class {{ class }} extends ContextMenu
     }
 
     /**
-     * The command interaction routes.
+     * The context menu interaction routes.
      */
     public function interactions(): array
     {
