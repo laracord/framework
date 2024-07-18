@@ -2,7 +2,9 @@
 
 namespace {{ namespace }};
 
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Interaction;
+use Discord\Parts\User\User;
 use Laracord\Commands\ContextMenu;
 
 class {{ class }} extends ContextMenu
@@ -12,7 +14,7 @@ class {{ class }} extends ContextMenu
      *
      * @var string
      */
-    protected $name = '{{ command }}';
+    protected $name = '{{ title }}';
 
     /**
      * The context menu type.
@@ -35,16 +37,13 @@ class {{ class }} extends ContextMenu
 
     /**
      * Handle the context menu interaction.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return void
      */
-    public function handle($interaction)
+    public function handle(Interaction $interaction, Message|User|null $target): mixed
     {
         $interaction->respondWithMessage(
             $this
               ->message()
-              ->title('{{ class }}')
+              ->title('{{ title }}')
               ->content('Hello world!')
               ->button('👋', route: 'wave')
               ->build()
