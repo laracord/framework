@@ -68,6 +68,11 @@ abstract class AbstractCommand
     protected $guild;
 
     /**
+     * Determine whether the command can be used in a direct message.
+     */
+    protected bool $directMessage = true;
+
+    /**
      * Determines whether the command requires admin permissions.
      *
      * @var bool
@@ -144,6 +149,14 @@ abstract class AbstractCommand
         }
 
         return $this->getUser($user)->is_admin;
+    }
+
+    /**
+     * Determine if the command can be used in a direct message.
+     */
+    public function canDirectMessage(): bool
+    {
+        return $this->directMessage;
     }
 
     /**
