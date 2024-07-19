@@ -19,4 +19,6 @@ class {{ class }} extends Event
      */
     public function handle({{ attributes }})
     {
-        $this->console()->log('The {{ eventName }} event has fired!'); } }
+        $this->console()->log('The {{ eventName }} event has fired!');
+    }
+}
