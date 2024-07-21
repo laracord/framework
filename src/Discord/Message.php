@@ -214,7 +214,9 @@ class Message
         }
 
         if ($this->hasButtons()) {
-            $message->addComponent($this->getButtons());
+            foreach ($this->getButtons() as $button) {
+                $message->addComponent($button);
+            }
         }
 
         if ($this->hasFiles()) {
@@ -407,21 +409,23 @@ class Message
     }
 
     /**
-     * Get the buttons.
+     * Get the button components.
      */
-    public function getButtons()
+    public function getButtons(): array
     {
         if (! $this->hasButtons()) {
-            return;
+            return [];
         }
 
-        $buttons = ActionRow::new();
+        return collect($this->buttons)->chunk(5)->map(function ($buttons) {
+            $row = ActionRow::new();
 
-        foreach ($this->buttons as $button) {
-            $buttons->addComponent($button);
-        }
+            foreach ($buttons as $button) {
+                $row->addComponent($button);
+            }
 
-        return $buttons;
+            return $row;
+        })->all();
     }
 
     /**
