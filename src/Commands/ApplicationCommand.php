@@ -2,6 +2,8 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Permissions\RolePermission;
+
 abstract class ApplicationCommand extends AbstractCommand
 {
     /**
