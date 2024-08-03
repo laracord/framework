@@ -2,6 +2,7 @@
 
 namespace Laracord\Console\Concerns;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
