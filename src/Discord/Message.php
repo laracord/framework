@@ -14,6 +14,7 @@ use Discord\Builders\MessageBuilder;
 use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
+use Discord\Parts\Channel\Poll\Poll;
 use Discord\Parts\Channel\Webhook;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
@@ -146,6 +147,11 @@ class Message
     protected array $files = [];
 
     /**
+     * The message poll.
+     */
+    protected ?Poll $poll = null;
+
+    /**
      * The message webhook.
      */
     protected string|bool $webhook = false;
@@ -217,6 +223,10 @@ class Message
             foreach ($this->getButtons() as $button) {
                 $message->addComponent($button);
             }
+        }
+
+        if ($this->hasPoll()) {
+            $message->setPoll($this->poll);
         }
 
         if ($this->hasFiles()) {
@@ -1039,6 +1049,44 @@ class Message
     public function hasButtons(): bool
     {
         return ! empty($this->buttons);
+    }
+
+    /**
+     * Add a poll to the message.
+     */
+    public function poll(string $question, array $answers, int $duration = 24, bool $multiselect = false): self
+    {
+        $answers = collect($answers)
+            ->map(fn ($value, $key) => is_string($key)
+                ? ['emoji' => $key, 'text' => $value]
+                : ['text' => $value]
+            )->all();
+
+        $this->poll = (new Poll($this->bot->discord()))
+            ->setQuestion($question)
+            ->setAnswers($answers)
+            ->setDuration($duration)
+            ->setAllowMultiselect($multiselect);
+
+        return $this;
+    }
+
+    /**
+     * Clear the poll from the message.
+     */
+    public function clearPoll(): self
+    {
+        $this->poll = null;
+
+        return $this;
+    }
+
+    /**
+     * Determine if the message has a poll.
+     */
+    public function hasPoll(): bool
+    {
+        return ! is_null($this->poll);
     }
 
     /**
