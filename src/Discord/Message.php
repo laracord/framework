@@ -541,10 +541,8 @@ class Message
     /**
      * Add a file from content to the message.
      */
-    public function file(string $content = '', string $filename = ''): self
+    public function file(string $content = '', string $filename = 'file.txt'): self
     {
-        $filename = $filename ?? 'file.txt';
-
         $this->files[] = [
             'content' => $content,
             'filename' => $filename,
@@ -556,7 +554,7 @@ class Message
     /**
      * Add a file to the message.
      */
-    public function filePath(string $path, string $filename = ''): self
+    public function filePath(string $path, ?string $filename = null): self
     {
         if (! file_exists($path)) {
             $this->bot->console()->error("File <fg=red>{$path}</> does not exist");
