@@ -1311,7 +1311,10 @@ class Laracord
             return $callback();
         } catch (Throwable $e) {
             $this->console()->error("An error occurred in <fg=red>{$name}</>.");
-            $this->console()->outputComponents()->bulletList([$e->getMessage()]);
+
+            $this->console()->outputComponents()->bulletList([
+                sprintf('%s in %s:%d', $e->getMessage(), $e->getFile(), $e->getLine()),
+            ]);
         }
 
         return null;
