@@ -264,6 +264,18 @@
         }
     },
     {
+        "MessagePollVoteAdd": {
+            "answer": "Discord\\Parts\\Channel\\Poll\\PollAnswer",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
+        "MessagePollVoteRemove": {
+            "answer": "Discord\\Parts\\Channel\\Poll\\PollAnswer",
+            "discord": "Discord\\Discord"
+        }
+    },
+    {
         "PresenceUpdate": {
             "presence": "Discord\\Parts\\WebSockets\\PresenceUpdate",
             "discord": "Discord\\Discord"
