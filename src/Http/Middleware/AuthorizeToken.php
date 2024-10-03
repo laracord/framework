@@ -15,7 +15,7 @@ class AuthorizeToken
      */
     public function handle(Request $request, Closure $next)
     {
-        $token = $request->bearerToken() ?? $request->query('token');
+        $token = $request->bearerToken() ?? $request->get('token');
 
         if (! $token) {
             return response()->json(['message' => 'You must specify a token.'], 401);

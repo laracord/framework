@@ -16,11 +16,14 @@ use Discord\Parts\Channel\Channel;
 use Discord\Parts\Channel\Message as ChannelMessage;
 use Discord\Parts\Channel\Poll\Poll;
 use Discord\Parts\Channel\Webhook;
+use Discord\Parts\Guild\Sticker;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
 use Discord\Repository\Channel\WebhookRepository;
 use Exception;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
 use React\Promise\ExtendedPromiseInterface;
@@ -152,6 +155,16 @@ class Message
     protected ?Poll $poll = null;
 
     /**
+     * The message attachments.
+     */
+    protected ?Collection $attachments = null;
+
+    /**
+     * The message stickers.
+     */
+    protected array $stickers = [];
+
+    /**
      * The message webhook.
      */
     protected string|bool $webhook = false;
@@ -204,9 +217,10 @@ class Message
     {
         $message = MessageBuilder::new()
             ->setUsername($this->username)
-            ->setAvatarUrl($this->avatarUrl)
+            ->setAvatarUrl($this->getAttachment($this->avatarUrl))
             ->setTts($this->tts)
             ->setContent($this->body)
+            ->setStickers($this->stickers)
             ->setComponents($this->getComponents());
 
         if ($this->hasContent() || $this->hasFields()) {
@@ -220,7 +234,9 @@ class Message
         }
 
         if ($this->hasButtons()) {
-            $message->addComponent($this->getButtons());
+            foreach ($this->getButtons() as $button) {
+                $message->addComponent($button);
+            }
         }
 
         if ($this->hasPoll()) {
@@ -391,18 +407,18 @@ class Message
             'color' => $this->color,
             'footer' => [
                 'text' => $this->footerText,
-                'icon_url' => $this->footerIcon,
+                'icon_url' => $this->getAttachment($this->footerIcon),
             ],
             'thumbnail' => [
-                'url' => $this->thumbnailUrl,
+                'url' => $this->getAttachment($this->thumbnailUrl),
             ],
             'image' => [
-                'url' => $this->imageUrl,
+                'url' => $this->getAttachment($this->imageUrl),
             ],
             'author' => [
                 'name' => $this->authorName,
                 'url' => $this->authorUrl,
-                'icon_url' => $this->authorIcon,
+                'icon_url' => $this->getAttachment($this->authorIcon),
             ],
             'fields' => $this->fields,
         ])->filter()->all();
@@ -417,21 +433,23 @@ class Message
     }
 
     /**
-     * Get the buttons.
+     * Get the button components.
      */
-    public function getButtons()
+    public function getButtons(): array
     {
         if (! $this->hasButtons()) {
-            return;
+            return [];
         }
 
-        $buttons = ActionRow::new();
+        return collect($this->buttons)->chunk(5)->map(function ($buttons) {
+            $row = ActionRow::new();
 
-        foreach ($this->buttons as $button) {
-            $buttons->addComponent($button);
-        }
+            foreach ($buttons as $button) {
+                $row->addComponent($button);
+            }
 
-        return $buttons;
+            return $row;
+        })->all();
     }
 
     /**
@@ -545,11 +563,29 @@ class Message
     }
 
     /**
-     * Add a file from content to the message.
+     * Add a file using raw input, local storage, or a remote URL to the message.
      */
-    public function file(string $content = '', string $filename = ''): self
+    public function file(string $input = '', ?string $filename = null): self
     {
-        $filename = $filename ?? 'file.txt';
+        $isPath = (! $isUrl = Str::isUrl($input))
+            && Str::length($input) <= 1024
+            && ! Str::contains($input, [DIRECTORY_SEPARATOR, "\n"])
+            && Str::isMatch('/\.\w+$/', $input);
+
+        $isPath = $isPath && Storage::drive('local')->exists($input);
+
+        $content = match (true) {
+            $isUrl => file_get_contents($input),
+            $isPath => Storage::drive('local')->get($input),
+            default => $input,
+        };
+
+        $filename = match (true) {
+            filled($filename) => $filename,
+            $isUrl => basename(parse_url($input, PHP_URL_PATH)),
+            $isPath => basename($input),
+            default => 'file.txt',
+        };
 
         $this->files[] = [
             'content' => $content,
@@ -562,7 +598,7 @@ class Message
     /**
      * Add a file to the message.
      */
-    public function filePath(string $path, string $filename = ''): self
+    public function filePath(string $path, ?string $filename = null): self
     {
         if (! file_exists($path)) {
             $this->bot->console()->error("File <fg=red>{$path}</> does not exist");
@@ -583,6 +619,28 @@ class Message
     public function hasFiles(): bool
     {
         return ! empty($this->files);
+    }
+
+    /**
+     * Retrieve the message file attachments.
+     */
+    protected function getAttachments(): Collection
+    {
+        return $this->attachments ??= collect($this->files)->mapWithKeys(fn ($file) => [
+            $file['filename'] => "attachment://{$file['filename']}",
+        ]);
+    }
+
+    /**
+     * Retrieve a message file attachment.
+     */
+    protected function getAttachment(?string $filename = null): ?string
+    {
+        if (blank($filename)) {
+            return null;
+        }
+
+        return $this->getAttachments()->get($filename, $filename);
     }
 
     /**
@@ -666,9 +724,7 @@ class Message
      */
     public function thumbnail(?string $thumbnailUrl): self
     {
-        $this->thumbnailUrl = $thumbnailUrl;
-
-        return $this;
+        return $this->thumbnailUrl($thumbnailUrl);
     }
 
     /**
@@ -696,9 +752,7 @@ class Message
      */
     public function image(?string $imageUrl): self
     {
-        $this->imageUrl = $imageUrl;
-
-        return $this;
+        return $this->imageUrl($imageUrl);
     }
 
     /**
@@ -707,6 +761,40 @@ class Message
     public function imageUrl(?string $imageUrl): self
     {
         $this->imageUrl = $imageUrl;
+
+        return $this;
+    }
+
+    /**
+     * Add a sticker to the message.
+     */
+    public function sticker(string|Sticker $sticker): self
+    {
+        $this->stickers[] = $sticker instanceof Sticker
+            ? $sticker->id
+            : $sticker;
+
+        return $this;
+    }
+
+    /**
+     * Add stickers to the message.
+     */
+    public function stickers(array $stickers): self
+    {
+        foreach ($stickers as $sticker) {
+            $this->sticker($sticker);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Clear the stickers from the message.
+     */
+    public function clearStickers(): self
+    {
+        $this->stickers = [];
 
         return $this;
     }

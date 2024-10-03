@@ -13,6 +13,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer;
 use React\Http\Message\Response;
 use React\Socket\SocketServer;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class Server
@@ -141,7 +142,7 @@ class Server
             return new Response(
                 $response->getStatusCode(),
                 $response->headers->allPreserveCase(),
-                $response->getContent() ?: $response->getFile()?->getContent() ?: ''
+                $response->getContent() ?: ($response instanceof BinaryFileResponse ? $response->getFile()->getContent() : false) ?: ''
             );
         });
     }
