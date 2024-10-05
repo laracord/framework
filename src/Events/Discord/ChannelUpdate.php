@@ -8,6 +8,5 @@ class ChannelUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Channel\Channel $channel,
         public readonly ?\Discord\Parts\Channel\Channel $oldChannel,
-    ) {
-    }
+    ) {}
 }

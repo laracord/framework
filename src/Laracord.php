@@ -1350,86 +1350,86 @@ class Laracord
 
     private function registerDiscordClientEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on('init', fn() => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientReady($this->app->make(\Laracord\Laracord::class))));
-        $discord->on('reconnected', fn() => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientReconnected($this->app->make(\Laracord\Laracord::class))));
-        $discord->on('trace', fn($servers) => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientTrace($this->app->make(\Laracord\Laracord::class), $servers)));
+        $discord->on('init', fn () => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientReady($this->app->make(\Laracord\Laracord::class))));
+        $discord->on('reconnected', fn () => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientReconnected($this->app->make(\Laracord\Laracord::class))));
+        $discord->on('trace', fn ($servers) => $dispatcher->dispatch(new \Laracord\Events\Discord\ClientTrace($this->app->make(\Laracord\Laracord::class), $servers)));
     }
 
     private function registerDiscordApplicationCommandEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::APPLICATION_COMMAND_PERMISSIONS_UPDATE, fn(\Discord\Parts\Guild\CommandPermissions $commandPermission, \Discord\Discord $discord, ?\Discord\Parts\Guild\CommandPermissions $oldCommandPermission) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ApplicationCommandPermissionsUpdate::class, compact('commandPermission', 'oldCommandPermission'))));
+        $discord->on(DiscordEvents::APPLICATION_COMMAND_PERMISSIONS_UPDATE, fn (\Discord\Parts\Guild\CommandPermissions $commandPermission, \Discord\Discord $discord, ?\Discord\Parts\Guild\CommandPermissions $oldCommandPermission) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ApplicationCommandPermissionsUpdate::class, compact('commandPermission', 'oldCommandPermission'))));
     }
 
     private function registerDiscordAutoModerationEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_CREATE, fn(\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleCreate::class, compact('rule'))));
-        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_UPDATE, fn(\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord, ?\Discord\Parts\Guild\AutoModeration\Rule $oldRule) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleUpdate::class, compact('rule', 'oldRule'))));
-        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_DELETE, fn(\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleDelete::class, compact('rule'))));
-        $discord->on(DiscordEvents::AUTO_MODERATION_ACTION_EXECUTION, fn(\Discord\Parts\WebSockets\AutoModerationActionExecution $actionExecution) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationActionExecution::class, compact('actionExecution'))));
+        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_CREATE, fn (\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleCreate::class, compact('rule'))));
+        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_UPDATE, fn (\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord, ?\Discord\Parts\Guild\AutoModeration\Rule $oldRule) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleUpdate::class, compact('rule', 'oldRule'))));
+        $discord->on(DiscordEvents::AUTO_MODERATION_RULE_DELETE, fn (\Discord\Parts\Guild\AutoModeration\Rule $rule, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationRuleDelete::class, compact('rule'))));
+        $discord->on(DiscordEvents::AUTO_MODERATION_ACTION_EXECUTION, fn (\Discord\Parts\WebSockets\AutoModerationActionExecution $actionExecution) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\AutoModerationActionExecution::class, compact('actionExecution'))));
     }
 
     private function registerDiscordChannelEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::CHANNEL_CREATE, fn(\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelCreate::class, compact('channel'))));
-        $discord->on(DiscordEvents::CHANNEL_DELETE, fn(\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelDelete::class, compact('channel'))));
-        $discord->on(DiscordEvents::CHANNEL_UPDATE, fn(\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord, ?\Discord\Parts\Channel\Channel $oldChannel) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelUpdate::class, compact('channel', 'oldChannel'))));
-        $discord->on(DiscordEvents::CHANNEL_PINS_UPDATE, fn(array $pins) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelPinsUpdate::class, compact('pins'))));
-        $discord->on(DiscordEvents::THREAD_CREATE, fn(\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadCreate::class, compact('thread'))));
-        $discord->on(DiscordEvents::THREAD_UPDATE, fn(\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord, ?\Discord\Parts\Thread\Thread $oldThread) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadUpdate::class, compact('thread', 'oldThread'))));
-        $discord->on(DiscordEvents::THREAD_DELETE, fn(\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadDelete::class, compact('thread'))));
-        $discord->on(DiscordEvents::THREAD_LIST_SYNC, fn(\Discord\Helpers\Collection $threadListSync) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadListSync::class, compact('threadListSync'))));
-        $discord->on(DiscordEvents::THREAD_MEMBER_UPDATE, fn(\Discord\Parts\Thread\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadMemberUpdate::class, compact('member'))));
-        $discord->on(DiscordEvents::THREAD_MEMBERS_UPDATE, fn(\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadMembersUpdate::class, compact('thread'))));
+        $discord->on(DiscordEvents::CHANNEL_CREATE, fn (\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelCreate::class, compact('channel'))));
+        $discord->on(DiscordEvents::CHANNEL_DELETE, fn (\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelDelete::class, compact('channel'))));
+        $discord->on(DiscordEvents::CHANNEL_UPDATE, fn (\Discord\Parts\Channel\Channel $channel, \Discord\Discord $discord, ?\Discord\Parts\Channel\Channel $oldChannel) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelUpdate::class, compact('channel', 'oldChannel'))));
+        $discord->on(DiscordEvents::CHANNEL_PINS_UPDATE, fn (array $pins) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ChannelPinsUpdate::class, compact('pins'))));
+        $discord->on(DiscordEvents::THREAD_CREATE, fn (\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadCreate::class, compact('thread'))));
+        $discord->on(DiscordEvents::THREAD_UPDATE, fn (\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord, ?\Discord\Parts\Thread\Thread $oldThread) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadUpdate::class, compact('thread', 'oldThread'))));
+        $discord->on(DiscordEvents::THREAD_DELETE, fn (\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadDelete::class, compact('thread'))));
+        $discord->on(DiscordEvents::THREAD_LIST_SYNC, fn (\Discord\Helpers\Collection $threadListSync) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadListSync::class, compact('threadListSync'))));
+        $discord->on(DiscordEvents::THREAD_MEMBER_UPDATE, fn (\Discord\Parts\Thread\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadMemberUpdate::class, compact('member'))));
+        $discord->on(DiscordEvents::THREAD_MEMBERS_UPDATE, fn (\Discord\Parts\Thread\Thread $thread, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\ThreadMembersUpdate::class, compact('thread'))));
     }
 
     private function registerDiscordGuildEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::GUILD_CREATE, fn(\stdClass|\Discord\Parts\Guild\Guild $guild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildCreate::class, compact('guild'))));
-        $discord->on(DiscordEvents::GUILD_UPDATE, fn(\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, ?\Discord\Parts\Guild\Guild $oldGuild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildUpdate::class, compact('guild', 'oldGuild'))));
-        $discord->on(DiscordEvents::GUILD_DELETE, fn(\stdClass|\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, bool $unavailable) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildDelete::class, compact('guild', 'unavailable'))));
-        $discord->on(DiscordEvents::GUILD_AUDIT_LOG_ENTRY_CREATE, fn(\Discord\Parts\Guild\AuditLog\Entry $entry) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildAuditLogEntryCreate::class, compact('entry'))));
-        $discord->on(DiscordEvents::GUILD_BAN_ADD, fn(\Discord\Parts\Guild\Ban $ban) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildBanAdd::class, compact('ban'))));
-        $discord->on(DiscordEvents::GUILD_BAN_REMOVE, fn(\Discord\Parts\Guild\Ban $ban) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildBanRemove::class, compact('ban'))));
-        $discord->on(DiscordEvents::GUILD_EMOJIS_UPDATE, fn(\Discord\Helpers\Collection $emojis, \Discord\Discord $discord, \Discord\Helpers\Collection $oldEmojis) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildEmojisUpdate::class, compact('emojis', 'oldEmojis'))));
-        $discord->on(DiscordEvents::GUILD_STICKERS_UPDATE, fn(\Discord\Helpers\Collection $stickers, \Discord\Discord $discord, \Discord\Helpers\Collection $oldStickers) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildStickersUpdate::class, compact('stickers', 'oldStickers'))));
-        $discord->on(DiscordEvents::GUILD_MEMBER_ADD, fn(\Discord\Parts\User\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberAdd::class, compact('member'))));
-        $discord->on(DiscordEvents::GUILD_MEMBER_REMOVE, fn(\Discord\Parts\User\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberRemove::class, compact('member'))));
-        $discord->on(DiscordEvents::GUILD_MEMBER_UPDATE, fn(\Discord\Parts\User\Member $member, \Discord\Discord $discord, ?\Discord\Parts\User\Member $oldMember) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberUpdate::class, compact('member', 'oldMember'))));
-        $discord->on(DiscordEvents::GUILD_ROLE_CREATE, fn(\Discord\Parts\Guild\Role $role) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleCreate::class, compact('role'))));
-        $discord->on(DiscordEvents::GUILD_ROLE_UPDATE, fn(\Discord\Parts\Guild\Role $role, \Discord\Discord $discord, ?\Discord\Parts\Guild\Role $oldRole) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleUpdate::class, compact('role', 'oldRole'))));
-        $discord->on(DiscordEvents::GUILD_ROLE_DELETE, fn(object $role) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleDelete::class, compact('role'))));
-        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_CREATE, fn(\Discord\Parts\Guild\ScheduledEvent $event) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventCreate::class, compact('event'))));
-        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_UPDATE, fn(\Discord\Parts\Guild\ScheduledEvent $event, \Discord\Discord $discord, ?\Discord\Parts\Guild\ScheduledEvent $oldEvent) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUpdate::class, compact('event', 'oldEvent'))));
-        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_DELETE, fn(\Discord\Parts\Guild\ScheduledEvent $event) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventDelete::class, compact('event'))));
-        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_USER_ADD, fn(object $user) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUserAdd::class, compact('user'))));
-        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_USER_REMOVE, fn(object $user) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUserRemove::class, compact('user'))));
-        $discord->on(DiscordEvents::GUILD_INTEGRATIONS_UPDATE, fn(object $guild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildIntegrationsUpdate::class, compact('guild'))));
-        $discord->on(DiscordEvents::INTEGRATION_CREATE, fn(\Discord\Parts\Guild\Integration $integration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationCreate::class, compact('integration'))));
-        $discord->on(DiscordEvents::INTEGRATION_UPDATE, fn(\Discord\Parts\Guild\Integration $integration, \Discord\Discord $discord, ?\Discord\Parts\Guild\Integration $oldIntegration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationUpdate::class, compact('integration', 'oldIntegration'))));
-        $discord->on(DiscordEvents::INTEGRATION_DELETE, fn(\stdClass|\Discord\Parts\Guild\Integration $integration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationDelete::class, compact('integration'))));
+        $discord->on(DiscordEvents::GUILD_CREATE, fn (\stdClass|\Discord\Parts\Guild\Guild $guild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildCreate::class, compact('guild'))));
+        $discord->on(DiscordEvents::GUILD_UPDATE, fn (\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, ?\Discord\Parts\Guild\Guild $oldGuild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildUpdate::class, compact('guild', 'oldGuild'))));
+        $discord->on(DiscordEvents::GUILD_DELETE, fn (\stdClass|\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, bool $unavailable) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildDelete::class, compact('guild', 'unavailable'))));
+        $discord->on(DiscordEvents::GUILD_AUDIT_LOG_ENTRY_CREATE, fn (\Discord\Parts\Guild\AuditLog\Entry $entry) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildAuditLogEntryCreate::class, compact('entry'))));
+        $discord->on(DiscordEvents::GUILD_BAN_ADD, fn (\Discord\Parts\Guild\Ban $ban) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildBanAdd::class, compact('ban'))));
+        $discord->on(DiscordEvents::GUILD_BAN_REMOVE, fn (\Discord\Parts\Guild\Ban $ban) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildBanRemove::class, compact('ban'))));
+        $discord->on(DiscordEvents::GUILD_EMOJIS_UPDATE, fn (\Discord\Helpers\Collection $emojis, \Discord\Discord $discord, \Discord\Helpers\Collection $oldEmojis) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildEmojisUpdate::class, compact('emojis', 'oldEmojis'))));
+        $discord->on(DiscordEvents::GUILD_STICKERS_UPDATE, fn (\Discord\Helpers\Collection $stickers, \Discord\Discord $discord, \Discord\Helpers\Collection $oldStickers) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildStickersUpdate::class, compact('stickers', 'oldStickers'))));
+        $discord->on(DiscordEvents::GUILD_MEMBER_ADD, fn (\Discord\Parts\User\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberAdd::class, compact('member'))));
+        $discord->on(DiscordEvents::GUILD_MEMBER_REMOVE, fn (\Discord\Parts\User\Member $member) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberRemove::class, compact('member'))));
+        $discord->on(DiscordEvents::GUILD_MEMBER_UPDATE, fn (\Discord\Parts\User\Member $member, \Discord\Discord $discord, ?\Discord\Parts\User\Member $oldMember) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildMemberUpdate::class, compact('member', 'oldMember'))));
+        $discord->on(DiscordEvents::GUILD_ROLE_CREATE, fn (\Discord\Parts\Guild\Role $role) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleCreate::class, compact('role'))));
+        $discord->on(DiscordEvents::GUILD_ROLE_UPDATE, fn (\Discord\Parts\Guild\Role $role, \Discord\Discord $discord, ?\Discord\Parts\Guild\Role $oldRole) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleUpdate::class, compact('role', 'oldRole'))));
+        $discord->on(DiscordEvents::GUILD_ROLE_DELETE, fn (object $role) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildRoleDelete::class, compact('role'))));
+        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_CREATE, fn (\Discord\Parts\Guild\ScheduledEvent $event) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventCreate::class, compact('event'))));
+        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_UPDATE, fn (\Discord\Parts\Guild\ScheduledEvent $event, \Discord\Discord $discord, ?\Discord\Parts\Guild\ScheduledEvent $oldEvent) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUpdate::class, compact('event', 'oldEvent'))));
+        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_DELETE, fn (\Discord\Parts\Guild\ScheduledEvent $event) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventDelete::class, compact('event'))));
+        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_USER_ADD, fn (object $user) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUserAdd::class, compact('user'))));
+        $discord->on(DiscordEvents::GUILD_SCHEDULED_EVENT_USER_REMOVE, fn (object $user) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildScheduledEventUserRemove::class, compact('user'))));
+        $discord->on(DiscordEvents::GUILD_INTEGRATIONS_UPDATE, fn (object $guild) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\GuildIntegrationsUpdate::class, compact('guild'))));
+        $discord->on(DiscordEvents::INTEGRATION_CREATE, fn (\Discord\Parts\Guild\Integration $integration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationCreate::class, compact('integration'))));
+        $discord->on(DiscordEvents::INTEGRATION_UPDATE, fn (\Discord\Parts\Guild\Integration $integration, \Discord\Discord $discord, ?\Discord\Parts\Guild\Integration $oldIntegration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationUpdate::class, compact('integration', 'oldIntegration'))));
+        $discord->on(DiscordEvents::INTEGRATION_DELETE, fn (\stdClass|\Discord\Parts\Guild\Integration $integration) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\IntegrationDelete::class, compact('integration'))));
     }
 
     private function registerDiscordInviteEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::INVITE_CREATE, fn(\Discord\Parts\Channel\Invite $invite) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InviteCreate::class, compact('invite'))));
-        $discord->on(DiscordEvents::INVITE_DELETE, fn(\stdClass|\Discord\Parts\Channel\Invite $invite) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InviteDelete::class, compact('invite'))));
+        $discord->on(DiscordEvents::INVITE_CREATE, fn (\Discord\Parts\Channel\Invite $invite) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InviteCreate::class, compact('invite'))));
+        $discord->on(DiscordEvents::INVITE_DELETE, fn (\stdClass|\Discord\Parts\Channel\Invite $invite) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InviteDelete::class, compact('invite'))));
     }
 
     private function registerDiscordInteractionEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::INTERACTION_CREATE, fn(\Discord\Parts\Interactions\Interaction $interaction) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InteractionCreate::class, compact('interaction'))));
+        $discord->on(DiscordEvents::INTERACTION_CREATE, fn (\Discord\Parts\Interactions\Interaction $interaction) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\InteractionCreate::class, compact('interaction'))));
     }
 
     private function registerDiscordMessageEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::MESSAGE_CREATE, fn(\Discord\Parts\Channel\Message $message) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageCreate::class, compact('message'))));
-        $discord->on(DiscordEvents::MESSAGE_UPDATE, fn(\stdClass|\Discord\Parts\Channel\Message $message, \Discord\Discord $discord, ?\Discord\Parts\Channel\Message $oldMessage) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageUpdate::class, compact('message', 'oldMessage'))));
-        $discord->on(DiscordEvents::MESSAGE_DELETE, fn(\stdClass|\Discord\Parts\Channel\Message $message) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageDelete::class, compact('message'))));
-        $discord->on(DiscordEvents::MESSAGE_DELETE_BULK, fn(\Discord\Helpers\Collection $messages) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageDeleteBulk::class, compact('messages'))));
-        $discord->on(DiscordEvents::MESSAGE_REACTION_ADD, fn(\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionAdd::class, compact('reaction'))));
-        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE, fn(\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemove::class, compact('reaction'))));
-        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE_ALL, fn(\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemoveAll::class, compact('reaction'))));
-        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE_EMOJI, fn(\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemoveEmoji::class, compact('reaction'))));
+        $discord->on(DiscordEvents::MESSAGE_CREATE, fn (\Discord\Parts\Channel\Message $message) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageCreate::class, compact('message'))));
+        $discord->on(DiscordEvents::MESSAGE_UPDATE, fn (\stdClass|\Discord\Parts\Channel\Message $message, \Discord\Discord $discord, ?\Discord\Parts\Channel\Message $oldMessage) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageUpdate::class, compact('message', 'oldMessage'))));
+        $discord->on(DiscordEvents::MESSAGE_DELETE, fn (\stdClass|\Discord\Parts\Channel\Message $message) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageDelete::class, compact('message'))));
+        $discord->on(DiscordEvents::MESSAGE_DELETE_BULK, fn (\Discord\Helpers\Collection $messages) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageDeleteBulk::class, compact('messages'))));
+        $discord->on(DiscordEvents::MESSAGE_REACTION_ADD, fn (\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionAdd::class, compact('reaction'))));
+        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE, fn (\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemove::class, compact('reaction'))));
+        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE_ALL, fn (\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemoveAll::class, compact('reaction'))));
+        $discord->on(DiscordEvents::MESSAGE_REACTION_REMOVE_EMOJI, fn (\Discord\Parts\WebSockets\MessageReaction $reaction, \Discord\Discord $discord) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\MessageReactionRemoveEmoji::class, compact('reaction'))));
     }
 
     private function registerDiscordPresenceEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
@@ -1437,25 +1437,25 @@ class Laracord
         // $discord->on(DiscordEvents::PRESENCE_UPDATE, fn(\Discord\WebSockets\Events\PresenceUpdate $presence) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\PresenceUpdate::class, compact('presence'))));
         // $discord->on(DiscordEvents::USER_SETTINGS_UPDATE, fn(object $settings) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\UserSettingsUpdate::class, compact('settings'))));
 
-        $discord->on(DiscordEvents::TYPING_START, fn(\Discord\Parts\WebSockets\TypingStart $typing) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\TypingStart::class, compact('typing'))));
-        $discord->on(DiscordEvents::USER_UPDATE, fn(\Discord\Parts\User\User $user, \Discord\Discord $discord, ?\Discord\Parts\User\User $oldUser) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\UserUpdate::class, compact('user', 'oldUser'))));
+        $discord->on(DiscordEvents::TYPING_START, fn (\Discord\Parts\WebSockets\TypingStart $typing) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\TypingStart::class, compact('typing'))));
+        $discord->on(DiscordEvents::USER_UPDATE, fn (\Discord\Parts\User\User $user, \Discord\Discord $discord, ?\Discord\Parts\User\User $oldUser) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\UserUpdate::class, compact('user', 'oldUser'))));
     }
 
     private function registerDiscordStageInstanceEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::STAGE_INSTANCE_CREATE, fn(\Discord\Parts\Channel\StageInstance $stageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceCreate::class, compact('stageInstance'))));
-        $discord->on(DiscordEvents::STAGE_INSTANCE_UPDATE, fn(\Discord\Parts\Channel\StageInstance $stageInstance, \Discord\Discord $discord, ?\Discord\Parts\Channel\StageInstance $oldStageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceUpdate::class, compact('stageInstance', 'oldStageInstance'))));
-        $discord->on(DiscordEvents::STAGE_INSTANCE_DELETE, fn(\Discord\Parts\Channel\StageInstance $stageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceDelete::class, compact('stageInstance'))));
+        $discord->on(DiscordEvents::STAGE_INSTANCE_CREATE, fn (\Discord\Parts\Channel\StageInstance $stageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceCreate::class, compact('stageInstance'))));
+        $discord->on(DiscordEvents::STAGE_INSTANCE_UPDATE, fn (\Discord\Parts\Channel\StageInstance $stageInstance, \Discord\Discord $discord, ?\Discord\Parts\Channel\StageInstance $oldStageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceUpdate::class, compact('stageInstance', 'oldStageInstance'))));
+        $discord->on(DiscordEvents::STAGE_INSTANCE_DELETE, fn (\Discord\Parts\Channel\StageInstance $stageInstance) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\StageInstanceDelete::class, compact('stageInstance'))));
     }
 
     private function registerDiscordVoiceEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::VOICE_STATE_UPDATE, fn(\Discord\Parts\WebSockets\VoiceStateUpdate $voiceState) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\VoiceStateUpdate::class, compact('voiceState'))));
-        $discord->on(DiscordEvents::VOICE_SERVER_UPDATE, fn(\Discord\Parts\WebSockets\VoiceServerUpdate $voiceServer) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\VoiceServerUpdate::class, compact('voiceServer'))));
+        $discord->on(DiscordEvents::VOICE_STATE_UPDATE, fn (\Discord\Parts\WebSockets\VoiceStateUpdate $voiceState) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\VoiceStateUpdate::class, compact('voiceState'))));
+        $discord->on(DiscordEvents::VOICE_SERVER_UPDATE, fn (\Discord\Parts\WebSockets\VoiceServerUpdate $voiceServer) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\VoiceServerUpdate::class, compact('voiceServer'))));
     }
 
     private function registerDiscordWebhookEvents(\Discord\DiscordCommandClient $discord, \Illuminate\Contracts\Events\Dispatcher $dispatcher)
     {
-        $discord->on(DiscordEvents::WEBHOOKS_UPDATE, fn(\stdClass|\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, \stdClass|\Discord\Parts\Channel\Channel $channel) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\WebhooksUpdate::class, compact('guild', 'channel'))));
+        $discord->on(DiscordEvents::WEBHOOKS_UPDATE, fn (\stdClass|\Discord\Parts\Guild\Guild $guild, \Discord\Discord $discord, \stdClass|\Discord\Parts\Channel\Channel $channel) => $dispatcher->dispatch($this->app->make(\Laracord\Events\Discord\WebhooksUpdate::class, compact('guild', 'channel'))));
     }
 }

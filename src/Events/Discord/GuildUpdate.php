@@ -8,6 +8,5 @@ class GuildUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Guild\Guild $guild,
         public readonly ?\Discord\Parts\Guild\Guild $oldGuild,
-    ) {
-    }
+    ) {}
 }

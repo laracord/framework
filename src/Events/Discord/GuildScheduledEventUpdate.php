@@ -8,6 +8,5 @@ class GuildScheduledEventUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Guild\ScheduledEvent $scheduledEvent,
         public readonly ?\Discord\Parts\Guild\ScheduledEvent $oldScheduledEvent,
-    ) {
-    }
+    ) {}
 }

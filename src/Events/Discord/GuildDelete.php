@@ -8,6 +8,5 @@ class GuildDelete
         public readonly \Laracord\Laracord $laracord,
         public readonly object $guild,
         public readonly bool $unavailable,
-    ) {
-    }
+    ) {}
 }

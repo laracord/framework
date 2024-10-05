@@ -8,6 +8,5 @@ class GuildEmojisUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Helpers\Collection $emojis,
         public readonly \Discord\Helpers\Collection $oldEmojis,
-    ) {
-    }
+    ) {}
 }

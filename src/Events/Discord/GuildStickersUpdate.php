@@ -8,6 +8,5 @@ class GuildStickersUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Helpers\Collection $stickers,
         public readonly \Discord\Helpers\Collection $oldStickers,
-    ) {
-    }
+    ) {}
 }

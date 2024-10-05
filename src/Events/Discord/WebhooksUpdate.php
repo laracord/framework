@@ -8,6 +8,5 @@ class WebhooksUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly object $guild,
         public readonly object $channel,
-    ) {
-    }
+    ) {}
 }

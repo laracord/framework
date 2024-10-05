@@ -8,6 +8,5 @@ class ThreadUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Thread\Thread $thread,
         public readonly ?\Discord\Parts\Thread\Thread $oldThread,
-    ) {
-    }
+    ) {}
 }

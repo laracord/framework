@@ -8,6 +8,5 @@ class StageInstanceUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Channel\StageInstance $stageInstance,
         public readonly ?\Discord\Parts\Channel\StageInstance $oldStageInstance,
-    ) {
-    }
+    ) {}
 }

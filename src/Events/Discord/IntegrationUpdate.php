@@ -8,6 +8,5 @@ class IntegrationUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Guild\Integration $integration,
         public readonly ?\Discord\Parts\Guild\Integration $oldIntegration,
-    ) {
-    }
+    ) {}
 }

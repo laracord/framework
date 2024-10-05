@@ -8,6 +8,5 @@ class MessageUpdate
         public readonly \Laracord\Laracord $laracord,
         public readonly \Discord\Parts\Channel\Message $message,
         public readonly ?\Discord\Parts\Channel\Message $oldMessage,
-    ) {
-    }
+    ) {}
 }
