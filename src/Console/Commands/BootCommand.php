@@ -2,8 +2,8 @@
 
 namespace Laracord\Console\Commands;
 
-use Illuminate\Support\Str;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 class BootCommand extends Command
 {
@@ -43,6 +43,7 @@ class BootCommand extends Command
         // Check if bot token is provided
         if (empty($botToken)) {
             $this->error('Bot token is required.');
+
             return;
         }
 
@@ -52,6 +53,7 @@ class BootCommand extends Command
         // Create the bot instance using singleton with the bot name and token
         $this->app->singleton('bot', function () {
             $botClass = $this->getClass();
+
             return $botClass::make($this, config('discord.description'), config('discord.token'));
         });
 
@@ -64,7 +66,7 @@ class BootCommand extends Command
      */
     protected function getClass(): string
     {
-        $class = Str::start($this->app->getNamespace(), '\\') . 'Bot';
+        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
 
         return class_exists($class) ? $class : 'Laracord';
     }
