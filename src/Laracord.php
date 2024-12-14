@@ -35,6 +35,7 @@ use Throwable;
 
 use function React\Async\await;
 use function React\Promise\all;
+use function React\Promise\set_rejection_handler;
 
 class Laracord
 {
@@ -212,6 +213,8 @@ class Laracord
      */
     public function boot(): void
     {
+        set_rejection_handler(fn (Throwable $e) => $this->console()->error($e->getTraceAsString()));
+
         $this->beforeBoot();
 
         $this->bootDiscord();

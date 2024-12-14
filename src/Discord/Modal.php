@@ -7,7 +7,7 @@ use Discord\Builders\Components\TextInput;
 use Discord\Parts\Interactions\Interaction;
 use Exception;
 use Illuminate\Support\Str;
-use React\Promise\ExtendedPromiseInterface;
+use React\Promise\PromiseInterface;
 
 class Modal
 {
@@ -144,7 +144,7 @@ class Modal
     /**
      * Show the modal.
      */
-    public function show(?Interaction $interaction = null): ExtendedPromiseInterface
+    public function show(?Interaction $interaction = null): PromiseInterface
     {
         $interaction = $interaction ?? $this->interaction;
 
