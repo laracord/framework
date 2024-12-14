@@ -21,12 +21,12 @@ use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\User\User;
 use Discord\Repository\Channel\WebhookRepository;
 use Exception;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
-use React\Promise\ExtendedPromiseInterface;
 use React\Promise\PromiseInterface;
 use Throwable;
 
@@ -170,6 +170,11 @@ class Message
     protected string|bool $webhook = false;
 
     /**
+     * The additional message embeds.
+     */
+    protected array $embeds = [];
+
+    /**
      * The default embed colors.
      */
     protected array $colors = [
@@ -227,6 +232,12 @@ class Message
             $message->addEmbed($this->getEmbed());
         }
 
+        if ($this->hasEmbeds()) {
+            foreach ($this->embeds as $embed) {
+                $message->addEmbed($embed);
+            }
+        }
+
         if ($this->hasSelects()) {
             foreach ($this->selects as $select) {
                 $message->addComponent($select);
@@ -255,7 +266,7 @@ class Message
     /**
      * Send the message.
      */
-    public function send(mixed $destination = null): PromiseInterface|ExtendedPromiseInterface|null
+    public function send(mixed $destination = null): ?PromiseInterface
     {
         if ($destination) {
             $this->channel($destination);
@@ -271,7 +282,7 @@ class Message
     /**
      * Send the message to a user.
      */
-    public function sendTo(mixed $user): ?ExtendedPromiseInterface
+    public function sendTo(mixed $user): ?PromiseInterface
     {
         if (is_numeric($user)) {
             $member = $this->bot->discord()->users->get('id', $user);
@@ -301,7 +312,7 @@ class Message
     /**
      * Send the message as a webhook.
      */
-    protected function handleWebhook(): ?ExtendedPromiseInterface
+    protected function handleWebhook(): ?PromiseInterface
     {
         try {
             /** @var WebhookRepository $webhooks */
@@ -357,7 +368,7 @@ class Message
     /**
      * Reply to a message or interaction.
      */
-    public function reply(Interaction|ChannelMessage $message, bool $ephemeral = false): ExtendedPromiseInterface
+    public function reply(Interaction|ChannelMessage $message, bool $ephemeral = false): PromiseInterface
     {
         if ($message instanceof Interaction) {
             return $message->respondWithMessage($this->build(), ephemeral: $ephemeral);
@@ -369,7 +380,7 @@ class Message
     /**
      * Edit an existing message or interaction message.
      */
-    public function edit(Interaction|ChannelMessage $message): ExtendedPromiseInterface
+    public function edit(Interaction|ChannelMessage $message): PromiseInterface
     {
         if ($message instanceof Interaction) {
             return $message->updateMessage($this->build());
@@ -381,7 +392,7 @@ class Message
     /**
      * Edit an existing message if it is owned by the bot, otherwise replying instead.
      */
-    public function editOrReply(Interaction|ChannelMessage $message, bool $ephemeral = false): ExtendedPromiseInterface
+    public function editOrReply(Interaction|ChannelMessage $message, bool $ephemeral = false): PromiseInterface
     {
         if ($message instanceof Interaction) {
             return $message->message?->user_id === $this->bot->discord()->id
@@ -858,8 +869,14 @@ class Message
     /**
      * Set the message fields.
      */
-    public function fields(array $fields, bool $inline = true): self
+    public function fields(array|Arrayable|Collection $fields, bool $inline = true): self
     {
+        $fields = match (true) {
+            $fields instanceof Collection => $fields->all(),
+            $fields instanceof Arrayable => $fields->toArray(),
+            default => $fields
+        };
+
         foreach ($fields as $key => $value) {
             $this->field($key, $value, $inline);
         }
@@ -1171,6 +1188,60 @@ class Message
     public function hasPoll(): bool
     {
         return ! is_null($this->poll);
+    }
+
+    /**
+     * Add an additional embed to the message.
+     */
+    public function withEmbed(MessageBuilder|self $builder): self
+    {
+        if (count($this->embeds) === 10) {
+            throw new Exception('Messages cannot exceed 10 embeds.');
+        }
+
+        if ($builder instanceof self) {
+            $builder = $builder->build();
+        }
+
+        $embeds = $builder->getEmbeds();
+
+        if (! $embeds) {
+            throw new Exception('Builder must contain at least one embed.');
+        }
+
+        $this->embeds[] = $embeds[0];
+
+        return $this;
+    }
+
+    /**
+     * Add additional embeds to the message.
+     */
+    public function withEmbeds(array $builders): self
+    {
+        foreach ($builders as $builder) {
+            $this->withEmbed($builder);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Determine if the message has additional embeds.
+     */
+    public function hasEmbeds(): bool
+    {
+        return ! empty($this->embeds);
+    }
+
+    /**
+     * Clear the additional embeds from the message.
+     */
+    public function clearEmbeds(): self
+    {
+        $this->embeds = [];
+
+        return $this;
     }
 
     /**
