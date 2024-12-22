@@ -682,12 +682,12 @@ class Laracord
                 return;
             }
 
-            $guild->commands->delete($id)->done();
+            $guild->commands->delete($id);
 
             return;
         }
 
-        $this->discord()->application->commands->delete($id)->done();
+        $this->discord()->application->commands->delete($id);
     }
 
     /**
