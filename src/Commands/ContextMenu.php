@@ -2,10 +2,8 @@
 
 namespace Laracord\Commands;
 
-use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Interaction;
-use Discord\Parts\User\User;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
 
 abstract class ContextMenu extends ApplicationCommand implements ContextMenuContract
@@ -34,17 +32,9 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
     }
 
     /**
-     * Handle the context menu interaction.
-     */
-    abstract public function handle(Interaction $interaction, Message|User|null $target): mixed;
-
-    /**
      * Maybe handle the context menu interaction.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function maybeHandle($interaction)
+    public function maybeHandle(Interaction $interaction): void
     {
         $target = match ($this->getType()) {
             DiscordCommand::USER => $interaction->data->resolved->users?->first(),
@@ -53,23 +43,24 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
         };
 
         if (! $this->isAdminCommand()) {
-            $this->handle($interaction, $target);
+            $this->resolveHandler([
+                'interaction' => $interaction,
+                'target' => $target,
+            ]);
 
             return;
         }
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
-            return $interaction->respondWithMessage(
-                $this
-                    ->message('You do not have permission to run this command.')
-                    ->title('Permission Denied')
-                    ->error()
-                    ->build(),
-                ephemeral: true
-            );
+            $this->handleDenied($interaction);
+
+            return;
         }
 
-        $this->handle($interaction, $target);
+        $this->resolveHandler([
+            'interaction' => $interaction,
+            'target' => $target,
+        ]);
     }
 
     /**

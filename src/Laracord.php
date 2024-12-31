@@ -48,10 +48,8 @@ class Laracord
 
     /**
      * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
      */
-    protected $app;
+    public Application $app;
 
     /**
      * The console instance.
@@ -1325,11 +1323,8 @@ class Laracord
 
     /**
      * Build an embed for use in a Discord message.
-     *
-     * @param  string  $content
-     * @return \Laracord\Discord\Message
      */
-    public function message($content = '')
+    public function message(string $content = ''): Message
     {
         return Message::make($this)
             ->content($content);
