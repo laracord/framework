@@ -27,6 +27,10 @@ class AuthorizeToken
             return response()->json(['message' => 'You are not authorized.'], 403);
         }
 
+        $user = $token->tokenable;
+
+        $request->merge(['user' => $user]);
+
         return $next($request);
     }
 }
