@@ -12,9 +12,14 @@ class {{ class }} extends Service
     protected int $interval = 5;
 
     /**
+     * Determine if the service handler should execute during boot.
+     */
+    protected bool $eager = false;
+
+    /**
      * Handle the service.
      */
-    public function handle(): mixed
+    public function handle(): void
     {
         $this->console()->log('Hello world.');
     }

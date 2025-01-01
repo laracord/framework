@@ -66,25 +66,16 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
     }
 
     /**
-     * Handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
-     */
-    abstract public function handle($interaction);
-
-    /**
      * Maybe handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function maybeHandle($interaction)
+    public function maybeHandle(Interaction $interaction): void
     {
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
-            $this->handle($interaction);
+            $this->resolveHandler([
+                'interaction' => $interaction,
+            ]);
 
             $this->clearOptions();
 
@@ -92,19 +83,16 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
         }
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
-            return $interaction->respondWithMessage(
-                $this
-                    ->message('You do not have permission to run this command.')
-                    ->title('Permission Denied')
-                    ->error()
-                    ->build(),
-                ephemeral: true
-            );
+            $this->handleDenied($interaction);
+
+            return;
         }
 
         $this->parseOptions($interaction);
 
-        $this->handle($interaction);
+        $this->resolveHandler([
+            'interaction' => $interaction,
+        ]);
 
         $this->clearOptions();
     }

@@ -2,6 +2,7 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\Command as CommandContract;
 
@@ -37,12 +38,8 @@ abstract class Command extends AbstractCommand implements CommandContract
 
     /**
      * Maybe handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
      */
-    public function maybeHandle($message, $args)
+    public function maybeHandle(Message $message, array $args): void
     {
         if (! $this->canDirectMessage() && ! $message->guild_id) {
             return;
@@ -53,7 +50,10 @@ abstract class Command extends AbstractCommand implements CommandContract
         }
 
         if (! $this->isAdminCommand()) {
-            $this->handle($message, $args);
+            $this->resolveHandler([
+                'message' => $message,
+                'args' => $args,
+            ]);
 
             return;
         }
@@ -62,17 +62,11 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
-        $this->handle($message, $args);
+        $this->resolveHandler([
+            'message' => $message,
+            'args' => $args,
+        ]);
     }
-
-    /**
-     * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
-     */
-    abstract public function handle($message, $args);
 
     /**
      * Retrieve the command cooldown.

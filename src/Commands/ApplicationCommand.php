@@ -2,6 +2,7 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
 
 abstract class ApplicationCommand extends AbstractCommand
@@ -40,5 +41,17 @@ abstract class ApplicationCommand extends AbstractCommand
     public function isNsfw(): bool
     {
         return $this->nsfw;
+    }
+
+    /**
+     * Handle the denied command.
+     */
+    public function handleDenied(Interaction $interaction): void
+    {
+        $this
+            ->message('You do not have permission to run this command.')
+            ->title('Permission Denied')
+            ->error()
+            ->reply($interaction, ephemeral: true);
     }
 }

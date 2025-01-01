@@ -3,6 +3,7 @@
 namespace Laracord\Services;
 
 use Discord\DiscordCommandClient as Discord;
+use Laracord\Concerns\HasHandler;
 use Laracord\Console\Commands\BootCommand as Console;
 use Laracord\Laracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
@@ -10,6 +11,8 @@ use Laracord\Services\Exceptions\InvalidServiceInterval;
 
 abstract class Service implements ServiceContract
 {
+    use HasHandler;
+
     /**
      * The bot instance.
      *
@@ -42,6 +45,11 @@ abstract class Service implements ServiceContract
     protected int $interval = 5;
 
     /**
+     * Determine if the service handler should execute during boot.
+     */
+    protected bool $eager = false;
+
+    /**
      * Determine if the service is enabled.
      *
      * @var bool
@@ -69,13 +77,6 @@ abstract class Service implements ServiceContract
     }
 
     /**
-     * Handle the service.
-     *
-     * @return mixed
-     */
-    abstract public function handle();
-
-    /**
      * Boot the service.
      */
     public function boot(): self
@@ -84,9 +85,13 @@ abstract class Service implements ServiceContract
             throw new InvalidServiceInterval($this->getName());
         }
 
+        if ($this->eager) {
+            $this->resolveHandler();
+        }
+
         $this->bot->getLoop()->addPeriodicTimer(
             $this->getInterval(),
-            fn () => $this->handle()
+            fn () => $this->resolveHandler()
         );
 
         return $this;

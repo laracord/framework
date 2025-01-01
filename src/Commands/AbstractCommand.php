@@ -6,12 +6,13 @@ use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
 use Illuminate\Support\Str;
+use Laracord\Concerns\HasHandler;
 use Laracord\Discord\Concerns\HasModal;
 use Laracord\Laracord;
 
 abstract class AbstractCommand
 {
-    use HasModal;
+    use HasHandler, HasModal;
 
     /**
      * The bot instance.
@@ -185,7 +186,7 @@ abstract class AbstractCommand
             throw new Exception('The user model could not be found.');
         }
 
-        return $this->user = $model::firstOrCreate(['discord_id' => $user->id], [
+        return $model::firstOrCreate(['discord_id' => $user->id], [
             'discord_id' => $user->id,
             'username' => $user->username,
         ]) ?? null;
