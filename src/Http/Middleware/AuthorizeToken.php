@@ -29,6 +29,9 @@ class AuthorizeToken
 
         $user = $token->tokenable;
 
+        $request->setUserResolver(static fn() => $user);
+
+        //@deprecated This was the wrong way to do that. Use $request->user() to get current user from request.
         $request->merge(['user' => $user]);
 
         return $next($request);
