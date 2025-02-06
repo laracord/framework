@@ -2,7 +2,6 @@
 
 namespace Laracord\Http;
 
-use Exception;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
@@ -168,36 +167,21 @@ class HttpServer
     }
 
     /**
+     * Set the server address.
+     */
+    public function setAddress(string $address): self
+    {
+        $this->address = $address;
+
+        return $this;
+    }
+
+    /**
      * Retrieve the server address.
      */
     public function getAddress(): ?string
     {
-        if ($this->address) {
-            return $this->address;
-        }
-
-        $address = config('discord.http');
-
-        if (! $address) {
-            return null;
-        }
-
-        if (Str::startsWith($address, ':')) {
-            $address = Str::start($address, '0.0.0.0');
-        }
-
-        $host = Str::before($address, ':');
-        $port = Str::after($address, ':');
-
-        if (! filter_var($host, FILTER_VALIDATE_IP)) {
-            throw new Exception('Invalid HTTP server address');
-        }
-
-        if ($port > 65535 || $port < 1) {
-            throw new Exception('Invalid HTTP server port');
-        }
-
-        return $this->address = $address;
+        return $this->address;
     }
 
     /**

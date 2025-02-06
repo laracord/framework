@@ -4,6 +4,7 @@ namespace Laracord\Bot\Concerns;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Str;
 use Laracord\Http\HttpServer;
 
 trait HasHttpServer
@@ -12,6 +13,16 @@ trait HasHttpServer
      * The HTTP server instance.
      */
     protected ?HttpServer $httpServer = null;
+
+    /**
+     * The HTTP server address.
+     */
+    protected ?string $httpAddress = null;
+
+    /**
+     * Determine if the HTTP server is enabled.
+     */
+    protected bool $httpEnabled = true;
 
     /**
      * The HTTP routes.
@@ -58,7 +69,7 @@ trait HasHttpServer
      */
     protected function bootHttpServer(): self
     {
-        if ($this->httpServer) {
+        if ($this->httpServer || ! $this->isHttpEnabled()) {
             return $this;
         }
 
@@ -68,7 +79,9 @@ trait HasHttpServer
                 $this->app['router']->getRoutes()->refreshActionLookups();
             });
 
-            $this->httpServer = HttpServer::make($this)->boot();
+            $this->httpServer = HttpServer::make($this)
+                ->setAddress($this->getHttpAddress())
+                ->boot();
 
             if ($this->httpServer->isBooted()) {
                 $this->logger->info("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
@@ -76,6 +89,67 @@ trait HasHttpServer
         });
 
         return $this;
+    }
+
+    /**
+     * Disable the HTTP server.
+     */
+    public function disableHttpServer(): self
+    {
+        $this->httpEnabled = false;
+
+        return $this;
+    }
+
+    /**
+     * Determine if the HTTP server is enabled.
+     */
+    public function isHttpEnabled(): bool
+    {
+        return $this->httpEnabled && $this->getHttpAddress();
+    }
+
+    /**
+     * Set the HTTP server address.
+     */
+    public function setHttpAddress(string $address): self
+    {
+        $this->httpAddress = $address;
+
+        return $this;
+    }
+
+    /**
+     * Get the HTTP server address.
+     */
+    public function getHttpAddress(): ?string
+    {
+        $this->httpAddress ??= config('discord.http');
+
+        if (! $this->httpAddress) {
+            return null;
+        }
+
+        if (Str::startsWith($this->httpAddress, ':')) {
+            $this->httpAddress = Str::start($this->httpAddress, '0.0.0.0');
+        }
+
+        $host = Str::before($this->httpAddress, ':');
+        $port = Str::after($this->httpAddress, ':');
+
+        if (! filter_var($host, FILTER_VALIDATE_IP)) {
+            $this->logger->error('Invalid HTTP server address');
+
+            return null;
+        }
+
+        if ($port > 65535 || $port < 1) {
+            $this->logger->error('Invalid HTTP server port');
+
+            return null;
+        }
+
+        return $this->httpAddress;
     }
 
     /**
