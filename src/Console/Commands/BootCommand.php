@@ -37,11 +37,13 @@ class BootCommand extends Command
             $bot->setToken($this->option('token'));
         }
 
-        if ($this->option('shard-id') && $this->option('shard-count')) {
+        if (filled($this->option('shard-id')) && filled($this->option('shard-count'))) {
             $bot->setShard(
                 id: $this->option('shard-id'),
                 count: $this->option('shard-count')
             );
+
+            $bot->disableHttpServer();
         }
 
         $bot->boot();
