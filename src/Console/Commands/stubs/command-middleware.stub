@@ -1,0 +1,22 @@
+<?php
+
+namespace {{ namespace }};
+
+use Closure;
+use Laracord\Commands\Middleware\Context;
+use Laracord\Commands\Middleware\Middleware;
+
+class {{ class }} implements Middleware
+{
+    /**
+     * Handle the command.
+     *
+     * @param  \Laracord\Commands\Middleware\Context  $context
+     * @param  \Closure  $next
+     * @return mixed
+     */
+    public function handle(Context $context, Closure $next)
+    {
+        return $next($context);
+    }
+}
