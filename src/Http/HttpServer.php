@@ -3,35 +3,25 @@
 namespace Laracord\Http;
 
 use Exception;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
 use Psr\Http\Message\ServerRequestInterface;
-use React\Http\HttpServer;
+use React\Http\HttpServer as Server;
 use React\Http\Message\Response;
 use React\Socket\SocketServer;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
-class Server
+class HttpServer
 {
-    /**
-     * The application instance.
-     */
-    protected Application $app;
-
-    /**
-     * The Laracord instance.
-     */
-    protected Laracord $bot;
-
     /**
      * The HTTP server instance.
      */
-    protected ?HttpServer $server = null;
+    protected ?Server $server = null;
 
     /**
      * The socket server instance.
@@ -51,10 +41,9 @@ class Server
     /**
      * Create a new server instance.
      */
-    public function __construct(Laracord $bot)
+    public function __construct(protected Laracord $bot)
     {
-        $this->bot = $bot;
-        $this->app = $bot->getApplication();
+        //
     }
 
     /**
@@ -97,21 +86,19 @@ class Server
 
         $this->booted = false;
 
-        $this->bot->console()->log('The HTTP server has been shutdown');
+        $this->bot->logger->info('The HTTP server has been shutdown');
     }
 
     /**
      * Retrieve the HTTP server instance.
-     *
-     * @return \React\Http\HttpServer
      */
-    public function getServer()
+    public function getServer(): Server
     {
         if ($this->server) {
             return $this->server;
         }
 
-        return $this->server = new HttpServer($this->bot->getLoop(), function (ServerRequestInterface $request) {
+        return $this->server = new Server($this->bot->getLoop(), function (ServerRequestInterface $request) {
             $headers = $request->getHeaders();
 
             $request = Request::create(
@@ -126,12 +113,17 @@ class Server
 
             $request->headers->replace($headers);
 
-            $this->app->instance('request', $request);
+            $this->bot->app->instance('request', $request);
+
+            $this->bot->withMiddleware(function (Middleware $middleware) {
+                $middleware
+                    ->use([\Laracord\Http\Middleware\FlushState::class])
+                    ->api([\Laracord\Http\Middleware\AuthorizeToken::class])
+                    ->alias(['auth' => \Laracord\Http\Middleware\AuthorizeToken::class]);
+            });
 
             /** @var \Laracord\Http\Kernel $kernel */
-            $kernel = $this->app->make(Kernel::class);
-
-            $kernel = $this->attachMiddleware($kernel);
+            $kernel = $this->bot->app->make(Kernel::class);
 
             try {
                 $kernel->terminate($request, $response = $kernel->handle($request));
@@ -158,7 +150,7 @@ class Server
             $response = Str::finish($response, ": {$e->getMessage()}");
         }
 
-        $this->bot->console()->error($e->getMessage());
+        report($e);
 
         return new Response(
             500,
@@ -168,31 +160,9 @@ class Server
     }
 
     /**
-     * Attach the middleware to the kernel.
-     */
-    protected function attachMiddleware(Kernel $kernel): Kernel
-    {
-        if ($this->bot->prependMiddleware()) {
-            foreach ($this->bot->prependMiddleware() as $middleware) {
-                $kernel->prependMiddleware($middleware);
-            }
-        }
-
-        if ($this->bot->middleware()) {
-            foreach ($this->bot->middleware() as $middleware) {
-                $kernel->pushMiddleware($middleware);
-            }
-        }
-
-        return $kernel;
-    }
-
-    /**
      * Retrieve the socket server instance.
-     *
-     * @return \React\Socket\SocketServer
      */
-    public function getSocket()
+    public function getSocket(): SocketServer
     {
         return $this->socket;
     }
