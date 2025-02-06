@@ -4,7 +4,6 @@ namespace Laracord\Bot\Concerns;
 
 use Discord\Discord;
 use Discord\WebSockets\Intents;
-use Exception;
 use Laracord\Discord\Message;
 
 trait HasDiscord
@@ -92,7 +91,9 @@ trait HasDiscord
         $token = config('discord.token');
 
         if (! $token) {
-            throw new Exception('You must provide a Discord bot token.');
+            $this->logger->error('You must provide a Discord bot token.');
+
+            exit(1);
         }
 
         return $this->token = $token;
@@ -122,6 +123,30 @@ trait HasDiscord
     }
 
     /**
+     * Determine if the bot is a shard.
+     */
+    public function isShard(): bool
+    {
+        return filled($this->shardId) && filled($this->shardCount);
+    }
+
+    /**
+     * Get the current shard ID.
+     */
+    public function getShardId(): ?int
+    {
+        return $this->shardId;
+    }
+
+    /**
+     * Get the shard count.
+     */
+    public function getShardCount(): ?int
+    {
+        return $this->shardCount;
+    }
+
+    /**
      * Get the bot options.
      */
     public function getOptions(): array
@@ -137,7 +162,7 @@ trait HasDiscord
             'loop' => $this->getLoop(),
         ];
 
-        if ($this->shardId && $this->shardCount) {
+        if ($this->isShard()) {
             $options = [
                 ...$options,
                 'shardId' => $this->shardId,
