@@ -97,7 +97,13 @@ class Laracord
 
                 $status = Str::replaceLast(', ', ', and ', $status);
 
-                $this->logger->info("Successfully booted <fg=blue>{$this->getName()}</> with {$status}.");
+                $name = "<fg=blue>{$this->getName()}</>";
+
+                if ($this->isShard()) {
+                    $name .= " <fg=gray>(Shard {$this->getShardId()})</>";
+                }
+
+                $this->logger->info("Successfully booted {$name} with {$status}.");
 
                 $this
                     ->showCommands()
