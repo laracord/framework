@@ -2,7 +2,7 @@
 
 namespace Laracord;
 
-use Discord\DiscordCommandClient as Discord;
+use Discord\Discord;
 use Laracord\Console\Commands\Command as ConsoleCommand;
 use Laracord\Discord\Message;
 
