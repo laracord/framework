@@ -51,20 +51,15 @@ class {{ class }} extends SlashCommand
 
     /**
      * Handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function handle($interaction)
+    public function handle(Interaction $interaction): void
     {
-        $interaction->respondWithMessage(
-            $this
-              ->message()
-              ->title('{{ title }}')
-              ->content('Hello world!')
-              ->button('👋', route: 'wave')
-              ->build()
-        );
+        $this
+            ->message()
+            ->title('{{ title }}')
+            ->content('Hello world!')
+            ->button('👋', route: 'wave')
+            ->reply($interaction);
     }
 
     /**
