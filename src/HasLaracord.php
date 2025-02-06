@@ -3,7 +3,7 @@
 namespace Laracord;
 
 use Discord\Discord;
-use Laracord\Console\Commands\Command as ConsoleCommand;
+use Laracord\Console\Console;
 use Laracord\Discord\Message;
 
 trait HasLaracord
@@ -36,7 +36,7 @@ trait HasLaracord
     /**
      * Retrieve the console instance.
      */
-    public function console(): ConsoleCommand
+    public function console(): Console
     {
         return $this->bot()->console();
     }
