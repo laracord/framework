@@ -201,11 +201,11 @@ class Console
 
         // Detect msysgit/mingw and assume this is a tty because detection
         // does not work correctly, see https://github.com/composer/composer/issues/9690
-        if (is_resource($this->stdio) && ! @stream_isatty($this->stdio) && ! \in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
+        if (is_resource($this->stdio) && ! @stream_isatty($this->stdio) && ! in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
             return false;
         }
 
-        if (windows_os() && @sapi_windows_vt100_support($this->stdio)) {
+        if (is_resource($this->stdio) && windows_os() && @sapi_windows_vt100_support($this->stdio)) {
             return true;
         }
 

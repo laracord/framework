@@ -22,7 +22,10 @@ use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Stream\CompositeStream;
 use React\Stream\ReadableResourceStream;
+use React\Stream\ReadableStreamInterface;
+use React\Stream\ThroughStream;
 use React\Stream\WritableResourceStream;
+use React\Stream\WritableStreamInterface;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Finder\Finder;
@@ -127,11 +130,11 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         $this->app->singleton(Console::class, function () {
             $loop = $this->app->make(LoopInterface::class);
 
+            $stdin = $this->createInputStream($loop);
+            $stdout = $this->createOutputStream($loop);
+
             $console = new Console(
-                stdio: new CompositeStream(
-                    new ReadableResourceStream(STDIN, $loop),
-                    new WritableResourceStream(STDOUT, $loop),
-                ),
+                stdio: new CompositeStream($stdin, $stdout),
                 laravel: $this->app,
                 output: new ConsoleOutput,
                 input: new StringInput(''),
@@ -151,6 +154,40 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
 
             return $console;
         });
+    }
+
+    /**
+     * Create an input stream that works on both Windows and Unix systems.
+     */
+    protected function createInputStream(LoopInterface $loop): ReadableStreamInterface
+    {
+        if (! windows_os()) {
+            return new ReadableResourceStream(STDIN, $loop);
+        }
+
+        $stream = new ThroughStream;
+
+        $stream->end();
+
+        return $stream;
+    }
+
+    /**
+     * Create an output stream.
+     */
+    protected function createOutputStream(LoopInterface $loop): WritableStreamInterface
+    {
+        if (! windows_os()) {
+            return new WritableResourceStream(STDOUT, $loop);
+        }
+
+        $stream = new ThroughStream;
+
+        $stream->on('data', function ($data) {
+            fwrite(STDOUT, $data);
+        });
+
+        return $stream;
     }
 
     /**
