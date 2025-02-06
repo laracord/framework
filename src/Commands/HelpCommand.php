@@ -2,6 +2,8 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
+
 class HelpCommand extends Command
 {
     /**
@@ -27,28 +29,20 @@ class HelpCommand extends Command
 
     /**
      * The response title.
-     *
-     * @var string
      */
-    protected $title = 'Command Help';
+    protected string $title = 'Command Help';
 
     /**
      * The response message.
-     *
-     * @var string
      */
-    protected $message = 'Here is a list of all available commands.';
+    protected string $message = 'Here is a list of all available commands.';
 
     /**
      * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
      */
-    public function handle($message, $args)
+    public function handle(Message $message, array $args): void
     {
-        $commands = collect($this->bot()->getRegisteredCommands())
+        $commands = collect($this->bot->getCommands())
             ->filter(fn ($command) => ! $command->isHidden())
             ->filter(fn ($command) => $command->getGuild() ? $message->guild_id === $command->getGuild() : true)
             ->sortBy('name');
@@ -67,10 +61,10 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        return $this->message()
+        $this
+            ->message($this->message)
             ->title($this->title)
-            ->content($this->message)
             ->fields($fields)
-            ->send($message->channel);
+            ->reply($message);
     }
 }
