@@ -2,21 +2,35 @@
 
 namespace Laracord;
 
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Support\AggregateServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\ServiceProvider;
+use Laracord\Console\Commands;
+use Laracord\Console\Console;
+use Laracord\Console\Prompts;
+use Laracord\Discord\Message;
 use Laracord\Http\Kernel;
 use LaravelZero\Framework\Components\Database\Provider as DatabaseProvider;
+use LaravelZero\Framework\Components\Log\Provider as LogProvider;
+use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
+use React\Stream\CompositeStream;
+use React\Stream\ReadableResourceStream;
+use React\Stream\WritableResourceStream;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Finder\Finder;
 
-class LaracordServiceProvider extends ServiceProvider
+abstract class LaracordServiceProvider extends AggregateServiceProvider
 {
     /**
-     * The default providers.
+     * The provider class names.
      *
      * @var array
      */
@@ -30,9 +44,11 @@ class LaracordServiceProvider extends ServiceProvider
         \Illuminate\View\ViewServiceProvider::class,
         \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Session\SessionServiceProvider::class,
-        \Laracord\Providers\RouteServiceProvider::class,
+        \Laracord\Http\Providers\RouteServiceProvider::class,
         \Intonate\TinkerZero\TinkerZeroServiceProvider::class,
     ];
+
+    abstract public function bot(Laracord $bot): Laracord;
 
     /**
      * Register any application services.
@@ -44,13 +60,27 @@ class LaracordServiceProvider extends ServiceProvider
         $this->mergeConfigs();
         $this->createDirectories();
 
-        foreach ($this->providers as $provider) {
-            $this->app->register($provider);
-        }
+        parent::register();
 
         $this->registerDatabase();
+        $this->registerLoop();
+        $this->registerConsole();
+        $this->registerLogger();
 
         $this->app->singleton(KernelContract::class, Kernel::class);
+
+        $this->app->singleton(Laracord::class, fn () => tap(Laracord::make($this->app), function (Laracord $bot) {
+            $this
+                ->registerDefaultComponents($bot)
+                ->registerDefaultPrompts($bot);
+
+            $this->app->singleton(Message::class, fn () => Message::make($bot));
+
+            return $this->bot($bot);
+        }));
+
+        $this->app->alias(Laracord::class, 'bot');
+        $this->app->alias(Message::class, 'bot.message');
     }
 
     /**
@@ -61,21 +91,105 @@ class LaracordServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->commands([
-            Console\Commands\AdminCommand::class,
-            Console\Commands\BootCommand::class,
-            Console\Commands\ConsoleMakeCommand::class,
-            Console\Commands\ControllerMakeCommand::class,
-            Console\Commands\EventMakeCommand::class,
-            Console\Commands\KeyGenerateCommand::class,
-            Console\Commands\MakeCommand::class,
-            Console\Commands\MakeSlashCommand::class,
-            Console\Commands\MakeMenuCommand::class,
-            Console\Commands\ModelMakeCommand::class,
-            Console\Commands\ServiceMakeCommand::class,
-            Console\Commands\TokenMakeCommand::class,
+            Commands\AdminCommand::class,
+            Commands\BootCommand::class,
+            Commands\ConsoleMakeCommand::class,
+            Commands\ControllerMakeCommand::class,
+            Commands\EventMakeCommand::class,
+            Commands\KeyGenerateCommand::class,
+            Commands\MakeCommand::class,
+            Commands\MakeCommandMiddlewareCommand::class,
+            Commands\MakeSlashCommand::class,
+            Commands\MakeMenuCommand::class,
+            Commands\ModelMakeCommand::class,
+            Commands\ServiceMakeCommand::class,
+            Commands\TokenMakeCommand::class,
         ]);
 
         $this->registerMacros();
+    }
+
+    /**
+     * Register the event loop.
+     */
+    protected function registerLoop(): void
+    {
+        $this->app->singleton(LoopInterface::class, fn () => Loop::get());
+        $this->app->alias(LoopInterface::class, 'bot.loop');
+    }
+
+    /**
+     * Register the console.
+     */
+    protected function registerConsole(): void
+    {
+        $this->app->singleton(Console::class, function () {
+            $loop = $this->app->make(LoopInterface::class);
+
+            $console = new Console(
+                stdio: new CompositeStream(
+                    new ReadableResourceStream(STDIN, $loop),
+                    new WritableResourceStream(STDOUT, $loop),
+                ),
+                laravel: $this->app,
+                output: new ConsoleOutput,
+                input: new StringInput(''),
+            );
+
+            if ($console->hasColorSupport()) {
+                $console->getOutput()->setDecorated(true);
+            }
+
+            // foreach ($this->app->make(ConsoleKernel::class)->all() as $command) {
+            //     if ($command instanceof Command) {
+            //         $console->addCommand($command);
+            //     }
+            // }
+
+            $this->app->instance('bot.console', $console);
+
+            return $console;
+        });
+    }
+
+    /**
+     * Register the logger.
+     */
+    protected function registerLogger(): void
+    {
+        $this->app->booting(fn () => $this->app->register(LogProvider::class));
+    }
+
+    /**
+     * Register the default components.
+     */
+    protected function registerDefaultComponents(Laracord $bot): self
+    {
+        $bot
+            ->discoverCommands(in: app_path('Commands'), for: 'App\\Commands')
+            ->discoverSlashCommands(in: app_path('SlashCommands'), for: 'App\\SlashCommands')
+            ->discoverContextMenus(in: app_path('Menus'), for: 'App\\Menus')
+            ->discoverEvents(in: app_path('Events'), for: 'App\\Events')
+            ->discoverServices(in: app_path('Services'), for: 'App\\Services');
+
+        return $this;
+    }
+
+    /**
+     * Register the default console prompts.
+     */
+    protected function registerDefaultPrompts(Laracord $bot): self
+    {
+        $bot->registerPrompts([
+            Prompts\ExitPrompt::class,
+            Prompts\HelpPrompt::class,
+            Prompts\InvitePrompt::class,
+            Prompts\RestartPrompt::class,
+            Prompts\StatusPrompt::class,
+            Prompts\ClearPrompt::class,
+        ]);
+
+        return $this;
     }
 
     /**
@@ -152,7 +266,7 @@ class LaracordServiceProvider extends ServiceProvider
         Storage::macro('getAsync', fn (string $path) => Laracord::handleAsync(fn () => Storage::get($path)));
         Storage::macro('putAsync', fn (string $path, mixed $contents) => Laracord::handleAsync(fn () => Storage::put($path, $contents)));
 
-        Date::macro('toDiscord', function ($format = 'R') {
+        Date::macro('toDiscord', function (string $format = 'R') {
             $format = match ($format) {
                 't', 'T', 'd', 'D', 'f', 'F', 'R' => $format,
                 default => 'R',
