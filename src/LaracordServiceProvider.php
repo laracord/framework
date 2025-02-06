@@ -157,7 +157,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
     }
 
     /**
-     * Create an input stream that works on both Windows and Unix systems.
+     * Create an input stream.
      */
     protected function createInputStream(LoopInterface $loop): ReadableStreamInterface
     {
