@@ -2,8 +2,11 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\Command as CommandContract;
+use Laracord\Commands\Middleware\Context;
 
 abstract class Command extends AbstractCommand implements CommandContract
 {
@@ -15,20 +18,6 @@ abstract class Command extends AbstractCommand implements CommandContract
     protected $aliases = [];
 
     /**
-     * The command cooldown.
-     *
-     * @var int
-     */
-    protected $cooldown = 0;
-
-    /**
-     * The command cooldown message.
-     *
-     * @var string
-     */
-    protected $cooldownMessage = '';
-
-    /**
      * The command usage.
      *
      * @var string
@@ -37,12 +26,8 @@ abstract class Command extends AbstractCommand implements CommandContract
 
     /**
      * Maybe handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
      */
-    public function maybeHandle($message, $args)
+    public function maybeHandle(Message $message, array $args): void
     {
         if (! $this->canDirectMessage() && ! $message->guild_id) {
             return;
@@ -52,8 +37,12 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
+        if ($this->isOnCooldown($message->author, $message->guild)) {
+            return;
+        }
+
         if (! $this->isAdminCommand()) {
-            $this->handle($message, $args);
+            $this->processMiddleware($message, $args);
 
             return;
         }
@@ -62,65 +51,50 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
-        $this->handle($message, $args);
+        $this->processMiddleware($message, $args);
     }
 
     /**
-     * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
+     * Process the command through its middleware stack.
      */
-    abstract public function handle($message, $args);
-
-    /**
-     * Retrieve the command cooldown.
-     *
-     * @return int
-     */
-    public function getCooldown()
+    protected function processMiddleware(Message $message, array $args): mixed
     {
-        return $this->cooldown;
-    }
+        $context = new Context(
+            source: $message,
+            args: $args,
+            command: $this
+        );
 
-    /**
-     * Retrieve the command cooldown message.
-     *
-     * @return string
-     */
-    public function getCooldownMessage()
-    {
-        return $this->cooldownMessage;
+        return (new Pipeline($this->bot()->app))
+            ->send($context)
+            ->through($this->getMiddleware())
+            ->then(fn (Context $context) => $this->resolveHandler([
+                'message' => $context->source,
+                'args' => $context->args,
+            ]));
     }
 
     /**
      * Retrieve the command signature.
-     *
-     * @return string
      */
-    public function getSignature()
+    public function getSignature(): string
     {
         return Str::start($this->getName(), $this->bot()->getPrefix());
     }
 
     /**
-     * Retrieve the command usage.
-     *
-     * @return string
+     * Retrieve the command aliases.
      */
-    public function getUsage()
+    public function getAliases(): array
     {
-        return $this->usage;
+        return $this->aliases;
     }
 
     /**
-     * Retrieve the command aliases.
-     *
-     * @return array
+     * Retrieve the command usage.
      */
-    public function getAliases()
+    public function getUsage(): string
     {
-        return $this->aliases;
+        return $this->usage;
     }
 }
