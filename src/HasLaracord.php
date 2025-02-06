@@ -3,6 +3,7 @@
 namespace Laracord;
 
 use Discord\Discord;
+use Illuminate\Log\LogManager;
 use Laracord\Console\Console;
 use Laracord\Discord\Message;
 
