@@ -1,10 +1,11 @@
 <?php
 
-namespace Laracord\Console\Concerns;
+namespace Laracord\Console\Commands\Concerns;
 
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Laracord\Facades\Laracord;
 
 trait ResolvesUser
 {
@@ -34,7 +35,7 @@ trait ResolvesUser
         $model = $model ?? $this->getUserModel()::where('discord_id', $user)->first();
 
         if (! $model) {
-            $token = $this->getBotClass()::make($this)->getToken();
+            $token = Laracord::getToken();
 
             $request = Http::withHeaders([
                 'Authorization' => "Bot {$token}",
@@ -54,16 +55,6 @@ trait ResolvesUser
         }
 
         return $model;
-    }
-
-    /**
-     * Get the bot class.
-     */
-    protected function getBotClass(): string
-    {
-        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
-
-        return class_exists($class) ? $class : 'Laracord';
     }
 
     /**
