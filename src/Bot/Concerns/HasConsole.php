@@ -2,6 +2,8 @@
 
 namespace Laracord\Bot\Concerns;
 
+use Illuminate\Support\Arr;
+use InvalidArgumentException;
 use Laracord\Console\Console;
 use Laracord\Console\Prompts\Prompt;
 use Laracord\Logging\ConsoleHandler;
