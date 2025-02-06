@@ -8,9 +8,11 @@ use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
+use Laracord\Commands\Middleware\Context;
 
 abstract class SlashCommand extends ApplicationCommand implements SlashCommandContract
 {
@@ -62,29 +64,37 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
             ->filter()
             ->all();
 
-        return new DiscordCommand($this->discord(), $command);
+        return new DiscordCommand($this->discord, $command);
     }
 
     /**
-     * Handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
+     * Process the command through its middleware stack.
      */
-    abstract public function handle($interaction);
+    protected function processMiddleware(Interaction $interaction): mixed
+    {
+        $context = new Context(
+            source: $interaction,
+            options: $this->getOptions(),
+            command: $this,
+        );
+
+        return (new Pipeline($this->bot()->app))
+            ->send($context)
+            ->through($this->getMiddleware())
+            ->then(fn (Context $context) => $this->resolveHandler([
+                'interaction' => $context->source,
+            ]));
+    }
 
     /**
      * Maybe handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function maybeHandle($interaction)
+    public function maybeHandle(Interaction $interaction): void
     {
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
-            $this->handle($interaction);
+            $this->processMiddleware($interaction);
 
             $this->clearOptions();
 
@@ -92,19 +102,14 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
         }
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
-            return $interaction->respondWithMessage(
-                $this
-                    ->message('You do not have permission to run this command.')
-                    ->title('Permission Denied')
-                    ->error()
-                    ->build(),
-                ephemeral: true
-            );
+            $this->handleDenied($interaction);
+
+            return;
         }
 
         $this->parseOptions($interaction);
 
-        $this->handle($interaction);
+        $this->processMiddleware($interaction);
 
         $this->clearOptions();
     }
