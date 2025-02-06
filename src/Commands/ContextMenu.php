@@ -2,11 +2,11 @@
 
 namespace Laracord\Commands;
 
-use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Interaction;
-use Discord\Parts\User\User;
+use Illuminate\Pipeline\Pipeline;
 use Laracord\Commands\Contracts\ContextMenu as ContextMenuContract;
+use Laracord\Commands\Middleware\Context;
 
 abstract class ContextMenu extends ApplicationCommand implements ContextMenuContract
 {
@@ -30,21 +30,33 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
             'nsfw' => $this->isNsfw(),
         ])->reject(fn ($value) => blank($value));
 
-        return new DiscordCommand($this->discord(), $menu->all());
+        return new DiscordCommand($this->discord, $menu->all());
     }
 
     /**
-     * Handle the context menu interaction.
+     * Process the command through its middleware stack.
      */
-    abstract public function handle(Interaction $interaction, Message|User|null $target): mixed;
+    protected function processMiddleware(Interaction $interaction, mixed $target = null): mixed
+    {
+        $context = new Context(
+            source: $interaction,
+            target: $target,
+            command: $this,
+        );
+
+        return (new Pipeline($this->bot()->app))
+            ->send($context)
+            ->through($this->getMiddleware())
+            ->then(fn (Context $context) => $this->resolveHandler([
+                'interaction' => $context->source,
+                'target' => $context->target,
+            ]));
+    }
 
     /**
      * Maybe handle the context menu interaction.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function maybeHandle($interaction)
+    public function maybeHandle(Interaction $interaction): void
     {
         $target = match ($this->getType()) {
             DiscordCommand::USER => $interaction->data->resolved->users?->first(),
@@ -53,23 +65,18 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
         };
 
         if (! $this->isAdminCommand()) {
-            $this->handle($interaction, $target);
+            $this->processMiddleware($interaction, $target);
 
             return;
         }
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
-            return $interaction->respondWithMessage(
-                $this
-                    ->message('You do not have permission to run this command.')
-                    ->title('Permission Denied')
-                    ->error()
-                    ->build(),
-                ephemeral: true
-            );
+            $this->handleDenied($interaction);
+
+            return;
         }
 
-        $this->handle($interaction, $target);
+        $this->processMiddleware($interaction, $target);
     }
 
     /**
