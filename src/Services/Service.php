@@ -2,34 +2,14 @@
 
 namespace Laracord\Services;
 
-use Discord\DiscordCommandClient as Discord;
-use Laracord\Console\Commands\BootCommand as Console;
-use Laracord\Laracord;
+use Laracord\Concerns\HasHandler;
+use Laracord\HasLaracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
 use Laracord\Services\Exceptions\InvalidServiceInterval;
 
 abstract class Service implements ServiceContract
 {
-    /**
-     * The bot instance.
-     *
-     * @var \Laracord\Laracord
-     */
-    protected $bot;
-
-    /**
-     * The console instance.
-     *
-     * @var \Laracord\Console\Commands\BootCommand
-     */
-    protected $console;
-
-    /**
-     * The Discord instance.
-     *
-     * @var \Discord\DiscordCommandClient;
-     */
-    protected $discord;
+    use HasHandler, HasLaracord;
 
     /**
      * The service name.
@@ -42,38 +22,22 @@ abstract class Service implements ServiceContract
     protected int $interval = 5;
 
     /**
-     * Determine if the service is enabled.
-     *
-     * @var bool
+     * Determine if the service handler should execute during boot.
      */
-    protected $enabled = true;
+    protected bool $eager = false;
 
     /**
-     * Create a new service instance.
-     *
-     * @return void
+     * Determine if the service is enabled.
      */
-    public function __construct(Laracord $bot)
-    {
-        $this->bot = $bot;
-        $this->console = $bot->console();
-        $this->discord = $bot->discord();
-    }
+    protected bool $enabled = true;
 
     /**
      * Make a new service instance.
      */
-    public static function make(Laracord $bot): self
+    public static function make(): self
     {
-        return new static($bot);
+        return new static;
     }
-
-    /**
-     * Handle the service.
-     *
-     * @return mixed
-     */
-    abstract public function handle();
 
     /**
      * Boot the service.
@@ -84,9 +48,13 @@ abstract class Service implements ServiceContract
             throw new InvalidServiceInterval($this->getName());
         }
 
+        if ($this->eager) {
+            $this->resolveHandler();
+        }
+
         $this->bot->getLoop()->addPeriodicTimer(
             $this->getInterval(),
-            fn () => $this->bot->handleSafe($this->getName(), fn () => $this->handle())
+            fn () => $this->resolveHandler()
         );
 
         return $this;
@@ -123,7 +91,7 @@ abstract class Service implements ServiceContract
      */
     public function getName(): string
     {
-        if ($this->name) {
+        if (filled($this->name)) {
             return $this->name;
         }
 
@@ -136,40 +104,5 @@ abstract class Service implements ServiceContract
     public function isEnabled(): bool
     {
         return $this->enabled;
-    }
-
-    /**
-     * Get the Discord client.
-     */
-    public function discord(): Discord
-    {
-        return $this->discord;
-    }
-
-    /**
-     * Get the bot instance.
-     */
-    public function bot(): Laracord
-    {
-        return $this->bot;
-    }
-
-    /**
-     * Get the console instance.
-     */
-    public function console(): Console
-    {
-        return $this->console;
-    }
-
-    /**
-     * Build an embed for use in a Discord message.
-     *
-     * @param  string  $content
-     * @return \Laracord\Discord\Message
-     */
-    public function message($content = '')
-    {
-        return $this->bot()->message($content);
     }
 }
