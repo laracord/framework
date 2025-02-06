@@ -42,6 +42,14 @@ trait HasLaracord
     }
 
     /**
+     * Retrieve the logger instance.
+     */
+    public function logger(): LogManager
+    {
+        return $this->bot()->getLogger();
+    }
+
+    /**
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
