@@ -99,9 +99,10 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             Commands\KeyGenerateCommand::class,
             Commands\MakeCommand::class,
             Commands\MakeCommandMiddlewareCommand::class,
-            Commands\MakeSlashCommand::class,
             Commands\MakeMenuCommand::class,
+            Commands\MakeSlashCommand::class,
             Commands\ModelMakeCommand::class,
+            Commands\PromptMakeCommand::class,
             Commands\ServiceMakeCommand::class,
             Commands\TokenMakeCommand::class,
         ]);
