@@ -30,7 +30,7 @@ abstract class ContextMenu extends ApplicationCommand implements ContextMenuCont
             'nsfw' => $this->isNsfw(),
         ])->reject(fn ($value) => blank($value));
 
-        return new DiscordCommand($this->discord, $menu->all());
+        return new DiscordCommand($this->discord(), $menu->all());
     }
 
     /**
