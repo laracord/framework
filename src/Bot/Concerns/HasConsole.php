@@ -88,9 +88,14 @@ trait HasConsole
             return $this;
         }
 
+        $commands = [
+            ...$this->commands,
+            ...$this->slashCommands,
+        ];
+
         $this->console->table(
             ['<fg=blue>Command</>', '<fg=blue>Description</>'],
-            collect($this->commands)->map(fn ($command) => [
+            collect($commands)->map(fn ($command) => [
                 $command->getSignature(),
                 $command->getDescription(),
             ])->all()
