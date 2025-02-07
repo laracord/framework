@@ -207,12 +207,11 @@ trait HasApplicationCommands
             $subcommands = $subcommands->merge($subcommandGroups);
 
             if ($subcommands->isNotEmpty()) {
-                $subcommands->each(fn ($names) =>
-                    $this->discord->listenCommand(
-                        $names,
-                        fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
-                        fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
-                    )
+                $subcommands->each(fn ($names) => $this->discord->listenCommand(
+                    $names,
+                    fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
+                    fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
+                )
                 );
 
                 return;
@@ -235,8 +234,6 @@ trait HasApplicationCommands
      */
     protected function registerApplicationCommand(ApplicationCommand $command): void
     {
-        cache()->forget('laracord.application-commands');
-
         if ($command->getGuild()) {
             $guild = $this->discord->guilds->get('id', $command->getGuild());
 
@@ -259,8 +256,6 @@ trait HasApplicationCommands
      */
     protected function unregisterApplicationCommand(string $id, ?string $guildId = null): void
     {
-        cache()->forget('laracord.application-commands');
-
         if ($guildId) {
             $guild = $this->discord->guilds->get('id', $guildId);
 
