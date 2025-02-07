@@ -5,14 +5,31 @@ namespace Laracord\Bot\Concerns;
 trait HasHooks
 {
     /**
-     * Attempt to call the hook.
+     * The registered hooks.
+     */
+    protected array $hooks = [];
+
+    /**
+     * Register a hook callback.
+     */
+    public function registerHook(string $hook, callable $callback): self
+    {
+        if (! isset($this->hooks[$hook])) {
+            $this->hooks[$hook] = [];
+        }
+
+        $this->hooks[$hook][] = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Call all registered callbacks for a hook.
      */
     protected function callHook(string $hook): void
     {
-        if (! method_exists($this, $hook)) {
-            return;
+        foreach ($this->hooks[$hook] ?? [] as $callback) {
+            $this->app->call($callback);
         }
-
-        $this->app->call([$this, $hook]);
     }
 }
