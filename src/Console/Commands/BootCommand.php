@@ -34,7 +34,7 @@ class BootCommand extends Command
         }
 
         if ($this->option('token')) {
-            $this->components->alert('Using --token is insecure and not recommended.');
+            $this->components->alert('Using --token is insecure. Consider using --env instead.');
 
             $bot->setToken($this->option('token'));
         }
