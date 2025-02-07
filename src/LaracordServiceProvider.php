@@ -60,7 +60,9 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
      */
     public function register()
     {
-        $this->app->useStoragePath(laracord_path('storage', basePath: false));
+        $storage = env('STORAGE_PATH', laracord_path('storage', basePath: false));
+
+        $this->app->useStoragePath($storage);
 
         $this->mergeConfigs();
         $this->createDirectories();
