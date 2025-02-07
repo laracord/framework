@@ -64,7 +64,7 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
             ->filter()
             ->all();
 
-        return new DiscordCommand($this->discord, $command);
+        return new DiscordCommand($this->discord(), $command);
     }
 
     /**
