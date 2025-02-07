@@ -29,7 +29,8 @@ class Laracord
         Concerns\HasLoop,
         Concerns\HasPlugins,
         Concerns\HasServices,
-        Concerns\HasSlashCommands;
+        Concerns\HasSlashCommands,
+        Concerns\HasUserModel;
 
     /**
      * The boot state.

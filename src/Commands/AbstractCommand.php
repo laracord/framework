@@ -5,7 +5,7 @@ namespace Laracord\Commands;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 use Laracord\Concerns\HasHandler;
 use Laracord\Discord\Concerns\HasModal;
 use Laracord\HasLaracord;
@@ -131,7 +131,11 @@ abstract class AbstractCommand
             return in_array($user->id, $this->bot->getAdmins());
         }
 
-        return $this->getUser($user)->is_admin;
+        if (! $this->bot->getUserModel()) {
+            return false;
+        }
+
+        return $this->bot->getUserModel()::where(['discord_id' => $user->id])->first()?->is_admin ?? false;
     }
 
     /**
@@ -140,38 +144,6 @@ abstract class AbstractCommand
     public function canDirectMessage(): bool
     {
         return $this->directMessage;
-    }
-
-    /**
-     * Resolve a Discord user.
-     */
-    public function resolveUser(string $username): ?User
-    {
-        return ! empty($username) ? $this->discord()->users->filter(function ($user) use ($username) {
-            $username = str_replace(['<', '@', '>'], '', strtolower($username));
-
-            return ($user->username === $username || $user->id === $username) && ! $user->bot;
-        })->first() : null;
-    }
-
-    /**
-     * Get the command user.
-     *
-     * @param  \Discord\Parts\User\User  $user
-     * @return \App\Models\User|null
-     */
-    public function getUser($user)
-    {
-        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
-
-        if (! class_exists($model)) {
-            throw new Exception('The user model could not be found.');
-        }
-
-        return $model::firstOrCreate(['discord_id' => $user->id], [
-            'discord_id' => $user->id,
-            'username' => $user->username,
-        ]) ?? null;
     }
 
     /**
