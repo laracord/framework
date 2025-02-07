@@ -24,7 +24,7 @@ trait HasInteractions
     /**
      * Register the interaction routes.
      */
-    protected function registerInteractions(string $name, array $routes = []): void
+    public function registerInteractions(string $name, array $routes = []): void
     {
         $routes = collect($routes)
             ->mapWithKeys(fn ($value, $route) => ["{$name}@{$route}" => $value])
