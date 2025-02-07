@@ -5,7 +5,6 @@ namespace Laracord\Commands;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
-use Illuminate\Database\Eloquent\Model;
 use Laracord\Concerns\HasHandler;
 use Laracord\Discord\Concerns\HasModal;
 use Laracord\HasLaracord;
