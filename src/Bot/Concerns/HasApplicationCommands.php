@@ -41,38 +41,33 @@ trait HasApplicationCommands
             return $data;
         };
 
-        $existing = cache()->get('laracord.application-commands', []);
+        $existing = [];
 
-        if (! $existing) {
-            $existing[] = $this->discord->application->commands->freshen();
+        $existing[] = $this->discord->application->commands->freshen();
 
-            foreach ($this->discord->guilds as $guild) {
-                $existing[] = $guild->commands->freshen();
-            }
-
-            $existing = all($existing)->then(fn ($commands) => collect($commands)
-                ->flatMap(fn ($command) => $command->toArray())
-                ->map(fn ($command) => collect($command->getCreatableAttributes())
-                    ->merge([
-                        'id' => $command->id,
-                        'guild_id' => $command->guild_id ?? null,
-                        'dm_permission' => $command->guild_id ? null : ($command->dm_permission ?? false),
-                        'default_permission' => $command->default_permission ?? true,
-                    ])
-                    ->all()
-                )
-                ->map(fn ($command) => array_merge($command, [
-                    'options' => json_decode(json_encode($command['options'] ?? []), true),
-                ]))
-                ->filter(fn ($command) => ! blank($command))
-                ->keyBy('name')
-            );
-
-            $existing = await($existing);
-
-            cache()->forever('laracord.application-commands', $existing);
+        foreach ($this->discord->guilds as $guild) {
+            $existing[] = $guild->commands->freshen();
         }
 
+        $existing = all($existing)->then(fn ($commands) => collect($commands)
+            ->flatMap(fn ($command) => $command->toArray())
+            ->map(fn ($command) => collect($command->getCreatableAttributes())
+                ->merge([
+                    'id' => $command->id,
+                    'guild_id' => $command->guild_id ?? null,
+                    'dm_permission' => $command->guild_id ? null : ($command->dm_permission ?? false),
+                    'default_permission' => $command->default_permission ?? true,
+                ])
+                ->all()
+            )
+            ->map(fn ($command) => array_merge($command, [
+                'options' => json_decode(json_encode($command['options'] ?? []), true),
+            ]))
+            ->filter(fn ($command) => filled($command))
+            ->keyBy('name')
+        );
+
+        $existing = await($existing);
         $existing = collect($existing);
 
         $registered = collect($this->slashCommands)
@@ -90,7 +85,7 @@ trait HasApplicationCommands
                     ->sortKeys()
                     ->all();
 
-                return [$command::class => [
+                return [$command->getName() => [
                     'state' => $command,
                     'attributes' => $attributes,
                 ]];
@@ -196,11 +191,13 @@ trait HasApplicationCommands
                 return;
             }
 
-            $subcommands = collect($command['state']->getRegisteredOptions())
+            $command = $command['state'];
+
+            $subcommands = collect($command->getRegisteredOptions())
                 ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND)
                 ->map(fn (Option $subcommand) => [$name, $subcommand->name]);
 
-            $subcommandGroups = collect($command['state']->getRegisteredOptions())
+            $subcommandGroups = collect($command->getRegisteredOptions())
                 ->filter(fn (Option $option) => $option->type === Option::SUB_COMMAND_GROUP)
                 ->flatMap(fn (Option $group) => collect($group->options)
                     ->filter(fn (Option $subcommand) => $subcommand->type === Option::SUB_COMMAND)
@@ -210,28 +207,25 @@ trait HasApplicationCommands
             $subcommands = $subcommands->merge($subcommandGroups);
 
             if ($subcommands->isNotEmpty()) {
-                $subcommands->each(function ($names) use ($command) {
+                $subcommands->each(fn ($names) =>
                     $this->discord->listenCommand(
                         $names,
-                        fn ($interaction) => rescue(fn () => $command['state']->maybeHandle($interaction)),
-                        fn ($interaction) => rescue(fn () => $command['state']->maybeHandleAutocomplete($interaction))
-                    );
-                });
+                        fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
+                        fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
+                    )
+                );
 
                 return;
             }
 
             $this->discord->listenCommand(
                 $name,
-                fn ($interaction) => rescue(fn () => $command['state']->maybeHandle($interaction)),
-                fn ($interaction) => rescue(fn () => $command['state']->maybeHandleAutocomplete($interaction))
+                fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
+                fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
             );
-        });
 
-        $this->slashCommands = [
-            ...$this->slashCommands,
-            ...$registered->pluck('state')->reject(fn ($command) => $command instanceof ContextMenu)->all(),
-        ];
+            $this->slashCommands[$command::class] = $command;
+        });
 
         return $this;
     }
