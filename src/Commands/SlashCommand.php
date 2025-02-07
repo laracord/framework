@@ -235,10 +235,8 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
 
     /**
      * Retrieve the command signature.
-     *
-     * @return string
      */
-    public function getSignature()
+    public function getSignature(): string
     {
         return Str::start($this->getName(), '/');
     }
