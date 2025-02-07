@@ -12,7 +12,7 @@ class BootCommand extends Command
      * @var string
      */
     protected $signature = 'bot:boot
-                            {--token= : The Discord bot token}
+                            {--token= : The Discord bot token (insecure)}
                             {--shard-id= : The Discord bot shard ID}
                             {--shard-count= : The Discord bot shard count}
                             {--no-migrate : Boot without running database migrations}';
@@ -34,6 +34,8 @@ class BootCommand extends Command
         }
 
         if ($this->option('token')) {
+            $this->components->alert('Using --token is insecure and not recommended.');
+
             $bot->setToken($this->option('token'));
         }
 
