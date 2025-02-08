@@ -134,7 +134,7 @@ class Laracord
 
         $this->logger->info("<fg=blue>{$this->getName()}</> is shutting down.");
 
-        $this->loop->stop();
+        $this->getLoop()?->stop();
 
         exit($code);
     }
