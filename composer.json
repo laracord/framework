@@ -34,7 +34,7 @@
     "react/http": "^1.9",
     "react/promise": "^3.0",
     "symfony/psr-http-message-bridge": "^7.0",
-    "team-reflex/discord-php": "^10.1"
+    "team-reflex/discord-php": "^10.3"
   },
   "require-dev": {
     "laravel/pint": "^1.15"
