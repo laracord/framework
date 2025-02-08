@@ -68,14 +68,6 @@ class Console
     }
 
     /**
-     * Close the console instance.
-     */
-    public function __destruct()
-    {
-        $this->stdio->close();
-    }
-
-    /**
      * Make a new console instance.
      */
     public static function make(): self
