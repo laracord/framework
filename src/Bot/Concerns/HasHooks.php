@@ -2,7 +2,7 @@
 
 namespace Laracord\Bot\Concerns;
 
-use Laracord\Hook;
+use Laracord\Bot\Hook;
 
 trait HasHooks
 {

@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Bot\Concerns;
+use Laracord\Bot\Hook;
 use Throwable;
 
 use function React\Promise\set_rejection_handler;

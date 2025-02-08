@@ -1,6 +1,6 @@
 <?php
 
-namespace Laracord;
+namespace Laracord\Bot;
 
 enum Hook: string
 {
