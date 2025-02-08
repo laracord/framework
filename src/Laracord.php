@@ -16,6 +16,7 @@ use function React\Promise\set_rejection_handler;
 class Laracord
 {
     use Concerns\HasApplicationCommands,
+        Concerns\HasAsync,
         Concerns\HasCommandMiddleware,
         Concerns\HasCommands,
         Concerns\HasComponents,
