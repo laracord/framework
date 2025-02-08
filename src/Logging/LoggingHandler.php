@@ -34,7 +34,7 @@ class LoggingHandler extends AbstractProcessingHandler
         protected string $path,
         protected int $maxSize = 10485760,
         protected int $maxFiles = 5,
-        protected float $flushInterval = 1,
+        protected float $flushInterval = 60,
         mixed $level = Level::Debug,
         bool $bubble = true,
     ) {
