@@ -1,6 +1,6 @@
 <?php
 
-namespace Laracord\Concerns;
+namespace Laracord\Bot\Concerns;
 
 use Exception;
 use React\EventLoop\LoopInterface;
