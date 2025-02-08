@@ -123,7 +123,6 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     protected function write(LogRecord $record): void
     {
-        $this->rotate();
         $this->buffer[] = $record->formatted;
     }
 
