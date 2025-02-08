@@ -24,8 +24,6 @@ trait HasServices
             }
 
             $this->services[$service::class] = $service->boot();
-
-            $this->logger->info("The <fg=blue>{$service->getName()}</> service has been booted.");
         }
 
         $this->callHook(Hook::AFTER_SERVICES_REGISTERED);

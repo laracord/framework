@@ -6,6 +6,7 @@ use Laracord\Concerns\HasHandler;
 use Laracord\HasLaracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
 use Laracord\Services\Exceptions\InvalidServiceInterval;
+use React\EventLoop\TimerInterface;
 
 abstract class Service implements ServiceContract
 {
@@ -32,6 +33,16 @@ abstract class Service implements ServiceContract
     protected bool $enabled = true;
 
     /**
+     * Determine if the service is booted.
+     */
+    protected bool $booted = false;
+
+    /**
+     * The timer for the service.
+     */
+    protected ?TimerInterface $timer = null;
+
+    /**
      * Make a new service instance.
      */
     public static function make(): self
@@ -44,6 +55,10 @@ abstract class Service implements ServiceContract
      */
     public function boot(): self
     {
+        if ($this->booted) {
+            return $this;
+        }
+
         if ($this->getInterval() < 1) {
             throw new InvalidServiceInterval($this->getName());
         }
@@ -52,10 +67,14 @@ abstract class Service implements ServiceContract
             $this->resolveHandler();
         }
 
-        $this->bot()->getLoop()->addPeriodicTimer(
+        $this->timer = $this->bot()->getLoop()->addPeriodicTimer(
             $this->getInterval(),
             fn () => $this->resolveHandler()
         );
+
+        $this->logger->info("The <fg=blue>{$this->getName()}</> service has been booted.");
+
+        $this->booted = true;
 
         return $this;
     }
@@ -104,5 +123,31 @@ abstract class Service implements ServiceContract
     public function isEnabled(): bool
     {
         return $this->enabled;
+    }
+
+    /**
+     * Determine if the service is booted.
+     */
+    public function isBooted(): bool
+    {
+        return $this->booted;
+    }
+
+    /**
+     * Stop the service.
+     */
+    public function stop(): void
+    {
+        if (! $this->booted) {
+            return;
+        }
+
+        $this->getLoop()->cancelTimer($this->timer);
+
+        $this->logger->info("The <fg=blue>{$this->getName()}</> service has been stopped.");
+
+        $this->timer = null;
+
+        $this->booted = false;
     }
 }
