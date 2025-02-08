@@ -98,7 +98,8 @@ trait HasConsole
             collect($commands)->map(fn ($command) => [
                 $command->getSignature(),
                 $command->getDescription(),
-            ])->all()
+            ])->all(),
+            tableStyle: 'box',
         );
 
         return $this;

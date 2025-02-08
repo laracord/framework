@@ -40,6 +40,7 @@ class HelpPrompt extends Prompt
                 $command->getName(),
                 $command->getDescription(),
             ])->all(),
+            tableStyle: 'box',
         );
     }
 }
