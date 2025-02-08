@@ -28,14 +28,30 @@ class HelpCommand extends Command
     protected $hidden = true;
 
     /**
-     * The response title.
+     * The help title.
      */
-    protected string $title = 'Command Help';
+    protected static string $title = 'Command Help';
 
     /**
-     * The response message.
+     * The help message content.
      */
-    protected string $message = 'Here is a list of all available commands.';
+    protected static string $message = 'Here is a list of all available commands.';
+
+    /**
+     * Set the help title.
+     */
+    public static function setTitle(string $title): void
+    {
+        static::$title = $title;
+    }
+
+    /**
+     * Set the help message content.
+     */
+    public static function setMessage(string $message): void
+    {
+        static::$message = $message;
+    }
 
     /**
      * Handle the command.
@@ -62,8 +78,8 @@ class HelpCommand extends Command
         }
 
         $this
-            ->message($this->message)
-            ->title($this->title)
+            ->message(static::$message)
+            ->title(static::$title)
             ->fields($fields)
             ->reply($message);
     }
