@@ -52,7 +52,7 @@ abstract class Service implements ServiceContract
             $this->resolveHandler();
         }
 
-        $this->bot->getLoop()->addPeriodicTimer(
+        $this->bot()->getLoop()->addPeriodicTimer(
             $this->getInterval(),
             fn () => $this->resolveHandler()
         );
