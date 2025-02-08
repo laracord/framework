@@ -62,7 +62,7 @@ return [
             'driver' => 'monolog',
             'handler' => Laracord\Logging\LoggingHandler::class,
             'with' => [
-                'path' => storage_path('logs/laracord.log'),
+                'path' => laracord_path('logs/laracord.log'),
                 'level' => env('LOG_LEVEL', 'info'),
             ],
         ],
