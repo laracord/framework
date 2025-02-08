@@ -77,7 +77,7 @@ class Laracord
     {
         $this->registerDiscord();
 
-        $this->callHook('beforeBoot');
+        $this->callHook(Hook::BEFORE_BOOT);
 
         $this->discord->on('init', function () {
             $this
@@ -88,7 +88,7 @@ class Laracord
                 ->bootHttpServer()
                 ->handleInteractions();
 
-            $this->callHook('afterBoot');
+            $this->callHook(Hook::AFTER_BOOT);
 
             $this->getLoop()->addTimer(1, function () {
                 $status = $this
