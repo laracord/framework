@@ -72,7 +72,7 @@ abstract class Service implements ServiceContract
             fn () => $this->resolveHandler()
         );
 
-        $this->logger->info("The <fg=blue>{$this->getName()}</> service has been booted.");
+        $this->bot()->logger->info("The <fg=blue>{$this->getName()}</> service has been booted.");
 
         $this->booted = true;
 
@@ -144,7 +144,7 @@ abstract class Service implements ServiceContract
 
         $this->getLoop()->cancelTimer($this->timer);
 
-        $this->logger->info("The <fg=blue>{$this->getName()}</> service has been stopped.");
+        $this->bot()->logger->info("The <fg=blue>{$this->getName()}</> service has been stopped.");
 
         $this->timer = null;
 
