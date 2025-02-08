@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'react')),
+            'channels' => explode(',', env('LOG_STACK', windows_os() ? 'single' : 'react')),
             'ignore_exceptions' => false,
         ],
 
