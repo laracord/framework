@@ -34,7 +34,7 @@ trait HasHooks
     /**
      * Call all registered callbacks for a hook.
      */
-    protected function callHook(Hook|string $hook): void
+    public function callHook(Hook|string $hook): void
     {
         $hook = $hook instanceof Hook
             ? $hook->value
