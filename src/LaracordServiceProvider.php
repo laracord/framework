@@ -47,6 +47,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         \Illuminate\View\ViewServiceProvider::class,
         \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Session\SessionServiceProvider::class,
+        \Illuminate\Mail\MailServiceProvider::class,
         \Laracord\Http\Providers\RouteServiceProvider::class,
         \Intonate\TinkerZero\TinkerZeroServiceProvider::class,
     ];
