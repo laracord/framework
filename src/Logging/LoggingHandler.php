@@ -8,28 +8,22 @@ use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;
 use Monolog\LogRecord;
 use React\EventLoop\TimerInterface;
-use React\Stream\WritableResourceStream;
 use RuntimeException;
 
 class LoggingHandler extends AbstractProcessingHandler
 {
     /**
-     * The stream instance.
-     */
-    protected ?WritableResourceStream $stream = null;
-
-    /**
-     * The file resource. (Windows only)
+     * The file handle.
      */
     protected $handle = null;
 
     /**
-     * The buffer of messages to write (Windows only).
+     * The buffer of messages to write.
      */
     protected array $buffer = [];
 
     /**
-     * The timer for flushing the buffer (Windows only).
+     * The timer for flushing the buffer.
      */
     protected ?TimerInterface $flushTimer = null;
 
@@ -58,16 +52,6 @@ class LoggingHandler extends AbstractProcessingHandler
 
         File::ensureDirectoryExists($path);
 
-        windows_os()
-            ? $this->initializeWindowsStream()
-            : $this->initializeUnixStream();
-    }
-
-    /**
-     * Initialize the stream for Windows systems.
-     */
-    protected function initializeWindowsStream(): void
-    {
         $this->handle = fopen($this->path, 'a');
 
         if ($this->handle === false) {
@@ -80,25 +64,7 @@ class LoggingHandler extends AbstractProcessingHandler
     }
 
     /**
-     * Initialize the stream for Unix-like systems.
-     */
-    protected function initializeUnixStream(): void
-    {
-        $resource = fopen($this->path, 'a');
-
-        if ($resource === false) {
-            throw new RuntimeException("Could not open log file: {$this->path}");
-        }
-
-        $this->stream = new WritableResourceStream(
-            $resource,
-            Laracord::getLoop(),
-            ['write_buffer_size' => 64 * 1024]
-        );
-    }
-
-    /**
-     * Flush the buffer to disk (Windows only).
+     * Flush the buffer to disk.
      */
     protected function flush(): void
     {
@@ -134,9 +100,7 @@ class LoggingHandler extends AbstractProcessingHandler
             return;
         }
 
-        windows_os()
-            ? fclose($this->handle)
-            : $this->stream->end();
+        fclose($this->handle);
 
         for ($i = $this->maxFiles - 1; $i >= 0; $i--) {
             $existing = $i === 0 ? $this->path : "{$this->path}.{$i}";
@@ -160,10 +124,7 @@ class LoggingHandler extends AbstractProcessingHandler
     protected function write(LogRecord $record): void
     {
         $this->rotate();
-
-        windows_os()
-            ? $this->buffer[] = $record->formatted
-            : $this->stream->write($record->formatted);
+        $this->buffer[] = $record->formatted;
     }
 
     /**
@@ -171,18 +132,14 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     public function close(): void
     {
-        if (! windows_os()) {
-            $this->stream->end();
-
-            return;
-        }
-
         if ($this->flushTimer) {
             Laracord::getLoop()->cancelTimer($this->flushTimer);
         }
 
         $this->flush();
 
-        fclose($this->handle);
+        if ($this->handle) {
+            fclose($this->handle);
+        }
     }
 }
