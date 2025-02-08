@@ -11,7 +11,7 @@ use React\EventLoop\TimerInterface;
 use React\Stream\WritableResourceStream;
 use RuntimeException;
 
-class LoggerHandler extends AbstractProcessingHandler
+class LoggingHandler extends AbstractProcessingHandler
 {
     /**
      * The stream instance.
