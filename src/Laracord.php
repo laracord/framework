@@ -65,6 +65,7 @@ class Laracord
 
         $this->registerConsole();
         $this->registerLogger();
+        $this->registerSignalHandlers();
 
         rescue(fn () => $this->handleBoot());
 
@@ -77,7 +78,6 @@ class Laracord
     protected function handleBoot(): void
     {
         $this->registerDiscord();
-        $this->registerSignalHandlers();
 
         $this->callHook(Hook::BEFORE_BOOT);
 
@@ -147,6 +147,10 @@ class Laracord
         $this->logger->info("<fg=blue>{$this->getName()}</> is restarting.");
 
         $this->callHook(Hook::BEFORE_RESTART);
+
+        foreach ($this->services as $service) {
+            $service->stop();
+        }
 
         $this->discord?->close(closeLoop: false);
         $this->discord = null;
