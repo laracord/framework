@@ -5,6 +5,7 @@ namespace Laracord\Bot\Concerns;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Str;
+use Laracord\Bot\Hook;
 use Laracord\Http\HttpServer;
 
 trait HasHttpServer
@@ -85,6 +86,8 @@ trait HasHttpServer
 
             if ($this->httpServer->isBooted()) {
                 $this->logger->info("HTTP server started on <fg=blue>{$this->httpServer->getAddress()}</>.");
+
+                $this->callHook(Hook::AFTER_HTTP_SERVER_START);
             }
         });
 

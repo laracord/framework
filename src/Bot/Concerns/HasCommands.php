@@ -6,6 +6,7 @@ use Discord\Parts\Channel\Message;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Laracord\Bot\Hook;
 use Laracord\Commands\Command;
 
 trait HasCommands
@@ -60,6 +61,8 @@ trait HasCommands
     protected function bootCommands(): self
     {
         $this->handleCommands();
+
+        $this->callHook(Hook::AFTER_COMMANDS_REGISTERED);
 
         return $this;
     }

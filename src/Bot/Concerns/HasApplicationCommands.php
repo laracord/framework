@@ -4,6 +4,7 @@ namespace Laracord\Bot\Concerns;
 
 use Discord\Parts\Interactions\Command\Option;
 use Illuminate\Support\Arr;
+use Laracord\Bot\Hook;
 use Laracord\Commands\ApplicationCommand;
 use Laracord\Commands\ContextMenu;
 
@@ -211,8 +212,7 @@ trait HasApplicationCommands
                     $names,
                     fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
                     fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
-                )
-                );
+                ));
 
                 return;
             }
@@ -225,6 +225,8 @@ trait HasApplicationCommands
 
             $this->slashCommands[$command::class] = $command;
         });
+
+        $this->callHook(Hook::AFTER_APPLICATION_COMMANDS_REGISTERED);
 
         return $this;
     }

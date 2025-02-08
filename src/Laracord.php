@@ -77,6 +77,7 @@ class Laracord
     protected function handleBoot(): void
     {
         $this->registerDiscord();
+        $this->registerSignalHandlers();
 
         $this->callHook(Hook::BEFORE_BOOT);
 
@@ -123,10 +124,17 @@ class Laracord
      */
     public function shutdown(int $code = 0): void
     {
-        $this->logger->info("Shutting down <fg=blue>{$this->getName()}</>.");
+        $this->callHook(Hook::BEFORE_SHUTDOWN);
 
-        $this->httpServer()->shutdown();
-        $this->discord()->close();
+        if ($this->httpServer) {
+            $this->httpServer()->shutdown();
+        }
+
+        $this->discord?->close(closeLoop: false);
+
+        $this->logger->info("<fg=blue>{$this->getName()}</> is shutting down.");
+
+        $this->loop->stop();
 
         exit($code);
     }
@@ -138,11 +146,14 @@ class Laracord
     {
         $this->logger->info("<fg=blue>{$this->getName()}</> is restarting.");
 
-        $this->discord->close(closeLoop: false);
+        $this->callHook(Hook::BEFORE_RESTART);
 
+        $this->discord?->close(closeLoop: false);
         $this->discord = null;
 
         $this->handleBoot();
+
+        $this->callHook(Hook::AFTER_RESTART);
     }
 
     /**

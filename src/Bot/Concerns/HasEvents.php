@@ -3,6 +3,7 @@
 namespace Laracord\Bot\Concerns;
 
 use InvalidArgumentException;
+use Laracord\Bot\Hook;
 use Laracord\Events\Event;
 
 trait HasEvents
@@ -26,6 +27,8 @@ trait HasEvents
 
             $this->logger->info("The <fg=blue>{$event->getName()}</> event has been registered to <fg=blue>{$event->getHandler()}</>.");
         }
+
+        $this->callHook(Hook::AFTER_EVENTS_REGISTERED);
 
         return $this;
     }

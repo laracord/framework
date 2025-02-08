@@ -3,6 +3,7 @@
 namespace Laracord\Bot\Concerns;
 
 use InvalidArgumentException;
+use Laracord\Bot\Hook;
 use Laracord\Services\Service;
 
 trait HasServices
@@ -26,6 +27,8 @@ trait HasServices
 
             $this->logger->info("The <fg=blue>{$service->getName()}</> service has been booted.");
         }
+
+        $this->callHook(Hook::AFTER_SERVICES_REGISTERED);
 
         return $this;
     }

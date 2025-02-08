@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laracord\Bot\Hook;
 use Laracord\Laracord;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer as Server;
@@ -79,6 +80,8 @@ class HttpServer
         if (! $this->isBooted()) {
             return;
         }
+
+        $this->bot->callHook(Hook::BEFORE_HTTP_SERVER_STOP);
 
         $this->getServer()->removeAllListeners();
         $this->getSocket()->close();
