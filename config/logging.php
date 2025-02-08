@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'channels' => explode(',', env('LOG_STACK', 'react')),
             'ignore_exceptions' => false,
         ],
 
@@ -63,6 +63,14 @@ return [
             'path' => storage_path('logs/laracord.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+        ],
+
+        'react' => [
+            'driver' => 'monolog',
+            'handler' => Laracord\Logging\LoggerHandler::class,
+            'with' => [
+                'path' => storage_path('logs/laracord.log'),
+            ],
         ],
 
         'daily' => [
