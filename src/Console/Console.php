@@ -182,6 +182,10 @@ class Console
      */
     public function showPrompt(): void
     {
+        if (windows_os()) {
+            return;
+        }
+
         $this->output->write($this->prompt);
     }
 
