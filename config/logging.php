@@ -54,28 +54,29 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', windows_os() ? 'single' : 'react')),
+            'channels' => explode(',', env('LOG_STACK', 'laracord')),
             'ignore_exceptions' => false,
         ],
 
-        'single' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/laracord.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
-        ],
-
-        'react' => [
+        'laracord' => [
             'driver' => 'monolog',
             'handler' => Laracord\Logging\LoggerHandler::class,
             'with' => [
                 'path' => storage_path('logs/laracord.log'),
+                'level' => env('LOG_LEVEL', 'info'),
             ],
+        ],
+
+        'single' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laracord.log'),
+            'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
