@@ -1,5 +1,15 @@
 <?php
 
+if (! function_exists('laracord')) {
+    /**
+     * Retrieve the bot instance.
+     */
+    function laracord(): Laracord
+    {
+        return app('bot');
+    }
+}
+
 if (! function_exists('laracord_path')) {
     /**
      * Retrieve the path to a file or directory relative to Laracord.

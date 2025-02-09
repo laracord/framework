@@ -38,16 +38,14 @@ class {{ class }} extends ContextMenu
     /**
      * Handle the context menu interaction.
      */
-    public function handle(Interaction $interaction, Message|User|null $target): mixed
+    public function handle(Interaction $interaction, Message|User|null $target): void
     {
-        $interaction->respondWithMessage(
-            $this
-              ->message()
-              ->title('{{ title }}')
-              ->content('Hello world!')
-              ->button('👋', route: 'wave')
-              ->build()
-        );
+        $this
+            ->message()
+            ->title('{{ title }}')
+            ->content('Hello world!')
+            ->button('👋', route: 'wave')
+            ->reply($interaction);
     }
 
     /**

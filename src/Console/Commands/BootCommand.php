@@ -2,7 +2,7 @@
 
 namespace Laracord\Console\Commands;
 
-use Illuminate\Support\Str;
+use Laracord\Laracord;
 
 class BootCommand extends Command
 {
@@ -12,6 +12,9 @@ class BootCommand extends Command
      * @var string
      */
     protected $signature = 'bot:boot
+                            {--token= : The Discord bot token (insecure)}
+                            {--shard-id= : The Discord bot shard ID}
+                            {--shard-count= : The Discord bot shard count}
                             {--no-migrate : Boot without running database migrations}';
 
     /**
@@ -23,27 +26,28 @@ class BootCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return mixed
      */
-    public function handle()
+    public function handle(Laracord $bot): void
     {
         if (! $this->option('no-migrate')) {
             $this->callSilent('migrate', ['--force' => true]);
         }
 
-        $this->app->singleton('bot', fn () => $this->getClass()::make($this));
+        if ($this->option('token')) {
+            $this->components->alert('Using --token is insecure. Consider using --env instead.');
 
-        $this->app->make('bot')->boot();
-    }
+            $bot->setToken($this->option('token'));
+        }
 
-    /**
-     * Get the bot class.
-     */
-    protected function getClass(): string
-    {
-        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
+        if (filled($this->option('shard-id')) && filled($this->option('shard-count'))) {
+            $bot->setShard(
+                id: $this->option('shard-id'),
+                count: $this->option('shard-count')
+            );
 
-        return class_exists($class) ? $class : 'Laracord';
+            $bot->disableHttpServer();
+        }
+
+        $bot->boot();
     }
 }

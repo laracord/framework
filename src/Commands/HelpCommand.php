@@ -2,6 +2,8 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
+
 class HelpCommand extends Command
 {
     /**
@@ -26,29 +28,37 @@ class HelpCommand extends Command
     protected $hidden = true;
 
     /**
-     * The response title.
-     *
-     * @var string
+     * The help title.
      */
-    protected $title = 'Command Help';
+    protected static string $title = 'Command Help';
 
     /**
-     * The response message.
-     *
-     * @var string
+     * The help message content.
      */
-    protected $message = 'Here is a list of all available commands.';
+    protected static string $message = 'Here is a list of all available commands.';
+
+    /**
+     * Set the help title.
+     */
+    public static function setTitle(string $title): void
+    {
+        static::$title = $title;
+    }
+
+    /**
+     * Set the help message content.
+     */
+    public static function setMessage(string $message): void
+    {
+        static::$message = $message;
+    }
 
     /**
      * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
      */
-    public function handle($message, $args)
+    public function handle(Message $message, array $args): void
     {
-        $commands = collect($this->bot()->getRegisteredCommands())
+        $commands = collect($this->bot->getCommands())
             ->filter(fn ($command) => ! $command->isHidden())
             ->filter(fn ($command) => $command->getGuild() ? $message->guild_id === $command->getGuild() : true)
             ->sortBy('name');
@@ -67,10 +77,10 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        return $this->message()
-            ->title($this->title)
-            ->content($this->message)
+        $this
+            ->message(static::$message)
+            ->title(static::$title)
             ->fields($fields)
-            ->send($message->channel);
+            ->reply($message);
     }
 }

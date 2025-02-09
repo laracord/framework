@@ -1,11 +1,12 @@
 <?php
 
-namespace Laracord\Concerns;
+namespace Laracord\Bot\Concerns;
 
 use Exception;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 
-trait CanAsync
+trait HasAsync
 {
     /**
      * Perform an asynchronous operation.
@@ -13,14 +14,13 @@ trait CanAsync
     public static function handleAsync(callable $callback): Promise
     {
         return new Promise(function ($resolve, $reject) use ($callback) {
-            if (! $loop = app('bot')?->getLoop()) {
-                throw new Exception('The Laracord event loop is not available.');
+            if (! $loop = app(LoopInterface::class)) {
+                throw new Exception('The event loop is not available.');
             }
 
             $loop->futureTick(function () use ($callback, $resolve, $reject) {
                 try {
-                    $result = $callback();
-                    $resolve($result);
+                    $resolve($callback());
                 } catch (Exception $e) {
                     $reject($e);
                 }

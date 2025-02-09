@@ -2,60 +2,87 @@
 
 namespace Laracord\Console\Concerns;
 
+use DateTimeInterface;
 use Laracord\Console\Components\Log;
+use Psr\Log\LogLevel;
+use Stringable;
 
 trait WithLog
 {
     /**
-     * Send a message to the console.
+     * The output style implementation.
+     *
+     * @var \Illuminate\Console\OutputStyle
      */
-    public function log(string $message, string $type = 'info'): void
+    protected $output;
+
+    /**
+     * The log level colors.
+     */
+    protected array $colors = [
+        LogLevel::EMERGENCY => 'red',
+        LogLevel::ALERT => 'red',
+        LogLevel::CRITICAL => 'red',
+        LogLevel::ERROR => 'red',
+        LogLevel::WARNING => 'yellow',
+        LogLevel::NOTICE => 'cyan',
+        LogLevel::INFO => 'blue',
+        LogLevel::DEBUG => 'green',
+    ];
+
+    /**
+     * Render a log message.
+     */
+    public function log($level, string|\Stringable $message, array $context = []): void
     {
         $message = trim($message);
-
-        if (empty($message)) {
-            return;
-        }
-
-        $color = match ($type) {
-            'error' => 'red',
-            'warn' => 'yellow',
-            default => 'blue',
-        };
 
         $timestamp = config('discord.timestamp');
 
         $config = [
-            'bgColor' => $color,
+            'bgColor' => $this->color($level),
             'fgColor' => 'white',
-            'title' => $type,
+            'title' => $level,
             'timestamp' => $timestamp ? now()->format($timestamp) : null,
         ];
 
-        with(new Log($this->getOutput()))->render($config, $message);
+        with(new Log($this->output))->render($config, $this->interpolate($level, $message, $context));
     }
 
     /**
-     * Send a warning log to console.
-     *
-     * @param  string  $string
-     * @param  string|null  $verbosity
-     * @return void
+     * Interpolate the message.
      */
-    public function warn($string, $verbosity = null)
+    private function interpolate(string $level, string $message, array $context): string
     {
-        return $this->log($string, 'warn');
+        $color = $this->color($level);
+
+        $replacements = [];
+
+        foreach ($context as $key => $val) {
+            $replacements["{{$key}}"] = $this->colorize($color, match (true) {
+                $val === null, is_scalar($val), $val instanceof Stringable => "{$val}",
+                $val instanceof DateTimeInterface => $val->format(DateTimeInterface::RFC3339),
+                is_object($val) => '[object '.$val::class.']',
+                default => '['.gettype($val).']',
+            });
+        }
+
+        return strtr($message, $replacements);
     }
 
     /**
-     * Send an error log to console.
-     *
-     * @param  string  $string
-     * @param  string|null  $verbosity
-     * @return void
+     * Retrieve the color for the log level.
      */
-    public function error($string, $verbosity = null)
+    private function color(string $level): string
     {
-        return $this->log($string, 'error');
+        return $this->colors[$level] ?? $this->colors[LogLevel::INFO];
+    }
+
+    /**
+     * Colorize the message.
+     */
+    private function colorize(string $color, string $message)
+    {
+        return "<fg={$color}>{$message}</>";
     }
 }

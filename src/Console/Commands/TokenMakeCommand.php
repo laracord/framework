@@ -3,7 +3,7 @@
 namespace Laracord\Console\Commands;
 
 use Illuminate\Support\Collection;
-use Laracord\Console\Concerns\ResolvesUser;
+use Laracord\Console\Commands\Concerns\ResolvesUser;
 
 class TokenMakeCommand extends Command
 {

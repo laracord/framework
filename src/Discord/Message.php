@@ -288,7 +288,7 @@ class Message
             $member = $this->bot->discord()->users->get('id', $user);
 
             if (! $member) {
-                $this->bot->console()->error("Could not find user <fg=red>{$user}</> to send message");
+                $this->bot->logger->error("Could not find user <fg=red>{$user}</> to send message");
 
                 return null;
             }
@@ -301,7 +301,7 @@ class Message
         }
 
         if (! $user instanceof User) {
-            $this->bot->console()->error('You must provide a valid Discord user.');
+            $this->bot->logger->error('You must provide a valid Discord user.');
 
             return null;
         }
@@ -318,13 +318,13 @@ class Message
             /** @var WebhookRepository $webhooks */
             $webhooks = await($this->getChannel()->webhooks->freshen());
         } catch (NoPermissionsException) {
-            $this->bot->console()->error("\nMissing permission to fetch channel webhooks.");
+            $this->bot->logger->error("\nMissing permission to fetch channel webhooks.");
 
             return null;
         }
 
         if (! $webhooks) {
-            $this->bot->console()->error('Failed to fetch channel webhooks.');
+            $this->bot->logger->error('Failed to fetch channel webhooks.');
 
             return null;
         }
@@ -337,7 +337,7 @@ class Message
                     'name' => $this->bot->discord()->username,
                 ]))->then(
                     fn (Webhook $webhook) => $webhook->execute($this->build()),
-                    fn () => $this->bot->console()->error('Failed to create message webhook.')
+                    fn () => $this->bot->logger->error('Failed to create message webhook.')
                 );
             }
 
@@ -347,7 +347,7 @@ class Message
         $webhook = $this->getChannel()->webhooks->get('url', $this->webhook);
 
         if (! $webhook) {
-            $this->bot->console()->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
+            $this->bot->logger->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
 
             return null;
         }
@@ -612,7 +612,7 @@ class Message
     public function filePath(string $path, ?string $filename = null): self
     {
         if (! file_exists($path)) {
-            $this->bot->console()->error("File <fg=red>{$path}</> does not exist");
+            $this->bot->logger->error("File <fg=red>{$path}</> does not exist");
 
             return $this;
         }
@@ -997,7 +997,7 @@ class Message
                 try {
                     $select = $select->{$key}($option);
                 } catch (Throwable) {
-                    $this->bot->console()->error("Invalid select menu option <fg=red>{$key}</>");
+                    $this->bot->logger->error("Invalid select menu option <fg=red>{$key}</>");
 
                     continue;
                 }
@@ -1095,7 +1095,7 @@ class Message
                 try {
                     $button = $button->{$key}($option);
                 } catch (Throwable) {
-                    $this->bot->console()->error("Invalid button option <fg=red>{$key}</>");
+                    $this->bot->logger->error("Invalid button option <fg=red>{$key}</>");
 
                     continue;
                 }
