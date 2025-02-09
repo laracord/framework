@@ -34,7 +34,7 @@
     "react/async": "^4.2",
     "react/http": "^1.9",
     "react/promise": "^3.0",
-    "sebastian/environment": "^8.0",
+    "sebastian/environment": "*",
     "symfony/psr-http-message-bridge": "^7.0",
     "team-reflex/discord-php": "^10.3"
   },
