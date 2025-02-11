@@ -54,9 +54,27 @@ trait HasHttpServer
             $callback($middleware);
         }
 
-        $kernel->setGlobalMiddleware($middleware->getGlobalMiddleware());
-        $kernel->setMiddlewareGroups($middleware->getMiddlewareGroups());
-        $kernel->setMiddlewareAliases($middleware->getMiddlewareAliases());
+         foreach ($middleware->getGlobalMiddleware() as $middlewareClass) {
+            $kernel->pushMiddleware($middlewareClass);
+        }
+
+        foreach ($middleware->getMiddlewareGroups() as $group => $middlewareGroup) {
+            if (!in_array($group, array_keys($kernel->getMiddlewareGroups()))) {
+                $kernel->setMiddlewareGroups(array_merge(
+                    $kernel->getMiddlewareGroups(),
+                    [$group => $middlewareGroup]
+                ));
+            } else {
+                $kernel->appendMiddlewareToGroup($group, $middlewareGroup);
+            }
+        }
+
+        foreach ($middleware->getMiddlewareAliases() as $alias => $middlewareClass) {
+            $kernel->setMiddlewareAliases(array_merge(
+                $kernel->getMiddlewareAliases(),
+                [$alias => $middlewareClass]
+            ));
+        }
 
         if ($priorities = $middleware->getMiddlewarePriority()) {
             $kernel->setMiddlewarePriority($priorities);
