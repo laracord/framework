@@ -170,9 +170,19 @@ class Message
     protected string|bool $webhook = false;
 
     /**
+     * The webhook cache.
+     */
+    protected static array $webhookCache = [];
+
+    /**
      * The additional message embeds.
      */
     protected array $embeds = [];
+
+    /**
+     * The message sections.
+     */
+    protected array $sections = [];
 
     /**
      * The default embed colors.
@@ -189,6 +199,11 @@ class Message
      * The interaction route prefix.
      */
     protected ?string $routePrefix = null;
+
+    /**
+     * The message flags.
+     */
+    protected int $flags = 0;
 
     /**
      * Create a new Discord message instance.
@@ -226,7 +241,7 @@ class Message
             ->setTts($this->tts)
             ->setContent($this->body)
             ->setStickers($this->stickers)
-            ->setComponents($this->getComponents());
+            ->setFlags($this->flags);
 
         if ($this->hasContent() || $this->hasFields()) {
             $message->addEmbed($this->getEmbed());
@@ -235,6 +250,12 @@ class Message
         if ($this->hasEmbeds()) {
             foreach ($this->embeds as $embed) {
                 $message->addEmbed($embed);
+            }
+        }
+
+        if ($this->hasComponents()) {
+            foreach ($this->components as $component) {
+                $message->addComponent($component);
             }
         }
 
@@ -314,9 +335,17 @@ class Message
      */
     protected function handleWebhook(): ?PromiseInterface
     {
+        $channel = $this->getChannel()->id;
+
         try {
-            /** @var WebhookRepository $webhooks */
-            $webhooks = await($this->getChannel()->webhooks->freshen());
+            if (! isset(static::$webhookCache[$channel])) {
+                /** @var WebhookRepository $webhooks */
+                $webhooks = await($this->getChannel()->webhooks->freshen());
+
+                static::$webhookCache[$channel] = $webhooks;
+            }
+
+            $webhooks = static::$webhookCache[$channel];
         } catch (NoPermissionsException) {
             $this->bot->logger->error("\nMissing permission to fetch channel webhooks.");
 
@@ -336,7 +365,11 @@ class Message
                 return $webhooks->save(new Webhook($this->bot->discord(), [
                     'name' => $this->bot->discord()->username,
                 ]))->then(
-                    fn (Webhook $webhook) => $webhook->execute($this->build()),
+                    function (Webhook $webhook) use ($channel) {
+                        static::$webhookCache[$channel]->push($webhook);
+
+                        return $webhook->execute($this->build());
+                    },
                     fn () => $this->bot->logger->error('Failed to create message webhook.')
                 );
             }
@@ -344,7 +377,7 @@ class Message
             return $webhook->execute($this->build());
         }
 
-        $webhook = $this->getChannel()->webhooks->get('url', $this->webhook);
+        $webhook = $webhooks->get('url', $this->webhook);
 
         if (! $webhook) {
             $this->bot->logger->error("Could not find webhook <fg=red>{$this->webhook}</> on channel to send message.");
@@ -1240,6 +1273,75 @@ class Message
     public function clearEmbeds(): self
     {
         $this->embeds = [];
+
+        return $this;
+    }
+
+    /**
+     * Add a component to the message.
+     */
+    public function addComponent(mixed $component): self
+    {
+        $this->components[] = $component;
+
+        return $this;
+    }
+
+    /**
+     * Add multiple components to the message.
+     */
+    public function addComponents(array $components): self
+    {
+        foreach ($components as $component) {
+            $this->addComponent($component);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add components using the Components instance.
+     */
+    public function withComponents(Components|callable $components): self
+    {
+        if (is_callable($components)) {
+            $instance = Components::make($this->bot)
+                ->routePrefix($this->routePrefix);
+
+            $components($instance);
+
+            $components = $instance;
+        }
+
+        $this->addComponents($components->getComponents());
+
+        return $this;
+    }
+
+    /**
+     * Determine if the message has components.
+     */
+    public function hasComponents(): bool
+    {
+        return ! empty($this->components);
+    }
+
+    /**
+     * Clear the components from the message.
+     */
+    public function clearComponents(): self
+    {
+        $this->components = [];
+
+        return $this;
+    }
+
+    /**
+     * Set the message flags.
+     */
+    public function flags(int $flags): self
+    {
+        $this->flags = $flags;
 
         return $this;
     }
