@@ -17,7 +17,6 @@ use Discord\Builders\Components\StringSelect;
 use Discord\Builders\Components\TextDisplay;
 use Discord\Builders\Components\Thumbnail;
 use Discord\Builders\Components\UserSelect;
-use Discord\Parts\Channel\Message as ChannelMessage;
 use Exception;
 use Illuminate\Support\Str;
 use Laracord\Laracord;
