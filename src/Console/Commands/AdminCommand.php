@@ -2,7 +2,7 @@
 
 namespace Laracord\Console\Commands;
 
-use Laracord\Console\Concerns\ResolvesUser;
+use Laracord\Console\Commands\Concerns\ResolvesUser;
 
 class AdminCommand extends Command
 {

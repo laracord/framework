@@ -5,41 +5,13 @@ namespace Laracord\Commands;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
-use Illuminate\Support\Str;
+use Laracord\Concerns\HasHandler;
 use Laracord\Discord\Concerns\HasModal;
-use Laracord\Laracord;
+use Laracord\HasLaracord;
 
 abstract class AbstractCommand
 {
-    use HasModal;
-
-    /**
-     * The bot instance.
-     *
-     * @var \Laracord\Laracord
-     */
-    protected $bot;
-
-    /**
-     * The console instance.
-     *
-     * @var \Laracord\Console\Commands\Command
-     */
-    protected $console;
-
-    /**
-     * The Discord instance.
-     *
-     * @var \Discord\DiscordCommandClient
-     */
-    protected $discord;
-
-    /**
-     * The user instance.
-     *
-     * @var \App\Models\User
-     */
-    protected $user;
+    use HasHandler, HasLaracord, HasModal;
 
     /**
      * The command name.
@@ -80,6 +52,13 @@ abstract class AbstractCommand
     protected $admin = false;
 
     /**
+     * The command cooldown in seconds.
+     *
+     * @var int
+     */
+    protected $cooldown = 0;
+
+    /**
      * Determines whether the command should be displayed in the commands list.
      *
      * @var bool
@@ -94,23 +73,29 @@ abstract class AbstractCommand
     protected $enabled = true;
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
+     * The command cooldown cache.
      */
-    public function __construct(Laracord $bot)
+    protected array $cooldowns = [];
+
+    /**
+     * The middleware to be applied to the command.
+     */
+    protected array $middleware = [];
+
+    /**
+     * Get the middleware for the command.
+     */
+    public function getMiddleware(): array
     {
-        $this->bot = $bot;
-        $this->console = $bot->console();
-        $this->discord = $bot->discord();
+        return $this->bot()->resolveCommandMiddleware($this->middleware);
     }
 
     /**
      * Make a new command instance.
      */
-    public static function make(Laracord $bot): self
+    public static function make(): self
     {
-        return new static($bot);
+        return new static;
     }
 
     /**
@@ -129,26 +114,27 @@ abstract class AbstractCommand
      */
     public function message($content = '')
     {
-        return $this->bot()->message($content)->routePrefix($this->getName());
+        return $this->bot->message($content)->routePrefix($this->getName());
     }
 
     /**
      * Determine if the Discord user is an admin.
-     *
-     * @param  string|\Discord\Parts\User\User  $user
-     * @return bool
      */
-    public function isAdmin($user)
+    public function isAdmin(User|string $user): bool
     {
         if (! $user instanceof User) {
-            $user = $this->discord()->users->get('id', $user);
+            $user = $this->discord->users->get('id', $user);
         }
 
-        if ($this->bot()->getAdmins()) {
-            return in_array($user->id, $this->bot()->getAdmins());
+        if ($this->bot->getAdmins()) {
+            return in_array($user->id, $this->bot->getAdmins());
         }
 
-        return $this->getUser($user)->is_admin;
+        if (! $this->bot->getUserModel()) {
+            return false;
+        }
+
+        return $this->bot->getUserModel()::where(['discord_id' => $user->id])->first()?->is_admin ?? false;
     }
 
     /**
@@ -160,67 +146,29 @@ abstract class AbstractCommand
     }
 
     /**
-     * Resolve a Discord user.
-     */
-    public function resolveUser(string $username): ?User
-    {
-        return ! empty($username) ? $this->discord()->users->filter(function ($user) use ($username) {
-            $username = str_replace(['<', '@', '>'], '', strtolower($username));
-
-            return ($user->username === $username || $user->id === $username) && ! $user->bot;
-        })->first() : null;
-    }
-
-    /**
-     * Get the command user.
-     *
-     * @param  \Discord\Parts\User\User  $user
-     * @return \App\Models\User|null
-     */
-    public function getUser($user)
-    {
-        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
-
-        if (! class_exists($model)) {
-            throw new Exception('The user model could not be found.');
-        }
-
-        return $this->user = $model::firstOrCreate(['discord_id' => $user->id], [
-            'discord_id' => $user->id,
-            'username' => $user->username,
-        ]) ?? null;
-    }
-
-    /**
      * Retrieve the command name.
-     *
-     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
      * Retrieve the command signature.
-     *
-     * @return string
      */
-    public function getSignature()
+    public function getSignature(): string
     {
         return $this->getName();
     }
 
     /**
      * Retrieve the full command syntax.
-     *
-     * @return string
      */
-    public function getSyntax()
+    public function getSyntax(): string
     {
         $command = $this->getSignature();
 
-        if (! empty($this->usage)) {
+        if (filled($this->usage)) {
             $command .= " `{$this->usage}`";
         }
 
@@ -229,10 +177,8 @@ abstract class AbstractCommand
 
     /**
      * Retrieve the command description.
-     *
-     * @return string
      */
-    public function getDescription()
+    public function getDescription(): string
     {
         return $this->description;
     }
@@ -256,41 +202,45 @@ abstract class AbstractCommand
     }
 
     /**
-     * Retrieve the bot instance.
-     *
-     * @return \Laracord\Laracord
-     */
-    public function bot()
-    {
-        return $this->bot;
-    }
-
-    /**
-     * Retrieve the console instance.
-     *
-     * @return \Laracord\Console\Commands\Command
-     */
-    public function console()
-    {
-        return $this->console;
-    }
-
-    /**
-     * Retrieve the Discord instance.
-     *
-     * @return \Discord\DiscordCommandClient
-     */
-    public function discord()
-    {
-        return $this->discord;
-    }
-
-    /**
      * Determine if the command requires admin permissions.
      */
     public function isAdminCommand(): bool
     {
         return $this->admin;
+    }
+
+    /**
+     * Determine if the user is on cooldown.
+     */
+    public function isOnCooldown(User $user, Guild $guild): bool
+    {
+        if ($this->getCooldown() === 0) {
+            return false;
+        }
+
+        $key = "{$user->id}.{$guild->id}";
+
+        if (! isset($this->cooldowns[$key])) {
+            $this->cooldowns[$key] = time();
+
+            return false;
+        }
+
+        if (time() - $this->cooldowns[$key] < $this->cooldown) {
+            return true;
+        }
+
+        $this->cooldowns[$key] = time();
+
+        return false;
+    }
+
+    /**
+     * Retrieve the command cooldown.
+     */
+    public function getCooldown(): int
+    {
+        return $this->cooldown;
     }
 
     /**

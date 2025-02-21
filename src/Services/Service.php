@@ -2,34 +2,15 @@
 
 namespace Laracord\Services;
 
-use Discord\DiscordCommandClient as Discord;
-use Laracord\Console\Commands\BootCommand as Console;
-use Laracord\Laracord;
+use Laracord\Concerns\HasHandler;
+use Laracord\HasLaracord;
 use Laracord\Services\Contracts\Service as ServiceContract;
 use Laracord\Services\Exceptions\InvalidServiceInterval;
+use React\EventLoop\TimerInterface;
 
 abstract class Service implements ServiceContract
 {
-    /**
-     * The bot instance.
-     *
-     * @var \Laracord\Laracord
-     */
-    protected $bot;
-
-    /**
-     * The console instance.
-     *
-     * @var \Laracord\Console\Commands\BootCommand
-     */
-    protected $console;
-
-    /**
-     * The Discord instance.
-     *
-     * @var \Discord\DiscordCommandClient;
-     */
-    protected $discord;
+    use HasHandler, HasLaracord;
 
     /**
      * The service name.
@@ -42,52 +23,58 @@ abstract class Service implements ServiceContract
     protected int $interval = 5;
 
     /**
-     * Determine if the service is enabled.
-     *
-     * @var bool
+     * Determine if the service handler should execute during boot.
      */
-    protected $enabled = true;
+    protected bool $eager = false;
 
     /**
-     * Create a new service instance.
-     *
-     * @return void
+     * Determine if the service is enabled.
      */
-    public function __construct(Laracord $bot)
-    {
-        $this->bot = $bot;
-        $this->console = $bot->console();
-        $this->discord = $bot->discord();
-    }
+    protected bool $enabled = true;
+
+    /**
+     * Determine if the service is booted.
+     */
+    protected bool $booted = false;
+
+    /**
+     * The timer for the service.
+     */
+    protected ?TimerInterface $timer = null;
 
     /**
      * Make a new service instance.
      */
-    public static function make(Laracord $bot): self
+    public static function make(): self
     {
-        return new static($bot);
+        return new static;
     }
-
-    /**
-     * Handle the service.
-     *
-     * @return mixed
-     */
-    abstract public function handle();
 
     /**
      * Boot the service.
      */
     public function boot(): self
     {
+        if ($this->booted) {
+            return $this;
+        }
+
         if ($this->getInterval() < 1) {
             throw new InvalidServiceInterval($this->getName());
         }
 
-        $this->bot->getLoop()->addPeriodicTimer(
+        if ($this->eager) {
+            $this->resolveHandler();
+        }
+
+        $this->timer = $this->bot()->getLoop()->addPeriodicTimer(
             $this->getInterval(),
-            fn () => $this->bot->handleSafe($this->getName(), fn () => $this->handle())
+            fn () => $this->resolveHandler()
         );
+
+        $this->bot()->logger->info("The <fg=blue>{$this->getName()}</> service has been booted.");
+
+        $this->booted = true;
 
         return $this;
     }
@@ -123,7 +110,7 @@ abstract class Service implements ServiceContract
      */
     public function getName(): string
     {
-        if ($this->name) {
+        if (filled($this->name)) {
             return $this->name;
         }
 
@@ -139,37 +126,28 @@ abstract class Service implements ServiceContract
     }
 
     /**
-     * Get the Discord client.
+     * Determine if the service is booted.
      */
-    public function discord(): Discord
+    public function isBooted(): bool
     {
-        return $this->discord;
+        return $this->booted;
     }
 
     /**
-     * Get the bot instance.
+     * Stop the service.
      */
-    public function bot(): Laracord
+    public function stop(): void
     {
-        return $this->bot;
-    }
+        if (! $this->booted) {
+            return;
+        }
 
-    /**
-     * Get the console instance.
-     */
-    public function console(): Console
-    {
-        return $this->console;
-    }
+        $this->getLoop()->cancelTimer($this->timer);
 
-    /**
-     * Build an embed for use in a Discord message.
-     *
-     * @param  string  $content
-     * @return \Laracord\Discord\Message
-     */
-    public function message($content = '')
-    {
-        return $this->bot()->message($content);
+        $this->bot()->logger->info("The <fg=blue>{$this->getName()}</> service has been stopped.");
+
+        $this->timer = null;
+
+        $this->booted = false;
     }
 }
