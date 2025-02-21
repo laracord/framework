@@ -5,6 +5,7 @@ namespace Laracord;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\AggregateServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
@@ -76,6 +77,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         $this->registerLogger();
 
         $this->app->singleton(KernelContract::class, Kernel::class);
+        $this->app->singleton(Middleware::class, fn () => new Middleware);
 
         $this->app->singleton(Laracord::class, fn () => tap(Laracord::make($this->app), function (Laracord $bot) {
             $this

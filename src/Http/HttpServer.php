@@ -119,7 +119,8 @@ class HttpServer
 
             $this->bot->withMiddleware(function (Middleware $middleware) {
                 $middleware
-                    ->use([\Laracord\Http\Middleware\FlushState::class])
+                    ->remove([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
+                    ->append([\Laracord\Http\Middleware\FlushState::class])
                     ->api([\Laracord\Http\Middleware\AuthorizeToken::class])
                     ->alias(['auth' => \Laracord\Http\Middleware\AuthorizeToken::class]);
             });

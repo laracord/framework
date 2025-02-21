@@ -48,7 +48,8 @@ trait HasHttpServer
         /** @var \Laracord\Http\Kernel $kernel */
         $kernel = $this->app->make(Kernel::class);
 
-        $middleware = new Middleware;
+        /** @var \Illuminate\Foundation\Configuration\Middleware $middleware */
+        $middleware = $this->app->make(Middleware::class);
 
         if (! is_null($callback)) {
             $callback($middleware);
