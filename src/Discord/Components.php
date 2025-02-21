@@ -139,6 +139,7 @@ class Components
     public function success(): self
     {
         $this->ensureContainer();
+
         $this->currentContainer->setAccentColor($this->colors['success']);
 
         return $this;
@@ -150,6 +151,7 @@ class Components
     public function error(): self
     {
         $this->ensureContainer();
+
         $this->currentContainer->setAccentColor($this->colors['error']);
 
         return $this;
@@ -202,13 +204,11 @@ class Components
     }
 
     /**
-     * Add a text display to the current container.
+     * Add a text display to the current container or section.
      */
     public function text(string|array $text): self
     {
         $this->ensureContainer();
-
-        $this->currentSection = Section::new();
 
         $text = is_string($text)
             ? [$text]
@@ -217,10 +217,12 @@ class Components
         $texts = array_slice($text, 0, 3);
 
         foreach ($texts as $content) {
-            $this->currentSection->addComponent(TextDisplay::new($content));
-        }
+            $textDisplay = TextDisplay::new($content);
 
-        $this->currentContainer->addComponent($this->currentSection);
+            $this->currentSection
+                ? $this->currentSection->addComponent($textDisplay)
+                : $this->currentContainer->addComponent($textDisplay);
+        }
 
         return $this;
     }
@@ -322,6 +324,16 @@ class Components
     }
 
     /**
+     * Close the current section.
+     */
+    public function endSection(): self
+    {
+        $this->currentSection = null;
+
+        return $this;
+    }
+
+    /**
      * Add a custom accessory to the current section.
      */
     public function accessory(mixed $accessory): self
@@ -404,14 +416,6 @@ class Components
     public function getComponents(): array
     {
         return $this->components;
-    }
-
-    /**
-     * Get the message flags for v2 components.
-     */
-    public function getFlags(): int
-    {
-        return ChannelMessage::FLAG_V2_COMPONENTS;
     }
 
     /**
