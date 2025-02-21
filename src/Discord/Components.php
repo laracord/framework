@@ -364,20 +364,6 @@ class Components
     }
 
     /**
-     * Add a media gallery to the current container.
-     */
-    public function gallery(): MediaGallery
-    {
-        $this->ensureContainer();
-
-        $gallery = MediaGallery::new();
-
-        $this->currentContainer->addComponent($gallery);
-
-        return $gallery;
-    }
-
-    /**
      * Add a file to the current container.
      */
     public function file(string $filename, bool $spoiler = false): self
@@ -396,11 +382,15 @@ class Components
     }
 
     /**
-     * Add a media gallery with items.
+     * Add a media gallery to the current container.
      */
-    public function mediaGallery(array $items): self
+    public function gallery(array $items): self
     {
-        $gallery = $this->gallery();
+        $this->ensureContainer();
+
+        $gallery = MediaGallery::new();
+
+        $this->currentContainer->addComponent($gallery);
 
         foreach ($items as $item) {
             $gallery->addItem($item);
