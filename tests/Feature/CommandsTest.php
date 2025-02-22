@@ -8,9 +8,7 @@ class ValidCommand extends Command
     {
         return 'valid-command';
     }
-
 }
-
 
 describe('in order to communicate with the bot, developer should be able to register commands into Laracord instance', function () {
 
@@ -19,9 +17,6 @@ describe('in order to communicate with the bot, developer should be able to regi
 
         $laracord->registerCommand(ValidCommand::class);
 
-
-
         expect(ValidCommand::class)->toBeRegistered();
-
     });
 });

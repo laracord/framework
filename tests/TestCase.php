@@ -12,5 +12,4 @@ abstract class TestCase extends Orchestra
             TestLaracordServiceProvider::class,
         ];
     }
-
 }
