@@ -11,7 +11,7 @@
 |
 */
 
-// pest()->extend(Tests\TestCase::class)->in('Feature');
+pest()->extend(Tests\TestCase::class)->in('Feature');
 
 /*
 |--------------------------------------------------------------------------
@@ -24,8 +24,11 @@
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
+expect()->extend('toBeRegistered', function () {
+    $laracord = app(\Laracord\Laracord::class);
+    if (str_contains($this->value, 'Command')) {
+        return $this->toBeIn(array_keys($laracord->getCommands()));
+    }
 });
 
 /*
