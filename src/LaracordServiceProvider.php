@@ -141,7 +141,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             $stdout = $this->createOutputStream($loop);
 
             $console = new Console(
-                stdio: new CompositeStream($stdin, $stdout),
+                stdio: ! stream_isatty(STDIN) ? $stdout : new CompositeStream($stdin, $stdout),
                 laravel: $this->app,
                 output: new ConsoleOutput,
                 input: new StringInput(''),
