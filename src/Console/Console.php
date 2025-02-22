@@ -12,6 +12,7 @@ use Illuminate\Foundation\Console\ClosureCommand;
 use InvalidArgumentException;
 use Laracord\Console\Concerns\WithLog;
 use React\Stream\DuplexStreamInterface;
+use React\Stream\WritableStreamInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
@@ -49,7 +50,7 @@ class Console
      * Initialize the console instance.
      */
     public function __construct(
-        public readonly DuplexStreamInterface $stdio,
+        public readonly DuplexStreamInterface|WritableStreamInterface $stdio,
         public readonly Container $laravel,
         ConsoleOutputInterface $output,
         InputInterface $input,
