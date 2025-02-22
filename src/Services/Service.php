@@ -86,7 +86,7 @@ abstract class Service implements ServiceContract
 
         $this->bot->getLoop()->addPeriodicTimer(
             $this->getInterval(),
-            fn () => $this->handle()
+            fn () => $this->bot->handleSafe($this->getName(), fn () => $this->handle())
         );
 
         return $this;
