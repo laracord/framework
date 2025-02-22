@@ -39,7 +39,9 @@
     "team-reflex/discord-php": "^10.3"
   },
   "require-dev": {
-    "laravel/pint": "^1.15"
+    "laravel/pint": "^1.15",
+    "pestphp/pest": "^3.7",
+    "pestphp/pest-plugin-laravel": "^3.1"
   },
   "autoload": {
     "psr-4": {
@@ -49,9 +51,13 @@
       "src/helpers.php"
     ]
   },
+  "scripts": {
+    "test": "./vendor/bin/pest"
+  },
   "config": {
     "sort-packages": true,
     "allow-plugins": {
+      "pestphp/pest-plugin": true,
       "php-http/discovery": true
     }
   }
