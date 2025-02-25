@@ -105,10 +105,6 @@ class Logger implements LoggerInterface
      */
     public function debug(string|Stringable $message, array $context = []): void
     {
-        if (app()->environment('production')) {
-            return;
-        }
-
         $this->handle($message, $context, LogLevel::DEBUG);
     }
 
@@ -135,6 +131,10 @@ class Logger implements LoggerInterface
             'warning' => LogLevel::WARNING,
             default => LogLevel::INFO,
         };
+
+        if (app()->isProduction() && $type === LogLevel::DEBUG) {
+            return;
+        }
 
         if (Str::of($message)->lower()->contains($this->except)) {
             return;
