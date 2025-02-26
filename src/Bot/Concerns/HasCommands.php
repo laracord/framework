@@ -83,9 +83,14 @@ trait HasCommands
                 return;
             }
 
+            $after = Str::substr($message->content, Str::length($prefix), 1);
+
+            if ($after === ' ') {
+                return;
+            }
+
             $parts = Str::of($message->content)
                 ->after($prefix)
-                ->trim()
                 ->explode(' ');
 
             $command = $parts->shift();
