@@ -63,14 +63,14 @@ abstract class Service implements ServiceContract
             throw new InvalidServiceInterval($this->getName());
         }
 
-        if ($this->eager) {
-            $this->resolveHandler();
-        }
-
         $this->timer = $this->bot()->getLoop()->addPeriodicTimer(
             $this->getInterval(),
             fn () => $this->resolveHandler()
         );
+
+        if ($this->eager) {
+            $this->bot->getLoop()->futureTick(fn () => $this->resolveHandler());
+        }
 
         $this->bot()->logger->info("The <fg=blue>{$this->getName()}</> service has been booted.");
 
