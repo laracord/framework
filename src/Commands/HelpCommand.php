@@ -3,6 +3,7 @@
 namespace Laracord\Commands;
 
 use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
 
 class HelpCommand extends Command
 {
@@ -35,7 +36,12 @@ class HelpCommand extends Command
     /**
      * The help message content.
      */
-    protected static string $message = 'Here is a list of all available commands.';
+    protected static string $message = 'Showing a list of %s available command(s):';
+
+    /**
+     * The maximum commands per page.
+     */
+    protected static int $perPage = 12;
 
     /**
      * Set the help title.
@@ -54,19 +60,39 @@ class HelpCommand extends Command
     }
 
     /**
+     * Set the maximum commands per page.
+     */
+    public static function setPerPage(int $perPage): void
+    {
+        static::$perPage = max($perPage, 25) ?: static::$perPage;
+    }
+
+    /**
      * Handle the command.
      */
     public function handle(Message $message, array $args): void
     {
+        $this->show($message, $args[0] ?? 1);
+    }
+
+    /**
+     * Show the help command.
+     */
+    public function show(Message|Interaction $context, int $page = 1): void
+    {
         $commands = collect($this->bot->getCommands())
             ->filter(fn ($command) => ! $command->isHidden())
-            ->filter(fn ($command) => $command->getGuild() ? $message->guild_id === $command->getGuild() : true)
+            ->filter(fn ($command) => $command->getGuild() ? $context->guild_id === $command->getGuild() : true)
             ->sortBy('name');
+
+        $page = max(1, $page);
+
+        $items = $commands->forPage($page, static::$perPage);
 
         $fields = [];
 
-        foreach ($commands as $command) {
-            $fields[$command->getSyntax()] = $command->getDescription();
+        foreach ($items as $item) {
+            $fields[$item->getSyntax()] = $item->getDescription();
         }
 
         if (count($fields) % 3 !== 0) {
@@ -77,10 +103,29 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
+        $pages = ceil($commands->count() / static::$perPage);
+        $previous = max(1, $page - 1);
+        $next = min($pages, $page + 1);
+
+        $message = sprintf(static::$message, $commands->count());
+
         $this
-            ->message(static::$message)
+            ->message($message)
             ->title(static::$title)
             ->fields($fields)
-            ->reply($message);
+            ->button('←', route: "show:{$previous}", style: 'secondary', disabled: $page <= 1, hidden: $pages === 1)
+            ->button('→', route: "show:{$next}", style: 'secondary', disabled: $page >= $pages, hidden: $pages === 1)
+            ->footerText("Page {$page} of {$pages}")
+            ->editOrReply($context);
+    }
+
+    /**
+     * The command interaction routes.
+     */
+    public function interactions(): array
+    {
+        return [
+            'show:{page}' => fn (Interaction $interaction, string $page) => $this->show($interaction, (int) $page),
+        ];
     }
 }
