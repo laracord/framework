@@ -121,8 +121,12 @@ class HttpServer
                 $middleware
                     ->remove([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
                     ->append([\Laracord\Http\Middleware\FlushState::class])
-                    ->api([\Laracord\Http\Middleware\AuthorizeToken::class])
-                    ->alias(['auth' => \Laracord\Http\Middleware\AuthorizeToken::class]);
+                    ->api([
+                        \Laracord\Http\Middleware\AuthorizeToken::class,
+                    ])
+                    ->alias([
+                        'auth.token' => \Laracord\Http\Middleware\AuthorizeToken::class,
+                    ]);
             });
 
             /** @var \Laracord\Http\Kernel $kernel */

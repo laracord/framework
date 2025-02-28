@@ -49,6 +49,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         \Illuminate\Cookie\CookieServiceProvider::class,
         \Illuminate\Session\SessionServiceProvider::class,
         \Illuminate\Mail\MailServiceProvider::class,
+        \Illuminate\Auth\AuthServiceProvider::class,
         \Laracord\Http\Providers\RouteServiceProvider::class,
         \Intonate\TinkerZero\TinkerZeroServiceProvider::class,
     ];
@@ -83,6 +84,12 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             $this
                 ->registerDefaultComponents($bot)
                 ->registerDefaultPrompts($bot);
+
+            $user = config('auth.providers.users.model');
+
+            if (! class_exists($user)) {
+                config(['auth.providers.users.model' => $bot->getUserModel()]);
+            }
 
             $this->app->singleton(Message::class, fn () => Message::make($bot));
 
