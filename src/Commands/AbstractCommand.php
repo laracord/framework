@@ -42,7 +42,7 @@ abstract class AbstractCommand
     /**
      * Determine whether the command can be used in a direct message.
      */
-    protected bool $directMessage = true;
+    protected bool $directMessage = false;
 
     /**
      * Determines whether the command requires admin permissions.
@@ -212,13 +212,17 @@ abstract class AbstractCommand
     /**
      * Determine if the user is on cooldown.
      */
-    public function isOnCooldown(User $user, Guild $guild): bool
+    public function isOnCooldown(User $user, ?Guild $guild = null): bool
     {
         if ($this->getCooldown() === 0) {
             return false;
         }
 
-        $key = "{$user->id}.{$guild->id}";
+        $suffix = $guild
+            ? $guild->id
+            : 'direct';
+
+        $key = "{$user->id}.{$suffix}";
 
         if (! isset($this->cooldowns[$key])) {
             $this->cooldowns[$key] = time();

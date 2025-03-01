@@ -37,7 +37,7 @@ abstract class Command extends AbstractCommand implements CommandContract
             return;
         }
 
-        if ($this->isOnCooldown($message->author, $message->guild)) {
+        if ($this->isOnCooldown($message->author, $message->guild ?? null)) {
             return;
         }
 
