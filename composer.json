@@ -15,6 +15,7 @@
   "require": {
     "php": "^8.2",
     "guzzlehttp/guzzle": "^7.5",
+    "illuminate/auth": "^11.0",
     "illuminate/cookie": "^11.0",
     "illuminate/database": "^11.0",
     "illuminate/encryption": "^11.0",
