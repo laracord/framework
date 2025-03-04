@@ -5,7 +5,11 @@ namespace Laracord;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Console\PackageDiscoverCommand;
+use Illuminate\Foundation\PackageManifest as BasePackageManifest;
 use Illuminate\Support\AggregateServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
@@ -70,7 +74,21 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         $this->mergeConfigs();
         $this->createDirectories();
 
+        $this->app->singleton(BasePackageManifest::class, fn () => new PackageManifest(
+            new Filesystem,
+            laracord_path(basePath: false),
+            laracord_path('cache/bootstrap/packages.php'),
+        ));
+
         parent::register();
+
+        foreach ($this->app->make(BasePackageManifest::class)->providers() as $provider) {
+            $this->app->register($provider);
+        }
+
+        AliasLoader::getInstance([
+            $this->app->make(BasePackageManifest::class)->aliases(),
+        ]);
 
         $this->registerDatabase();
         $this->registerLoop();
@@ -122,6 +140,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             Commands\PromptMakeCommand::class,
             Commands\ServiceMakeCommand::class,
             Commands\TokenMakeCommand::class,
+            PackageDiscoverCommand::class,
         ]);
 
         $this->registerMacros();
@@ -277,6 +296,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
     protected function createDirectories(): void
     {
         $paths = [
+            'bootstrap' => laracord_path('cache/bootstrap'),
             'cache' => $this->app['config']->get('cache.stores.file.path'),
             'sessions' => $this->app['config']->get('session.files'),
             'view' => $this->app['config']->get('view.compiled'),
