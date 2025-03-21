@@ -4,7 +4,7 @@ if (! function_exists('laracord')) {
     /**
      * Retrieve the bot instance.
      */
-    function laracord(): Laracord
+    function laracord(): Laracord\Laracord
     {
         return app('bot');
     }
