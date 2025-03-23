@@ -1011,7 +1011,7 @@ class Message
             ->setDisabled($disabled);
 
         if ($defaults && ! $select instanceof StringSelect) {
-            $select->setDefaultValues($defaults);
+            $select = $select->setDefaultValues($defaults);
         }
 
         if ($id) {
