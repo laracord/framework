@@ -1011,6 +1011,11 @@ class Message
             ->setDisabled($disabled);
 
         if ($defaults && ! $select instanceof StringSelect) {
+            $defaults = collect($defaults)->map(fn ($value) => [
+                'id' => $value,
+                'type' => $type,
+            ])->all();
+
             $select = $select->setDefaultValues($defaults);
         }
 
