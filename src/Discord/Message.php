@@ -989,7 +989,8 @@ class Message
         int $maxValues = 1,
         ?string $type = null,
         ?string $route = null,
-        ?array $options = []
+        ?array $options = [],
+        ?array $defaults = null
     ): self {
         if ($hidden) {
             return $this;
@@ -1008,6 +1009,10 @@ class Message
             ->setMinValues($minValues)
             ->setMaxValues($maxValues)
             ->setDisabled($disabled);
+
+        if ($default && ! $select instanceof StringSelect) {
+            $select->setDefaultValues($default);
+        }
 
         if ($id) {
             $select = $select->setCustomId($id);
