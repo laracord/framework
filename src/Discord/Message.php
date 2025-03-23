@@ -1010,8 +1010,8 @@ class Message
             ->setMaxValues($maxValues)
             ->setDisabled($disabled);
 
-        if ($default && ! $select instanceof StringSelect) {
-            $select->setDefaultValues($default);
+        if ($defaults && ! $select instanceof StringSelect) {
+            $select->setDefaultValues($defaults);
         }
 
         if ($id) {
