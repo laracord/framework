@@ -1010,12 +1010,11 @@ class Message
             ->setMaxValues($maxValues)
             ->setDisabled($disabled);
 
-        if ($defaults && ! $select instanceof StringSelect) {
-            $defaults = collect($defaults)->map(fn ($value) => [
-                'id' => $value,
-                'type' => $type,
-            ])->all();
+        $defaults = $items
+            ? collect($defaults)->mapWithKeys(fn ($value) => [$value => true])->all()
+            : collect($defaults)->map(fn ($value) => ['id' => $value, 'type' => $type])->all();
 
+        if ($defaults && ! $select instanceof StringSelect) {
             $select = $select->setDefaultValues($defaults);
         }
 
@@ -1047,28 +1046,22 @@ class Message
             }
         }
 
-        if ($items) {
-            $defaults = collect($defaults)
-                ->mapWithKeys(fn ($value) => [$value => true])
-                ->all();
+        foreach ($items as $key => $value) {
+            if (! is_array($value)) {
+                $select->addOption(
+                    Option::new(is_int($key) ? $value : $key, $value)
+                        ->setDefault($defaults[$value] ?? false)
+                );
 
-            foreach ($items as $key => $value) {
-                if (! is_array($value)) {
-                    $select->addOption(
-                        Option::new(is_int($key) ? $value : $key, $value)
-                            ->setDefault($defaults[$value] ?? false)
-                    );
-
-                    continue;
-                }
-
-                $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
-                    ->setDescription($value['description'] ?? null)
-                    ->setEmoji($value['emoji'] ?? null)
-                    ->setDefault($value['default'] ?? $defaults[$value['value'] ?? $key] ?? false);
-
-                $select->addOption($option);
+                continue;
             }
+
+            $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
+                ->setDescription($value['description'] ?? null)
+                ->setEmoji($value['emoji'] ?? null)
+                ->setDefault($value['default'] ?? $defaults[$value['value'] ?? $key] ?? false);
+
+            $select->addOption($option);
         }
 
         $this->selects[] = $select;
