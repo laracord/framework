@@ -1047,21 +1047,28 @@ class Message
             }
         }
 
-        foreach ($items as $key => $value) {
-            if (! is_array($value)) {
-                $select->addOption(
-                    Option::new(is_int($key) ? $value : $key, $value)
-                );
+        if ($items) {
+            $defaults = collect($defaults)
+                ->mapWithKeys(fn ($value) => [$value => true])
+                ->all();
 
-                continue;
+            foreach ($items as $key => $value) {
+                if (! is_array($value)) {
+                    $select->addOption(
+                        Option::new(is_int($key) ? $value : $key, $value)
+                            ->setDefault($defaults[$value] ?? false)
+                    );
+
+                    continue;
+                }
+
+                $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
+                    ->setDescription($value['description'] ?? null)
+                    ->setEmoji($value['emoji'] ?? null)
+                    ->setDefault($value['default'] ?? $defaults[$value['value'] ?? $key] ?? false);
+
+                $select->addOption($option);
             }
-
-            $option = Option::new($value['label'] ?? $key, $value['value'] ?? $key)
-                ->setDescription($value['description'] ?? null)
-                ->setEmoji($value['emoji'] ?? null)
-                ->setDefault($value['default'] ?? false);
-
-            $select->addOption($option);
         }
 
         $this->selects[] = $select;
