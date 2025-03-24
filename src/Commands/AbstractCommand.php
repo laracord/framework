@@ -7,6 +7,7 @@ use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
 use Laracord\Concerns\HasHandler;
 use Laracord\Discord\Concerns\HasModal;
+use Laracord\Discord\Message;
 use Laracord\HasLaracord;
 
 abstract class AbstractCommand
@@ -107,14 +108,13 @@ abstract class AbstractCommand
     }
 
     /**
-     * Build an embed for use in a Discord message.
-     *
-     * @param  string  $content
-     * @return \Laracord\Discord\Message
+     * {@inheritdoc}
      */
     public function message($content = '')
     {
-        return $this->bot->message($content)->routePrefix($this->getName());
+        return app(Message::class)
+            ->content($content)
+            ->routePrefix($this->getName());
     }
 
     /**

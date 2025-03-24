@@ -207,8 +207,6 @@ class Message
 
     /**
      * Create a new Discord message instance.
-     *
-     * @return void
      */
     public function __construct(?Laracord $bot)
     {

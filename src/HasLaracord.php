@@ -58,7 +58,7 @@ trait HasLaracord
      */
     public function message($content = '')
     {
-        return Message::make($this->bot())
+        return app(Message::class)
             ->content($content);
     }
 }

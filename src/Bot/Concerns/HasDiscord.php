@@ -197,7 +197,7 @@ trait HasDiscord
      */
     public function message(string $content = ''): Message
     {
-        return Message::make($this)
+        return app(Message::class)
             ->content($content);
     }
 }
