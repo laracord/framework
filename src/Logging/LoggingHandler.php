@@ -127,16 +127,16 @@ class LoggingHandler extends AbstractProcessingHandler
 
                 for ($i = $this->maxFiles - 1; $i >= 1; $i--) {
                     $existing = "{$this->path}.{$i}";
-                    $new = "{$this->path}.".($i + 1);
+                    $latest = "{$this->path}.".($i + 1);
 
                     $promises[] = $this->filesystem->detect($existing)
-                        ->then(function (NodeInterface $node) use ($new) {
+                        ->then(function (NodeInterface $node) use ($latest) {
                             if ($node instanceof NotExistInterface) {
                                 return;
                             }
 
                             return $node->getContents()
-                                ->then(fn (string $contents) => $this->filesystem->detect($new)
+                                ->then(fn (string $contents) => $this->filesystem->detect($latest)
                                     ->then(fn (NodeInterface $file) => $file instanceof NotExistInterface
                                         ? $file->createFile()
                                         : $file
@@ -155,10 +155,10 @@ class LoggingHandler extends AbstractProcessingHandler
                             return;
                         }
 
-                        $new = "{$this->path}.1";
+                        $latest = "{$this->path}.1";
 
                         return $node->getContents()
-                            ->then(fn (string $contents) => $this->filesystem->detect($new)
+                            ->then(fn (string $contents) => $this->filesystem->detect($latest)
                                 ->then(fn (NodeInterface $file) => $file instanceof NotExistInterface
                                     ? $file->createFile()
                                     : $file
