@@ -112,7 +112,7 @@ abstract class AbstractCommand
      */
     public function message($content = '')
     {
-        return app(Message::class)
+        return clone app(Message::class)
             ->content($content)
             ->routePrefix($this->getName());
     }
