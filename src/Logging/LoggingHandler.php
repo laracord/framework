@@ -32,13 +32,15 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     public function __construct(
         protected string $path,
-        protected int $maxSize = 10485760,
+        protected int $maxSize = 10,
         protected int $maxFiles = 5,
         protected float $flushInterval = 60,
         mixed $level = Level::Debug,
         bool $bubble = true,
     ) {
         parent::__construct($level, $bubble);
+
+        $this->maxSize *= 1024 * 1024;
 
         $this->initializeStream();
     }
