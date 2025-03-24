@@ -33,6 +33,7 @@
     "laravel-zero/framework": "^11.0",
     "laravel/sanctum": "^4.0",
     "react/async": "^4.2",
+    "react/filesystem": "0.2.x-dev",
     "react/http": "^1.9",
     "react/promise": "^3.0",
     "sebastian/environment": "*",
