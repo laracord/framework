@@ -116,23 +116,31 @@ class LoggingHandler extends AbstractProcessingHandler
 
                 $promises = [];
 
-                for ($i = $this->maxFiles - 1; $i >= 0; $i--) {
-                    $existing = $i === 0 ? $this->path : "{$this->path}.{$i}";
+                $oldest = "{$this->path}.{$this->maxFiles}";
+
+                $promises[] = $this->filesystem->detect($oldest)
+                    ->then(function (NodeInterface $node) {
+                        if (! ($node instanceof NotExistInterface)) {
+                            return $node->unlink();
+                        }
+                    });
+
+                for ($i = $this->maxFiles - 1; $i >= 1; $i--) {
+                    $existing = "{$this->path}.{$i}";
                     $new = "{$this->path}.".($i + 1);
 
                     $promises[] = $this->filesystem->detect($existing)
-                        ->then(function (NodeInterface $node) use ($new, $i) {
+                        ->then(function (NodeInterface $node) use ($new) {
                             if ($node instanceof NotExistInterface) {
                                 return;
                             }
 
-                            if ($i === $this->maxFiles - 1) {
-                                return $node->unlink();
-                            }
-
                             return $node->getContents()
                                 ->then(fn (string $contents) => $this->filesystem->detect($new)
-                                    ->then(fn (NotExistInterface $file) => $file->createFile())
+                                    ->then(fn (NodeInterface $file) => $file instanceof NotExistInterface
+                                        ? $file->createFile()
+                                        : $file
+                                    )
                                     ->then(fn (FileInterface $file) => $file
                                         ->putContents($contents)
                                         ->then(fn () => $node->unlink())
@@ -140,6 +148,27 @@ class LoggingHandler extends AbstractProcessingHandler
                                 );
                         });
                 }
+
+                $promises[] = $this->filesystem->detect($this->path)
+                    ->then(function (NodeInterface $node) {
+                        if ($node instanceof NotExistInterface) {
+                            return;
+                        }
+
+                        $new = "{$this->path}.1";
+
+                        return $node->getContents()
+                            ->then(fn (string $contents) => $this->filesystem->detect($new)
+                                ->then(fn (NodeInterface $file) => $file instanceof NotExistInterface
+                                    ? $file->createFile()
+                                    : $file
+                                )
+                                ->then(fn (FileInterface $file) => $file
+                                    ->putContents($contents)
+                                    ->then(fn () => $node->unlink())
+                                )
+                            );
+                    });
 
                 return all($promises);
             })

@@ -66,7 +66,7 @@ return [
                 'level' => env('LOG_LEVEL', 'debug'),
                 'maxSize' => env('LOG_MAX_SIZE', 10),
                 'maxFiles' => env('LOG_MAX_FILES', 5),
-                'flushInterval' => env('LOG_FLUSH_INTERVAL', 15),
+                'flushInterval' => env('LOG_FLUSH_INTERVAL', 30),
             ],
         ],
 
