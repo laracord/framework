@@ -8,14 +8,26 @@ use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;
 use Monolog\LogRecord;
 use React\EventLoop\TimerInterface;
-use RuntimeException;
+use React\Filesystem\AdapterInterface;
+use React\Filesystem\Factory;
+use React\Filesystem\Node\FileInterface;
+use React\Filesystem\Node\NodeInterface;
+use React\Filesystem\Node\NotExistInterface;
+use React\Filesystem\Stat;
+
+use function React\Promise\all;
 
 class LoggingHandler extends AbstractProcessingHandler
 {
     /**
-     * The file handle.
+     * The file handler.
      */
-    protected $handle = null;
+    protected ?FileInterface $handle = null;
+
+    /**
+     * The filesystem adapter.
+     */
+    protected AdapterInterface $filesystem;
 
     /**
      * The buffer of messages to write.
@@ -34,7 +46,7 @@ class LoggingHandler extends AbstractProcessingHandler
         protected string $path,
         protected int $maxSize = 10,
         protected int $maxFiles = 5,
-        protected float $flushInterval = 60,
+        protected float $flushInterval = 30,
         mixed $level = Level::Debug,
         bool $bubble = true,
     ) {
@@ -42,7 +54,17 @@ class LoggingHandler extends AbstractProcessingHandler
 
         $this->maxSize *= 1024 * 1024;
 
+        $this->filesystem = Factory::create();
+
+        $this->filesystem->detect(dirname($this->path))
+            ->then(fn (NodeInterface $node) => $node instanceof NotExistInterface
+                ? $node->createDirectory()
+                : $node
+            );
+
         $this->initializeStream();
+
+        $this->flushTimer = Laracord::getLoop()->addPeriodicTimer($this->flushInterval, fn () => $this->flush());
     }
 
     /**
@@ -50,19 +72,15 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     protected function initializeStream(): void
     {
-        $path = dirname($this->path);
+        $this->filesystem->detect($this->path)
+            ->then(function (NodeInterface $node) {
+                if ($node instanceof NotExistInterface) {
+                    return $node->createFile();
+                }
 
-        File::ensureDirectoryExists($path);
-
-        $this->handle = fopen($this->path, 'a');
-
-        if ($this->handle === false) {
-            throw new RuntimeException("Could not open log file: {$this->path}");
-        }
-
-        stream_set_blocking($this->handle, false);
-
-        $this->flushTimer = Laracord::getLoop()->addPeriodicTimer($this->flushInterval, fn () => $this->flush());
+                return $node;
+            })
+            ->then(fn (FileInterface $node) => $this->handle = $node);
     }
 
     /**
@@ -70,27 +88,17 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     protected function flush(): void
     {
-        if (empty($this->buffer)) {
+        if (! $this->handle || blank($this->buffer)) {
             return;
         }
 
-        $this->rotate();
-
-        if (! flock($this->handle, LOCK_EX | LOCK_NB)) {
-            return;
-        }
-
-        try {
-            foreach ($this->buffer as $message) {
-                fwrite($this->handle, $message);
-            }
-
-            fflush($this->handle);
-        } finally {
-            flock($this->handle, LOCK_UN);
-        }
+        $buffer = implode('', $this->buffer);
 
         $this->buffer = [];
+
+        $this->handle
+            ->putContents($buffer, FILE_APPEND)
+            ->then(fn () => $this->rotate());
     }
 
     /**
@@ -98,26 +106,44 @@ class LoggingHandler extends AbstractProcessingHandler
      */
     protected function rotate(): void
     {
-        if (! file_exists($this->path) || filesize($this->path) < $this->maxSize) {
-            return;
-        }
+        $this->filesystem
+            ->file($this->path)
+            ->stat()
+            ->then(function (?Stat $stat) {
+                if (! $stat || $stat->size() < $this->maxSize) {
+                    return;
+                }
 
-        fclose($this->handle);
+                $promises = [];
 
-        for ($i = $this->maxFiles - 1; $i >= 0; $i--) {
-            $existing = $i === 0 ? $this->path : "{$this->path}.{$i}";
-            $new = "{$this->path}.".($i + 1);
+                for ($i = $this->maxFiles - 1; $i >= 0; $i--) {
+                    $existing = $i === 0 ? $this->path : "{$this->path}.{$i}";
+                    $new = "{$this->path}.".($i + 1);
 
-            if (! file_exists($existing)) {
-                continue;
-            }
+                    $promises[] = $this->filesystem->detect($existing)
+                        ->then(function (NodeInterface $node) use ($new, $i) {
+                            if ($node instanceof NotExistInterface) {
+                                return;
+                            }
 
-            $i === $this->maxFiles - 1
-                ? unlink($existing)
-                : rename($existing, $new);
-        }
+                            if ($i === $this->maxFiles - 1) {
+                                return $node->unlink();
+                            }
 
-        $this->initializeStream();
+                            return $node->getContents()
+                                ->then(fn (string $contents) => $this->filesystem->detect($new)
+                                    ->then(fn (NotExistInterface $file) => $file->createFile())
+                                    ->then(fn (FileInterface $file) => $file
+                                        ->putContents($contents)
+                                        ->then(fn () => $node->unlink())
+                                    )
+                                );
+                        });
+                }
+
+                return all($promises);
+            })
+            ->then(fn () => $this->initializeStream());
     }
 
     /**
@@ -138,9 +164,5 @@ class LoggingHandler extends AbstractProcessingHandler
         }
 
         $this->flush();
-
-        if ($this->handle) {
-            fclose($this->handle);
-        }
     }
 }

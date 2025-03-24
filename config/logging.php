@@ -63,10 +63,10 @@ return [
             'handler' => Laracord\Logging\LoggingHandler::class,
             'with' => [
                 'path' => env('LOG_PATH', laracord_path('logs/laracord.log')),
-                'level' => env('LOG_LEVEL', 'info'),
+                'level' => env('LOG_LEVEL', 'debug'),
                 'maxSize' => env('LOG_MAX_SIZE', 10),
                 'maxFiles' => env('LOG_MAX_FILES', 5),
-                'flushInterval' => env('LOG_FLUSH_INTERVAL', 60),
+                'flushInterval' => env('LOG_FLUSH_INTERVAL', 15),
             ],
         ],
 
