@@ -5,13 +5,14 @@ namespace Laracord\Bot\Concerns;
 use Exception;
 use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 trait HasAsync
 {
     /**
      * Perform an asynchronous operation.
      */
-    public static function handleAsync(callable $callback): Promise
+    public static function handleAsync(callable $callback): PromiseInterface
     {
         return new Promise(function ($resolve, $reject) use ($callback) {
             if (! $loop = app(LoopInterface::class)) {
@@ -31,7 +32,7 @@ trait HasAsync
     /**
      * Perform an asynchronous operation.
      */
-    public function async(callable $callback): Promise
+    public function async(callable $callback): PromiseInterface
     {
         return static::handleAsync($callback);
     }
