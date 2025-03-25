@@ -83,6 +83,10 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         parent::register();
 
         foreach ($this->app->make(BasePackageManifest::class)->providers() as $provider) {
+            if (! class_exists($provider)) {
+                continue;
+            }
+
             $this->app->register($provider);
         }
 
