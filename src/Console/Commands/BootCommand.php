@@ -45,7 +45,9 @@ class BootCommand extends Command
                 count: $this->option('shard-count')
             );
 
-            $bot->disableHttpServer();
+            if ($bot->getShardId() > 0) {
+                $bot->disableHttpServer();
+            }
         }
 
         $bot->boot();
