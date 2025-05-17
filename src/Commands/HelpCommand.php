@@ -103,20 +103,25 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        $pages = ceil($commands->count() / static::$perPage);
+        $pages = min(1, ceil($commands->count() / static::$perPage));
         $previous = max(1, $page - 1);
         $next = min($pages, $page + 1);
 
         $message = sprintf(static::$message, $commands->count());
 
-        $this
+        $embed = $this
             ->message($message)
             ->title(static::$title)
-            ->fields($fields)
-            ->button('←', route: "show:{$previous}", style: 'secondary', disabled: $page <= 1, hidden: $pages === 1)
-            ->button('→', route: "show:{$next}", style: 'secondary', disabled: $page >= $pages, hidden: $pages === 1)
-            ->footerText("Page {$page} of {$pages}")
-            ->editOrReply($context);
+            ->fields($fields);
+
+        if ($pages > 1) {
+            $embed
+                ->button('←', route: "show:{$previous}", style: 'secondary', disabled: $page <= 1)
+                ->button('→', route: "show:{$next}", style: 'secondary', disabled: $page >= $pages)
+                ->footerText("Page {$page} of {$pages}");
+        }
+
+        $embed->editOrReply($context);
     }
 
     /**
