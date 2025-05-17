@@ -103,7 +103,7 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        $pages = min(1, ceil($commands->count() / static::$perPage));
+        $pages = max(1, ceil($commands->count() / static::$perPage));
         $previous = max(1, $page - 1);
         $next = min($pages, $page + 1);
 
