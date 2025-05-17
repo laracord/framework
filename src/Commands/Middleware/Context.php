@@ -4,6 +4,7 @@ namespace Laracord\Commands\Middleware;
 
 use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Interaction;
+use Discord\Parts\User\User;
 use Laracord\Commands\Contracts\Command;
 use Laracord\Commands\Contracts\ContextMenu;
 use Laracord\Commands\Contracts\SlashCommand;
@@ -72,7 +73,7 @@ class Context
     /**
      * Get the user from the context.
      */
-    public function getUser()
+    public function getUser(): ?User
     {
         if ($this->isMessage()) {
             return $this->source->author;
