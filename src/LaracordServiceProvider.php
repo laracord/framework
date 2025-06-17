@@ -143,7 +143,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             Commands\MakeSlashCommand::class,
             Commands\ModelMakeCommand::class,
             Commands\PromptMakeCommand::class,
-            Commands\ServiceMakeCommand::class,
+            Commands\TaskMakeCommand::class,
             Commands\TokenMakeCommand::class,
             PackageDiscoverCommand::class,
         ]);
@@ -246,7 +246,8 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             ->discoverSlashCommands(in: app_path('SlashCommands'), for: 'App\\SlashCommands')
             ->discoverContextMenus(in: app_path('Menus'), for: 'App\\Menus')
             ->discoverEvents(in: app_path('Events'), for: 'App\\Events')
-            ->discoverServices(in: app_path('Services'), for: 'App\\Services');
+            ->discoverTasks(in: app_path('Tasks'), for: 'App\\Tasks')
+            ->discoverTasks(in: app_path('Services'), for: 'App\\Services');
 
         return $this;
     }

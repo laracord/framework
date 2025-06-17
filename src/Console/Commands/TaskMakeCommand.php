@@ -6,28 +6,28 @@ use Illuminate\Console\GeneratorCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
-class ServiceMakeCommand extends GeneratorCommand
+class TaskMakeCommand extends GeneratorCommand
 {
     /**
      * The command name.
      *
      * @var string
      */
-    protected $name = 'make:service';
+    protected $name = 'make:task';
 
     /**
      * The command description.
      *
      * @var string
      */
-    protected $description = 'Create a new bot service';
+    protected $description = 'Create a new bot task';
 
     /**
      * The type of class being generated.
      *
      * @var string
      */
-    protected $type = 'Service';
+    protected $type = 'Task';
 
     /**
      * Get the stub file for the generator.
@@ -36,7 +36,7 @@ class ServiceMakeCommand extends GeneratorCommand
      */
     protected function getStub()
     {
-        $relativePath = '/stubs/service.stub';
+        $relativePath = '/stubs/task.stub';
 
         return file_exists($customPath = $this->laravel->basePath(trim($relativePath, '/')))
             ? $customPath
@@ -51,7 +51,7 @@ class ServiceMakeCommand extends GeneratorCommand
      */
     protected function getDefaultNamespace($rootNamespace)
     {
-        return $rootNamespace.'\Services';
+        return $rootNamespace.'\Tasks';
     }
 
     /**
@@ -62,7 +62,7 @@ class ServiceMakeCommand extends GeneratorCommand
     protected function getArguments()
     {
         return [
-            ['name', InputArgument::REQUIRED, 'The name of the service'],
+            ['name', InputArgument::REQUIRED, 'The name of the task'],
         ];
     }
 
@@ -74,7 +74,7 @@ class ServiceMakeCommand extends GeneratorCommand
     protected function getOptions()
     {
         return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the service already exists'],
+            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the task already exists'],
         ];
     }
 }

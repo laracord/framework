@@ -30,8 +30,8 @@ class Laracord
         Concerns\HasLogger,
         Concerns\HasLoop,
         Concerns\HasPlugins,
-        Concerns\HasServices,
         Concerns\HasSlashCommands,
+        Concerns\HasTasks,
         Concerns\HasUserModel;
 
     /**
@@ -87,7 +87,7 @@ class Laracord
                 ->bootApplicationCommands()
                 ->bootCommands()
                 ->bootEvents()
-                ->bootServices()
+                ->bootTasks()
                 ->bootHttpServer()
                 ->handleInteractions();
 
@@ -149,8 +149,8 @@ class Laracord
 
         $this->callHook(Hook::BEFORE_RESTART);
 
-        foreach ($this->services as $service) {
-            $service->stop();
+        foreach ($this->tasks as $task) {
+            $task->stop();
         }
 
         $this->discord?->close(closeLoop: false);
@@ -171,7 +171,7 @@ class Laracord
             'slash command' => count($this->slashCommands),
             'menu' => count($this->contextMenus),
             'event' => count($this->events),
-            'service' => count($this->services),
+            'task' => count($this->tasks),
             'interaction' => count($this->interactions),
             'route' => count(Route::getRoutes()->getRoutes()),
         ])->filter()->mapWithKeys(fn ($count, $type) => [Str::plural($type, $count) => $count]);

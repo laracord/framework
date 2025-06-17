@@ -35,11 +35,11 @@ use Illuminate\Support\Facades\Facade;
  * @method static self discoverEvents(string $in, string $for) Discover events in a path
  * @method static array getEvents() Get the registered events
  * @method static ?\Laracord\Events\Event getEvent(string $name) Get a registered event by name
- * @method static self registerService(\Laracord\Services\Service|string $service) Register a service
- * @method static self registerServices(array $services) Register multiple services
- * @method static self discoverServices(string $in, string $for) Discover services in a path
- * @method static array getServices() Get the registered services
- * @method static ?\Laracord\Services\Service getService(string $name) Get a registered service by name
+ * @method static self registerTask(\Laracord\Tasks\Task|string $task) Register a task
+ * @method static self registerTasks(array $tasks) Register multiple tasks
+ * @method static self discoverTasks(string $in, string $for) Discover tasks in a path
+ * @method static array getTasks() Get the registered tasks
+ * @method static ?\Laracord\Tasks\Task getTask(string $name) Get a registered task by name
  * @method static self registerPrompt(\Laracord\Console\Prompts\Prompt|string $prompt) Register a console prompt
  * @method static self registerPrompts(array $prompts) Register multiple console prompts
  * @method static array getPrompts() Get the registered prompts

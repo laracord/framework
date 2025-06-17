@@ -45,9 +45,9 @@ enum Hook: string
     case AFTER_EVENTS_REGISTERED = 'afterEventsRegistered';
 
     /**
-     * Called after all services are booted.
+     * Called after all tasks are booted.
      */
-    case AFTER_SERVICES_REGISTERED = 'afterServicesRegistered';
+    case AFTER_TASKS_REGISTERED = 'afterTasksRegistered';
 
     /**
      * Called after the HTTP server has started successfully.
