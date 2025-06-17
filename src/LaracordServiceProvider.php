@@ -145,6 +145,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
             Commands\PromptMakeCommand::class,
             Commands\TaskMakeCommand::class,
             Commands\TokenMakeCommand::class,
+            Commands\UpgradeCommand::class,
             PackageDiscoverCommand::class,
         ]);
 
