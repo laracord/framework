@@ -24,13 +24,6 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
     protected $options = [];
 
     /**
-     * The registered command options.
-     *
-     * @var array
-     */
-    protected $registeredOptions = [];
-
-    /**
      * The parsed command options.
      *
      * @var array
@@ -53,8 +46,8 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
             $command = $command->setDefaultMemberPermissions($permissions);
         }
 
-        if ($this->getRegisteredOptions()) {
-            foreach ($this->getRegisteredOptions() as $option) {
+        if ($options = $this->getRegisteredOptions()) {
+            foreach ($options as $option) {
                 $command = $command->addOption($option);
             }
         }
@@ -246,17 +239,13 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
      */
     public function getRegisteredOptions(): ?array
     {
-        if ($this->registeredOptions) {
-            return $this->registeredOptions;
-        }
-
         $options = collect($this->options())->merge($this->options);
 
         if ($options->isEmpty()) {
-            return $this->registeredOptions = null;
+            return null;
         }
 
-        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof Option
+        return $options->map(fn ($option) => $option instanceof Option
             ? $option
             : new Option($this->discord(), $option)
         )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
