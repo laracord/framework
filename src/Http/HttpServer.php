@@ -13,8 +13,10 @@ use Laracord\Laracord;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer as Server;
 use React\Http\Message\Response;
+use React\Promise\PromiseInterface;
 use React\Socket\SocketServer;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
 class HttpServer
@@ -107,65 +109,102 @@ class HttpServer
         }
 
         return $this->server = new Server($this->bot->getLoop(), function (ServerRequestInterface $request) {
-            if ($response = $this->handleStaticFile($request)) {
-                return $response;
-            }
+            return $this->handleStaticFile($request)
+                ->then(function ($response) use ($request) {
+                    if ($response !== null) {
+                        return $response;
+                    }
 
-            $headers = $request->getHeaders();
+                    return $this->handleLaravelRequest($request);
+                })
+                ->otherwise(fn (Throwable $e) => $this->handleError($e));
+        });
+    }
 
-            $request = Request::create(
-                $request->getUri()->getPath(),
-                $request->getMethod(),
-                $request->getQueryParams(),
-                $request->getCookieParams(),
-                [],
-                $request->getServerParams(),
-                $request->getBody()->getContents()
-            );
+    /**
+     * Handle a Laravel request through the kernel.
+     */
+    protected function handleLaravelRequest(ServerRequestInterface $request): Response
+    {
+        $headers = $request->getHeaders();
 
-            $request->headers->replace($headers);
+        $request = Request::create(
+            $request->getUri()->getPath(),
+            $request->getMethod(),
+            $request->getQueryParams(),
+            $request->getCookieParams(),
+            [],
+            $request->getServerParams(),
+            $request->getBody()->getContents()
+        );
+        $request->headers->replace($headers);
 
-            $this->bot->app->instance('request', $request);
+        $this->bot->app->instance('request', $request);
 
-            $this->bot->withMiddleware(function (Middleware $middleware) {
-                $middleware
-                    ->remove([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
-                    ->append([\Laracord\Http\Middleware\FlushState::class])
-                    ->api([
-                        \Laracord\Http\Middleware\AuthorizeToken::class,
-                    ])
-                    ->alias([
-                        'auth.token' => \Laracord\Http\Middleware\AuthorizeToken::class,
-                    ]);
-            });
+        $this->configureMiddleware();
 
-            /** @var \Laracord\Http\Kernel $kernel */
-            $kernel = $this->bot->app->make(Kernel::class);
+        /** @var \Laracord\Http\Kernel $kernel */
+        $kernel = $this->bot->app->make(Kernel::class);
 
-            try {
-                $kernel->terminate($request, $response = $kernel->handle($request));
-            } catch (Throwable $e) {
-                return $this->handleError($e);
-            }
+        try {
+            $response = $kernel->handle($request);
+            $kernel->terminate($request, $response);
 
             return new Response(
                 $response->getStatusCode(),
                 $response->headers->allPreserveCase(),
-                $response->getContent() ?: ($response instanceof BinaryFileResponse ? $response->getFile()->getContent() : false) ?: ''
+                $this->getResponseContent($response)
             );
+        } catch (Throwable $e) {
+            return $this->handleError($e);
+        }
+    }
+
+    /**
+     * Configure the Laravel middleware for the request.
+     */
+    protected function configureMiddleware(): void
+    {
+        $this->bot->withMiddleware(function (Middleware $middleware) {
+            $middleware
+                ->remove([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
+                ->append([\Laracord\Http\Middleware\FlushState::class])
+                ->api([
+                    \Laracord\Http\Middleware\AuthorizeToken::class,
+                ])
+                ->alias([
+                    'auth.token' => \Laracord\Http\Middleware\AuthorizeToken::class,
+                ]);
         });
+    }
+
+    /**
+     * Get the response content from a Laravel response.
+     */
+    protected function getResponseContent(SymfonyResponse $response): string
+    {
+        if ($response->getContent()) {
+            return $response->getContent();
+        }
+
+        if ($response instanceof BinaryFileResponse) {
+            return $response->getFile()->getContent();
+        }
+
+        return '';
     }
 
     /**
      * Handle a static file request.
      */
-    protected function handleStaticFile(ServerRequestInterface $request): ?Response
+    protected function handleStaticFile(ServerRequestInterface $request): PromiseInterface
     {
         if (! $this->staticFileHandler) {
             $this->staticFileHandler = new StaticFileHandler;
         }
 
-        return $this->staticFileHandler->handle($request);
+        return $this->staticFileHandler->handle($request)
+            ->otherwise(fn () => null);
     }
 
     /**
@@ -173,10 +212,10 @@ class HttpServer
      */
     protected function handleError(Throwable $e): Response
     {
-        $response = 'Internal Server Error';
+        $message = 'Internal Server Error';
 
         if (! app()->isProduction()) {
-            $response = Str::finish($response, ": {$e->getMessage()}");
+            $message = Str::finish($message, ": {$e->getMessage()}");
         }
 
         report($e);
@@ -184,7 +223,7 @@ class HttpServer
         return new Response(
             500,
             ['Content-Type' => 'application/json'],
-            json_encode(['code' => 500, 'message' => $response])
+            json_encode(['code' => 500, 'message' => $message])
         );
     }
 

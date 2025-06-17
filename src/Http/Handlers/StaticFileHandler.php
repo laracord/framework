@@ -2,9 +2,16 @@
 
 namespace Laracord\Http\Handlers;
 
-use Illuminate\Support\Facades\File;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Filesystem\Factory;
+use React\Filesystem\Node\FileInterface;
+use React\Filesystem\Node\NodeInterface;
+use React\Filesystem\Node\NotExistInterface;
 use React\Http\Message\Response;
+use React\Promise\PromiseInterface;
+use Throwable;
+
+use function React\Promise\resolve;
 
 class StaticFileHandler
 {
@@ -104,29 +111,109 @@ class StaticFileHandler
     ];
 
     /**
+     * The filesystem instance.
+     */
+    protected $filesystem;
+
+    /**
+     * Cache for content types.
+     */
+    protected static array $contentTypeCache = [];
+
+    /**
+     * Create a new static file handler instance.
+     */
+    public function __construct()
+    {
+        $this->filesystem = Factory::create();
+    }
+
+    /**
      * Handle the static file request.
      */
-    public function handle(ServerRequestInterface $request): ?Response
+    public function handle(ServerRequestInterface $request): PromiseInterface
     {
         $path = $this->resolvePath($request->getUri()->getPath());
 
-        if (! $path || ! File::exists($path)) {
-            return null;
+        if (! $path) {
+            return resolve(null);
         }
 
-        if (! File::isReadable($path)) {
-            return new Response(
-                403,
-                ['Content-Type' => 'text/plain'],
-                'Forbidden'
-            );
+        return $this->filesystem->detect($path)
+            ->then(fn (NodeInterface $node) => $this->handleNode($node, $path))
+            ->otherwise(function (Throwable $e) {
+                report($e);
+
+                return $this->createErrorResponse();
+            });
+    }
+
+    /**
+     * Handle a filesystem node (file or directory).
+     */
+    protected function handleNode(NodeInterface $node, string $path): ?PromiseInterface
+    {
+        if ($node instanceof NotExistInterface) {
+            return resolve(null);
         }
 
-        return new Response(
-            200,
-            ['Content-Type' => $this->getContentType($path)],
-            File::get($path)
-        );
+        return $node instanceof FileInterface
+            ? $this->handleFile($node, $path)
+            : $this->handleDirectory($node, $path);
+    }
+
+    /**
+     * Handle a file request.
+     */
+    protected function handleFile(FileInterface $file, string $path): PromiseInterface
+    {
+        return $file
+            ->getContents()
+            ->then(function (string $contents) use ($path) {
+                $headers = [
+                    'Content-Type' => $this->getContentType($path),
+                    'Content-Length' => strlen($contents),
+                    'Cache-Control' => 'public, max-age=3600',
+                    'ETag' => '"'.md5($contents).'"',
+                ];
+
+                if ($this->isWebAsset($path)) {
+                    $headers['Access-Control-Allow-Origin'] = '*';
+                }
+
+                return new Response(200, $headers, $contents);
+            })
+            ->otherwise(fn () => null);
+    }
+
+    /**
+     * Handle a directory request by looking for index files.
+     */
+    protected function handleDirectory(NodeInterface $directory, string $path): PromiseInterface
+    {
+        return $this->findIndexFile($path, 0);
+    }
+
+    /**
+     * Recursively find and serve index files.
+     */
+    protected function findIndexFile(string $path, int $index): PromiseInterface
+    {
+        if ($index >= count($this->indexFiles)) {
+            return resolve(null);
+        }
+
+        $indexPath = rtrim($path, '/').'/'.$this->indexFiles[$index];
+
+        return $this->filesystem->detect($indexPath)
+            ->then(function (NodeInterface $node) use ($indexPath, $path, $index) {
+                if ($node instanceof FileInterface) {
+                    return $this->handleFile($node, $indexPath);
+                }
+
+                return $this->findIndexFile($path, $index + 1);
+            })
+            ->otherwise(fn () => $this->findIndexFile($path, $index + 1));
     }
 
     /**
@@ -134,19 +221,19 @@ class StaticFileHandler
      */
     protected function resolvePath(string $requestPath): ?string
     {
-        $path = public_path(ltrim($requestPath, '/'));
+        $requestPath = ltrim($requestPath, '/');
 
-        if (! is_dir($path)) {
-            return $path;
+        if (
+            str_contains($requestPath, '..') ||
+            str_contains($requestPath, '\\') ||
+            str_starts_with(basename($requestPath), '.')
+        ) {
+            return null;
         }
 
-        foreach ($this->indexFiles as $index) {
-            if (File::exists($file = "{$path}/{$index}")) {
-                return $file;
-            }
-        }
+        $path = public_path($requestPath);
 
-        return null;
+        return $path ?: null;
     }
 
     /**
@@ -154,8 +241,37 @@ class StaticFileHandler
      */
     protected function getContentType(string $path): string
     {
+        if (! isset(static::$contentTypeCache[$path])) {
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+            static::$contentTypeCache[$path] = static::$mimeTypes[$extension] ?? 'application/octet-stream';
+        }
+
+        return static::$contentTypeCache[$path];
+    }
+
+    /**
+     * Check if the file is a common web asset that should have CORS headers.
+     */
+    protected function isWebAsset(string $path): bool
+    {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        return static::$mimeTypes[$extension] ?? 'application/octet-stream';
+        return in_array($extension, [
+            'css', 'js', 'mjs', 'json', 'woff', 'woff2', 'ttf', 'otf', 'eot',
+            'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico',
+        ]);
+    }
+
+    /**
+     * Create a standardized error response.
+     */
+    protected function createErrorResponse(int $status = 500, string $message = 'Internal Server Error'): Response
+    {
+        return new Response(
+            $status,
+            ['Content-Type' => 'text/plain'],
+            $message
+        );
     }
 }
