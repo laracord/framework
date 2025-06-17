@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Bot\Hook;
+use Laracord\Http\Handlers\StaticFileHandler;
 use Laracord\Laracord;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer as Server;
@@ -37,6 +38,11 @@ class HttpServer
      * Determine if the server is booted.
      */
     protected bool $booted = false;
+
+    /**
+     * The static file handler instance.
+     */
+    protected ?StaticFileHandler $staticFileHandler = null;
 
     /**
      * Create a new server instance.
@@ -101,6 +107,10 @@ class HttpServer
         }
 
         return $this->server = new Server($this->bot->getLoop(), function (ServerRequestInterface $request) {
+            if ($response = $this->handleStaticFile($request)) {
+                return $response;
+            }
+
             $headers = $request->getHeaders();
 
             $request = Request::create(
@@ -144,6 +154,18 @@ class HttpServer
                 $response->getContent() ?: ($response instanceof BinaryFileResponse ? $response->getFile()->getContent() : false) ?: ''
             );
         });
+    }
+
+    /**
+     * Handle a static file request.
+     */
+    protected function handleStaticFile(ServerRequestInterface $request): ?Response
+    {
+        if (! $this->staticFileHandler) {
+            $this->staticFileHandler = new StaticFileHandler;
+        }
+
+        return $this->staticFileHandler->handle($request);
     }
 
     /**
