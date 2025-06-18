@@ -23,6 +23,7 @@ class Laracord
         Concerns\HasConsole,
         Concerns\HasContextMenus,
         Concerns\HasDiscord,
+        Concerns\HasDiscordAuth,
         Concerns\HasEvents,
         Concerns\HasHooks,
         Concerns\HasHttpServer,

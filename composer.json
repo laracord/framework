@@ -30,6 +30,7 @@
     "illuminate/validation": "^12.0",
     "illuminate/view": "^12.0",
     "intonate/tinker-zero": "^1.2",
+    "laracord/socialite-discord": "dev-next",
     "laravel-zero/framework": "^12.0",
     "laravel/sanctum": "^4.0",
     "react/async": "^4.2",

@@ -10,17 +10,24 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Console\PackageDiscoverCommand;
 use Illuminate\Foundation\PackageManifest as BasePackageManifest;
+use Illuminate\Routing\Router;
+use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\AggregateServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Laracord\Bot\Hook;
 use Laracord\Console\Commands;
 use Laracord\Console\Console;
 use Laracord\Console\Prompts;
 use Laracord\Discord\Message;
 use Laracord\Http\Kernel;
+use Laracord\Http\Controllers\DiscordCallbackController;
+use Laracord\Http\Controllers\DiscordLoginController;
+use Laracord\Http\Routing\UrlGenerator as LaracordUrlGenerator;
 use LaravelZero\Framework\Components\Database\Provider as DatabaseProvider;
 use LaravelZero\Framework\Components\Log\Provider as LogProvider;
 use React\EventLoop\Loop;
@@ -99,6 +106,7 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
         $this->registerLoop();
         $this->registerConsole();
         $this->registerLogger();
+        $this->registerUrlGenerator();
 
         $this->app->singleton(KernelContract::class, Kernel::class);
         $this->app->singleton(Middleware::class, fn () => new Middleware);
@@ -116,7 +124,22 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
 
             $this->app->singleton(Message::class, fn () => Message::make($bot));
 
-            return $this->bot($bot);
+            return $this->bot($bot)
+                ->registerHook(Hook::AFTER_HTTP_SERVER_START, function (Laracord $bot) {
+                    config([
+                        'services.discord' => [
+                            'client_id' => $bot->discord()->id,
+                            'client_secret' => config('discord.secret'),
+                            'redirect' => route('oauth.discord.callback'),
+                        ],
+                    ]);
+                })
+                ->withRoutes(function (Router $router) {
+                    Route::middleware('web')->group(function() {
+                        Route::get('/oauth/discord/login', DiscordLoginController::class)->name('oauth.discord.login');
+                        Route::get('/oauth/discord/callback', DiscordCallbackController::class)->name('oauth.discord.callback');
+                    });
+                });
         }));
 
         $this->app->alias(Laracord::class, 'bot');
@@ -235,6 +258,19 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
     protected function registerLogger(): void
     {
         $this->app->booting(fn () => $this->app->register(LogProvider::class));
+    }
+
+    /**
+     * Register the URL generator.
+     */
+    protected function registerUrlGenerator(): void
+    {
+        $this->app->bind(UrlGenerator::class, function ($app) {
+            $request = $app->has('request') ? $app->make('request') : null;
+            return new LaracordUrlGenerator($request);
+        });
+
+        $this->app->alias(UrlGenerator::class, 'url');
     }
 
     /**
