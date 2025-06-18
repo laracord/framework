@@ -19,6 +19,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Discord Client Secret
+    |--------------------------------------------------------------------------
+    |
+    | This is the client secret associated with your Discord application.
+    | It is used during the OAuth2 authorization process in conjunction
+    | with the client ID. Keep this secret safe and never expose it
+    | publicly, as it could be used to impersonate your application.
+    |
+    */
+
+    'secret' => env('DISCORD_CLIENT_SECRET', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Gateway Intents
     |--------------------------------------------------------------------------
     |
