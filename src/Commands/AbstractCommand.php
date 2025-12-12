@@ -175,7 +175,6 @@ abstract class AbstractCommand
     {
         $command = $this->getSignature();
 
-        /** @todo Remove reference to usage */
         if (filled($this->usage)) {
             $command .= " `{$this->usage}`";
         }
