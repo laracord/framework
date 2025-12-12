@@ -242,21 +242,7 @@ trait HasApplicationCommands
      */
     protected function registerApplicationCommand(ApplicationCommand $command): void
     {
-        if ($command->getGuild()) {
-            $guild = $this->discord()->guilds->get('id', $command->getGuild());
-
-            if (! $guild) {
-                $this->logger->warning("The <fg=yellow>{$command->getName()}</> command failed to register because the guild <fg=yellow>{$command->getGuild()}</> could not be found.");
-
-                return;
-            }
-
-            $guild->commands->save($command->create());
-
-            return;
-        }
-
-        $this->discord()->application->commands->save($command->create());
+        $command->create()->save();
     }
 
     /**
