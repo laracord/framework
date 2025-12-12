@@ -52,7 +52,7 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
             }
         }
 
-        $command = collect($command->toArray())
+        $command = collect($command->jsonSerialize())
             ->put('guild_id', $this->getGuild())
             ->filter()
             ->all();
