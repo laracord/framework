@@ -5,6 +5,7 @@ namespace Laracord\Commands;
 use Discord\Parts\Guild\Guild;
 use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\User\User;
+use Exception;
 use Illuminate\Support\Str;
 use Laracord\Discord\Concerns\HasModal;
 use Laracord\Laracord;
