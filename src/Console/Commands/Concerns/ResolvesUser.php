@@ -2,6 +2,7 @@
 
 namespace Laracord\Console\Commands\Concerns;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Laracord\Facades\Laracord;
 
@@ -10,7 +11,7 @@ trait ResolvesUser
     /**
      * Resolve the user.
      *
-     * @return \Illuminate\Database\Eloquent\Model|void
+     * @return Model|void
      */
     protected function resolveUser(?string $user = null)
     {

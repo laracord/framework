@@ -4,11 +4,14 @@ namespace Laracord\Http;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laracord\Bot\Hook;
 use Laracord\Http\Handlers\StaticFileHandler;
+use Laracord\Http\Middleware\AuthorizeToken;
+use Laracord\Http\Middleware\FlushState;
 use Laracord\Laracord;
 use Psr\Http\Message\ServerRequestInterface;
 use React\Http\HttpServer as Server;
@@ -167,13 +170,13 @@ class HttpServer
     {
         $this->bot->withMiddleware(function (Middleware $middleware) {
             $middleware
-                ->remove([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
-                ->append([\Laracord\Http\Middleware\FlushState::class])
+                ->remove([PreventRequestsDuringMaintenance::class])
+                ->append([FlushState::class])
                 ->api([
-                    \Laracord\Http\Middleware\AuthorizeToken::class,
+                    AuthorizeToken::class,
                 ])
                 ->alias([
-                    'auth.token' => \Laracord\Http\Middleware\AuthorizeToken::class,
+                    'auth.token' => AuthorizeToken::class,
                 ]);
         });
     }

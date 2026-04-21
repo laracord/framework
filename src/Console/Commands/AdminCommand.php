@@ -2,6 +2,7 @@
 
 namespace Laracord\Console\Commands;
 
+use Illuminate\Database\Eloquent\Model;
 use Laracord\Console\Commands\Concerns\ResolvesUser;
 
 class AdminCommand extends Command
@@ -27,7 +28,7 @@ class AdminCommand extends Command
     /**
      * The user model.
      *
-     * @var \Illuminate\Database\Eloquent\Model|null
+     * @var Model|null
      */
     protected $user;
 

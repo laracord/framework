@@ -2,25 +2,39 @@
 
 namespace Laracord;
 
+use Illuminate\Auth\AuthServiceProvider;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Http\Kernel as KernelContract;
+use Illuminate\Cookie\CookieServiceProvider;
+use Illuminate\Encryption\EncryptionServiceProvider;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Console\PackageDiscoverCommand;
 use Illuminate\Foundation\PackageManifest as BasePackageManifest;
+use Illuminate\Hashing\HashServiceProvider;
+use Illuminate\Log\Context\ContextServiceProvider;
+use Illuminate\Mail\MailServiceProvider;
+use Illuminate\Queue\QueueServiceProvider;
+use Illuminate\Routing\RoutingServiceProvider;
+use Illuminate\Session\SessionServiceProvider;
 use Illuminate\Support\AggregateServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Translation\TranslationServiceProvider;
+use Illuminate\Validation\ValidationServiceProvider;
+use Illuminate\View\ViewServiceProvider;
+use Intonate\TinkerZero\TinkerZeroServiceProvider;
 use Laracord\Console\Commands;
 use Laracord\Console\Console;
 use Laracord\Console\Prompts;
 use Laracord\Discord\Message;
 use Laracord\Http\Kernel;
+use Laracord\Http\Providers\RouteServiceProvider;
 use LaravelZero\Framework\Components\Database\Provider as DatabaseProvider;
 use LaravelZero\Framework\Components\Log\Provider as LogProvider;
 use React\EventLoop\Loop;
@@ -43,20 +57,20 @@ abstract class LaracordServiceProvider extends AggregateServiceProvider
      * @var array
      */
     protected $providers = [
-        \Illuminate\Encryption\EncryptionServiceProvider::class,
-        \Illuminate\Hashing\HashServiceProvider::class,
-        \Illuminate\Queue\QueueServiceProvider::class,
-        \Illuminate\Routing\RoutingServiceProvider::class,
-        \Illuminate\Translation\TranslationServiceProvider::class,
-        \Illuminate\Validation\ValidationServiceProvider::class,
-        \Illuminate\View\ViewServiceProvider::class,
-        \Illuminate\Cookie\CookieServiceProvider::class,
-        \Illuminate\Session\SessionServiceProvider::class,
-        \Illuminate\Mail\MailServiceProvider::class,
-        \Illuminate\Auth\AuthServiceProvider::class,
-        \Illuminate\Log\Context\ContextServiceProvider::class,
-        \Laracord\Http\Providers\RouteServiceProvider::class,
-        \Intonate\TinkerZero\TinkerZeroServiceProvider::class,
+        EncryptionServiceProvider::class,
+        HashServiceProvider::class,
+        QueueServiceProvider::class,
+        RoutingServiceProvider::class,
+        TranslationServiceProvider::class,
+        ValidationServiceProvider::class,
+        ViewServiceProvider::class,
+        CookieServiceProvider::class,
+        SessionServiceProvider::class,
+        MailServiceProvider::class,
+        AuthServiceProvider::class,
+        ContextServiceProvider::class,
+        RouteServiceProvider::class,
+        TinkerZeroServiceProvider::class,
     ];
 
     abstract public function bot(Laracord $bot): Laracord;

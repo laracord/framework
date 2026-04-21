@@ -1,5 +1,6 @@
 <?php
 
+use Laracord\Logging\LoggingHandler;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -60,7 +61,7 @@ return [
 
         'laracord' => [
             'driver' => 'monolog',
-            'handler' => Laracord\Logging\LoggingHandler::class,
+            'handler' => LoggingHandler::class,
             'with' => [
                 'path' => env('LOG_PATH', laracord_path('logs/laracord.log')),
                 'level' => env('LOG_LEVEL', 'debug'),

@@ -16,7 +16,7 @@ if (! function_exists('laracord_path')) {
      */
     function laracord_path(string $path = '', bool $basePath = true): string
     {
-        $binary = \Phar::running(false);
+        $binary = Phar::running(false);
 
         $basePath = $basePath ? '.laracord' : '';
         $appPath = $binary ? pathinfo($binary, PATHINFO_DIRNAME) : null;

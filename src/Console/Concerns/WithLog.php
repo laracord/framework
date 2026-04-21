@@ -3,6 +3,7 @@
 namespace Laracord\Console\Concerns;
 
 use DateTimeInterface;
+use Illuminate\Console\OutputStyle;
 use Laracord\Console\Components\Log;
 use Psr\Log\LogLevel;
 use Stringable;
@@ -12,7 +13,7 @@ trait WithLog
     /**
      * The output style implementation.
      *
-     * @var \Illuminate\Console\OutputStyle
+     * @var OutputStyle
      */
     protected $output;
 
@@ -33,7 +34,7 @@ trait WithLog
     /**
      * Render a log message.
      */
-    public function log($level, string|\Stringable $message, array $context = []): void
+    public function log($level, string|Stringable $message, array $context = []): void
     {
         $message = trim($message);
 

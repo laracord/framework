@@ -54,7 +54,7 @@ trait HasLaracord
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Discord\Message
+     * @return Message
      */
     public function message($content = '')
     {

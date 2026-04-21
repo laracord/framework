@@ -4,6 +4,7 @@ namespace Laracord\Bot\Concerns;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
 use Laracord\Bot\Hook;
 use Laracord\Http\HttpServer;
@@ -30,7 +31,7 @@ trait HasHttpServer
      */
     public function withRoutes(?callable $callback = null): self
     {
-        /** @var \Illuminate\Routing\Router $router */
+        /** @var Router $router */
         $router = $this->app->make('router');
 
         if (! is_null($callback)) {
@@ -48,7 +49,7 @@ trait HasHttpServer
         /** @var \Laracord\Http\Kernel $kernel */
         $kernel = $this->app->make(Kernel::class);
 
-        /** @var \Illuminate\Foundation\Configuration\Middleware $middleware */
+        /** @var Middleware $middleware */
         $middleware = $this->app->make(Middleware::class);
 
         if (! is_null($callback)) {

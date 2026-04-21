@@ -5,6 +5,7 @@ namespace Laracord\Console\Components;
 use Illuminate\Console\Contracts\NewLineAware;
 use Illuminate\Console\View\Components\Component;
 use Illuminate\Console\View\Components\Mutators;
+use Illuminate\Contracts\Support\Arrayable;
 use Symfony\Component\Console\Output\OutputInterface;
 
 use function Termwind\render;
@@ -38,7 +39,7 @@ class Log extends Component
      * Renders the given view.
      *
      * @param  string  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
+     * @param  Arrayable|array  $data
      * @param  int  $verbosity
      * @return void
      */
