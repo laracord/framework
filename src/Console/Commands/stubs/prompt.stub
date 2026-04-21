@@ -1,0 +1,32 @@
+<?php
+
+namespace DummyNamespace;
+
+use Laracord\Console\Console;
+use Laracord\Console\Prompts\Prompt;
+use Laracord\Laracord;
+
+class DummyClass extends Prompt
+{
+    /**
+     * The name of the prompt.
+     *
+     * @var string
+     */
+    protected $name = 'dummy:command';
+
+    /**
+     * The description of the prompt.
+     *
+     * @var string
+     */
+    protected $description = 'Prompt description';
+
+    /**
+     * Handle the prompt.
+     */
+    public function handle(Console $console, Laracord $bot): void
+    {
+        //
+    }
+}

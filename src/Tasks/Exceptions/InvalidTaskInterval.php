@@ -1,10 +1,10 @@
 <?php
 
-namespace Laracord\Services\Exceptions;
+namespace Laracord\Tasks\Exceptions;
 
 use Exception;
 
-class InvalidServiceInterval extends Exception
+class InvalidTaskInterval extends Exception
 {
     /**
      * Create a new exception instance.
@@ -14,6 +14,6 @@ class InvalidServiceInterval extends Exception
      */
     public function __construct($name = '')
     {
-        parent::__construct("The {$name} service interval must be greater than 0.");
+        parent::__construct("The {$name} task interval must be greater than 0.");
     }
 }

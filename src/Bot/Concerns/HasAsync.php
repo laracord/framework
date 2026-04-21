@@ -1,26 +1,27 @@
 <?php
 
-namespace Laracord\Concerns;
+namespace Laracord\Bot\Concerns;
 
 use Exception;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
-trait CanAsync
+trait HasAsync
 {
     /**
      * Perform an asynchronous operation.
      */
-    public static function handleAsync(callable $callback): Promise
+    public static function handleAsync(callable $callback): PromiseInterface
     {
         return new Promise(function ($resolve, $reject) use ($callback) {
-            if (! $loop = app('bot')?->getLoop()) {
-                throw new Exception('The Laracord event loop is not available.');
+            if (! $loop = app(LoopInterface::class)) {
+                throw new Exception('The event loop is not available.');
             }
 
             $loop->futureTick(function () use ($callback, $resolve, $reject) {
                 try {
-                    $result = $callback();
-                    $resolve($result);
+                    $resolve($callback());
                 } catch (Exception $e) {
                     $reject($e);
                 }
@@ -31,7 +32,7 @@ trait CanAsync
     /**
      * Perform an asynchronous operation.
      */
-    public function async(callable $callback): Promise
+    public function async(callable $callback): PromiseInterface
     {
         return static::handleAsync($callback);
     }

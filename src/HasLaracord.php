@@ -2,8 +2,9 @@
 
 namespace Laracord;
 
-use Discord\DiscordCommandClient as Discord;
-use Laracord\Console\Commands\Command as ConsoleCommand;
+use Discord\Discord;
+use Illuminate\Log\LogManager;
+use Laracord\Console\Console;
 use Laracord\Discord\Message;
 
 trait HasLaracord
@@ -36,20 +37,28 @@ trait HasLaracord
     /**
      * Retrieve the console instance.
      */
-    public function console(): ConsoleCommand
+    public function console(): Console
     {
         return $this->bot()->console();
+    }
+
+    /**
+     * Retrieve the logger instance.
+     */
+    public function logger(): LogManager
+    {
+        return $this->bot()->getLogger();
     }
 
     /**
      * Build an embed for use in a Discord message.
      *
      * @param  string  $content
-     * @return \Laracord\Discord\Message
+     * @return Message
      */
     public function message($content = '')
     {
-        return Message::make($this->bot())
+        return clone app(Message::class)
             ->content($content);
     }
 }

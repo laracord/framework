@@ -2,8 +2,9 @@
 
 namespace Laracord\Console\Commands;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Laracord\Console\Concerns\ResolvesUser;
+use Laracord\Console\Commands\Concerns\ResolvesUser;
 
 class TokenMakeCommand extends Command
 {
@@ -29,7 +30,7 @@ class TokenMakeCommand extends Command
     /**
      * The user model.
      *
-     * @var \Illuminate\Database\Eloquent\Model|null
+     * @var Model|null
      */
     protected $user;
 

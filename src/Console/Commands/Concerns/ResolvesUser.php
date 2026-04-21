@@ -1,17 +1,17 @@
 <?php
 
-namespace Laracord\Console\Concerns;
+namespace Laracord\Console\Commands\Concerns;
 
-use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Laracord\Facades\Laracord;
 
 trait ResolvesUser
 {
     /**
      * Resolve the user.
      *
-     * @return \Illuminate\Database\Eloquent\Model|void
+     * @return Model|void
      */
     protected function resolveUser(?string $user = null)
     {
@@ -22,7 +22,7 @@ trait ResolvesUser
         }
 
         if (! is_numeric($user)) {
-            $model = $this->getUserModel()::where('username', $user)->first();
+            $model = Laracord::getUserModel()::where('username', $user)->first();
 
             if (! $model) {
                 $this->components->error("The user <fg=red>{$user}</> does not exist.");
@@ -31,10 +31,10 @@ trait ResolvesUser
             }
         }
 
-        $model = $model ?? $this->getUserModel()::where('discord_id', $user)->first();
+        $model = $model ?? Laracord::getUserModel()::where('discord_id', $user)->first();
 
         if (! $model) {
-            $token = $this->getBotClass()::make($this)->getToken();
+            $token = Laracord::getToken();
 
             $request = Http::withHeaders([
                 'Authorization' => "Bot {$token}",
@@ -48,33 +48,9 @@ trait ResolvesUser
 
             $user = $request->json();
 
-            $model = $this->getUserModel()::updateOrCreate(['discord_id' => $user['id']], [
+            $model = Laracord::getUserModel()::updateOrCreate(['discord_id' => $user['id']], [
                 'username' => $user['username'],
             ]);
-        }
-
-        return $model;
-    }
-
-    /**
-     * Get the bot class.
-     */
-    protected function getBotClass(): string
-    {
-        $class = Str::start($this->app->getNamespace(), '\\').'Bot';
-
-        return class_exists($class) ? $class : 'Laracord';
-    }
-
-    /**
-     * Get the user model class.
-     */
-    protected function getUserModel(): string
-    {
-        $model = Str::start(app()->getNamespace(), '\\').'Models\\User';
-
-        if (! class_exists($model)) {
-            throw new Exception('The user model could not be found.');
         }
 
         return $model;
