@@ -18,13 +18,6 @@ abstract class Command extends AbstractCommand implements CommandContract
     protected $aliases = [];
 
     /**
-     * The command usage.
-     *
-     * @var string
-     */
-    protected $usage = '';
-
-    /**
      * Maybe handle the command.
      */
     public function maybeHandle(Message $message, array $args): void

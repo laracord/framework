@@ -3,6 +3,8 @@
 namespace Laracord\Commands;
 
 use Closure;
+use Discord\Builders\CommandBuilder;
+use Discord\Parts\Interactions\Command\Command;
 use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Permissions\RolePermission;
 
@@ -24,6 +26,30 @@ abstract class ApplicationCommand extends AbstractCommand
      * Determine if the command is not safe for work.
      */
     protected bool $nsfw = false;
+
+     /**
+     * Create a Discord command instance.
+     */
+    public function create(): Command
+    {
+        $command = CommandBuilder::new()
+            ->setName($this->getName())
+            ->setDescription($this->getDescription())
+            ->setType($this->getType())
+            ->setDmPermission($this->canDirectMessage())
+            ->setNsfw($this->isNsfw());
+
+        if ($permissions = $this->getPermissions()) {
+            $command = $command->setDefaultMemberPermissions($permissions);
+        }
+
+        $command = collect($command->jsonSerialize())
+            ->put('guild_id', $this->getGuild())
+            ->filter()
+            ->all();
+
+        return new Command($this->discord(), $command);
+    }
 
     /**
      * Retrieve the slash command bitwise permission.

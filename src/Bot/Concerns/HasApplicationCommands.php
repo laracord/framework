@@ -2,6 +2,7 @@
 
 namespace Laracord\Bot\Concerns;
 
+use Discord\Discord;
 use Discord\Parts\Interactions\Command\Option;
 use Illuminate\Support\Arr;
 use Laracord\Bot\Hook;
@@ -11,6 +12,11 @@ use Laracord\Commands\ContextMenu;
 use function React\Async\await;
 use function React\Promise\all;
 
+/**
+ * Concern to manage application commands.
+ * 
+ * @method Discord discord() Get the Discord instance.
+ */
 trait HasApplicationCommands
 {
     /**
@@ -44,14 +50,14 @@ trait HasApplicationCommands
 
         $existing = [];
 
-        $existing[] = $this->discord->application->commands->freshen();
+        $existing[] = $this->discord()->application->commands->freshen();
 
-        foreach ($this->discord->guilds as $guild) {
+        foreach ($this->discord()->guilds as $guild) {
             $existing[] = $guild->commands->freshen();
         }
 
         $existing = all($existing)->then(fn ($commands) => collect($commands)
-            ->flatMap(fn ($command) => $command->toArray())
+            ->flatMap(fn ($command) => $command->jsonSerialize())
             ->map(fn ($command) => collect($command->getCreatableAttributes())
                 ->merge([
                     'id' => $command->id,
@@ -182,7 +188,7 @@ trait HasApplicationCommands
             if ($command['state'] instanceof ContextMenu) {
                 $menu = $command['state'];
 
-                $this->discord->listenCommand(
+                $this->discord()->listenCommand(
                     $name,
                     fn ($interaction) => rescue(fn () => $menu->maybeHandle($interaction))
                 );
@@ -208,7 +214,7 @@ trait HasApplicationCommands
             $subcommands = $subcommands->merge($subcommandGroups);
 
             if ($subcommands->isNotEmpty()) {
-                $subcommands->each(fn ($names) => $this->discord->listenCommand(
+                $subcommands->each(fn ($names) => $this->discord()->listenCommand(
                     $names,
                     fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
                     fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
@@ -217,7 +223,7 @@ trait HasApplicationCommands
                 return;
             }
 
-            $this->discord->listenCommand(
+            $this->discord()->listenCommand(
                 $name,
                 fn ($interaction) => rescue(fn () => $command->maybeHandle($interaction)),
                 fn ($interaction) => rescue(fn () => $command->maybeHandleAutocomplete($interaction))
@@ -236,21 +242,7 @@ trait HasApplicationCommands
      */
     protected function registerApplicationCommand(ApplicationCommand $command): void
     {
-        if ($command->getGuild()) {
-            $guild = $this->discord->guilds->get('id', $command->getGuild());
-
-            if (! $guild) {
-                $this->logger->warning("The <fg=yellow>{$command->getName()}</> command failed to register because the guild <fg=yellow>{$command->getGuild()}</> could not be found.");
-
-                return;
-            }
-
-            $guild->commands->save($command->create());
-
-            return;
-        }
-
-        $this->discord->application->commands->save($command->create());
+        $command->create()->save();
     }
 
     /**
@@ -259,7 +251,7 @@ trait HasApplicationCommands
     protected function unregisterApplicationCommand(string $id, ?string $guildId = null): void
     {
         if ($guildId) {
-            $guild = $this->discord->guilds->get('id', $guildId);
+            $guild = $this->discord()->guilds->get('id', $guildId);
 
             if (! $guild) {
                 $this->logger->warning("The command with ID <fg=yellow>{$id}</> failed to unregister because the guild <fg=yellow>{$guildId}</> could not be found.");
@@ -272,6 +264,6 @@ trait HasApplicationCommands
             return;
         }
 
-        $this->discord->application->commands->delete($id);
+        $this->discord()->application->commands->delete($id);
     }
 }

@@ -15,6 +15,13 @@ abstract class AbstractCommand
     use HasHandler, HasLaracord, HasModal;
 
     /**
+     * The command usage.
+     *
+     * @var string
+     */
+    protected $usage = '';
+
+    /**
      * The command name.
      *
      * @var string
@@ -123,7 +130,7 @@ abstract class AbstractCommand
     public function isAdmin(User|string $user): bool
     {
         if (! $user instanceof User) {
-            $user = $this->discord->users->get('id', $user);
+            $user = $this->discord()->users->get('id', $user);
         }
 
         if ($this->bot->getAdmins()) {
