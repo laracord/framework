@@ -2,6 +2,7 @@
 
 namespace {{ namespace }};
 
+use Discord\Parts\Channel\Message;
 use Discord\Parts\Interactions\Interaction;
 use Laracord\Commands\Command;
 
@@ -37,19 +38,15 @@ class {{ class }} extends Command
 
     /**
      * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return void
      */
-    public function handle($message, $args)
+    public function handle(Message $message, array $args): void
     {
-        return $this
+        $this
             ->message()
             ->title('{{ title }}')
             ->content('Hello world!')
             ->button('👋', route: 'wave')
-            ->send($message);
+            ->reply($message);
     }
 
     /**

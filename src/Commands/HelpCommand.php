@@ -2,6 +2,9 @@
 
 namespace Laracord\Commands;
 
+use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
+
 class HelpCommand extends Command
 {
     /**
@@ -26,37 +29,70 @@ class HelpCommand extends Command
     protected $hidden = true;
 
     /**
-     * The response title.
-     *
-     * @var string
+     * The help title.
      */
-    protected $title = 'Command Help';
+    protected static string $title = 'Command Help';
 
     /**
-     * The response message.
-     *
-     * @var string
+     * The help message content.
      */
-    protected $message = 'Here is a list of all available commands.';
+    protected static string $message = 'Showing a list of %s available command(s):';
+
+    /**
+     * The maximum commands per page.
+     */
+    protected static int $perPage = 12;
+
+    /**
+     * Set the help title.
+     */
+    public static function setTitle(string $title): void
+    {
+        static::$title = $title;
+    }
+
+    /**
+     * Set the help message content.
+     */
+    public static function setMessage(string $message): void
+    {
+        static::$message = $message;
+    }
+
+    /**
+     * Set the maximum commands per page.
+     */
+    public static function setPerPage(int $perPage): void
+    {
+        static::$perPage = max($perPage, 25) ?: static::$perPage;
+    }
 
     /**
      * Handle the command.
-     *
-     * @param  \Discord\Parts\Channel\Message  $message
-     * @param  array  $args
-     * @return mixed
      */
-    public function handle($message, $args)
+    public function handle(Message $message, array $args): void
     {
-        $commands = collect($this->bot()->getRegisteredCommands())
+        $this->show($message, $args[0] ?? 1);
+    }
+
+    /**
+     * Show the help command.
+     */
+    public function show(Message|Interaction $context, int $page = 1): void
+    {
+        $commands = collect($this->bot->getCommands())
             ->filter(fn ($command) => ! $command->isHidden())
-            ->filter(fn ($command) => $command->getGuild() ? $message->guild_id === $command->getGuild() : true)
+            ->filter(fn ($command) => $command->getGuild() ? $context->guild_id === $command->getGuild() : true)
             ->sortBy('name');
+
+        $page = max(1, $page);
+
+        $items = $commands->forPage($page, static::$perPage);
 
         $fields = [];
 
-        foreach ($commands as $command) {
-            $fields[$command->getSyntax()] = $command->getDescription();
+        foreach ($items as $item) {
+            $fields[$item->getSyntax()] = $item->getDescription();
         }
 
         if (count($fields) % 3 !== 0) {
@@ -67,10 +103,34 @@ class HelpCommand extends Command
             $fields['  '] = '';
         }
 
-        return $this->message()
-            ->title($this->title)
-            ->content($this->message)
-            ->fields($fields)
-            ->send($message->channel);
+        $pages = max(1, ceil($commands->count() / static::$perPage));
+        $previous = max(1, $page - 1);
+        $next = min($pages, $page + 1);
+
+        $message = sprintf(static::$message, $commands->count());
+
+        $embed = $this
+            ->message($message)
+            ->title(static::$title)
+            ->fields($fields);
+
+        if ($pages > 1) {
+            $embed
+                ->button('←', route: "show:{$previous}", style: 'secondary', disabled: $page <= 1)
+                ->button('→', route: "show:{$next}", style: 'secondary', disabled: $page >= $pages)
+                ->footerText("Page {$page} of {$pages}");
+        }
+
+        $embed->editOrReply($context);
+    }
+
+    /**
+     * The command interaction routes.
+     */
+    public function interactions(): array
+    {
+        return [
+            'show:{page}' => fn (Interaction $interaction, string $page) => $this->show($interaction, (int) $page),
+        ];
     }
 }

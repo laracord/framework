@@ -8,9 +8,11 @@ use Discord\Parts\Interactions\Command\Choice;
 use Discord\Parts\Interactions\Command\Command as DiscordCommand;
 use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laracord\Commands\Contracts\SlashCommand as SlashCommandContract;
+use Laracord\Commands\Middleware\Context;
 
 abstract class SlashCommand extends ApplicationCommand implements SlashCommandContract
 {
@@ -20,13 +22,6 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
      * @var array
      */
     protected $options = [];
-
-    /**
-     * The registered command options.
-     *
-     * @var array
-     */
-    protected $registeredOptions = [];
 
     /**
      * The parsed command options.
@@ -51,8 +46,8 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
             $command = $command->setDefaultMemberPermissions($permissions);
         }
 
-        if ($this->getRegisteredOptions()) {
-            foreach ($this->getRegisteredOptions() as $option) {
+        if ($options = $this->getRegisteredOptions()) {
+            foreach ($options as $option) {
                 $command = $command->addOption($option);
             }
         }
@@ -66,25 +61,33 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
     }
 
     /**
-     * Handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
+     * Process the command through its middleware stack.
      */
-    abstract public function handle($interaction);
+    protected function processMiddleware(Interaction $interaction): mixed
+    {
+        $context = new Context(
+            source: $interaction,
+            options: $this->getOptions(),
+            command: $this,
+        );
+
+        return (new Pipeline($this->bot()->app))
+            ->send($context)
+            ->through($this->getMiddleware())
+            ->then(fn (Context $context) => $this->resolveHandler([
+                'interaction' => $context->source,
+            ]));
+    }
 
     /**
      * Maybe handle the slash command.
-     *
-     * @param  \Discord\Parts\Interactions\Interaction  $interaction
-     * @return mixed
      */
-    public function maybeHandle($interaction)
+    public function maybeHandle(Interaction $interaction): void
     {
         if (! $this->isAdminCommand()) {
             $this->parseOptions($interaction);
 
-            $this->handle($interaction);
+            $this->processMiddleware($interaction);
 
             $this->clearOptions();
 
@@ -92,19 +95,14 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
         }
 
         if ($this->isAdminCommand() && ! $this->isAdmin($interaction->member->user)) {
-            return $interaction->respondWithMessage(
-                $this
-                    ->message('You do not have permission to run this command.')
-                    ->title('Permission Denied')
-                    ->error()
-                    ->build(),
-                ephemeral: true
-            );
+            $this->handleDenied($interaction);
+
+            return;
         }
 
         $this->parseOptions($interaction);
 
-        $this->handle($interaction);
+        $this->processMiddleware($interaction);
 
         $this->clearOptions();
     }
@@ -230,10 +228,8 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
 
     /**
      * Retrieve the command signature.
-     *
-     * @return string
      */
-    public function getSignature()
+    public function getSignature(): string
     {
         return Str::start($this->getName(), '/');
     }
@@ -243,17 +239,13 @@ abstract class SlashCommand extends ApplicationCommand implements SlashCommandCo
      */
     public function getRegisteredOptions(): ?array
     {
-        if ($this->registeredOptions) {
-            return $this->registeredOptions;
-        }
-
         $options = collect($this->options())->merge($this->options);
 
         if ($options->isEmpty()) {
-            return $this->registeredOptions = null;
+            return null;
         }
 
-        return $this->registeredOptions = $options->map(fn ($option) => $option instanceof Option
+        return $options->map(fn ($option) => $option instanceof Option
             ? $option
             : new Option($this->discord(), $option)
         )->map(fn ($option) => $option->setName(Str::slug($option->name)))->all();
